@@ -6,11 +6,15 @@ export default function ProtectedRoute() {
   const location = useLocation()
 
   if (!authResolved) {
-    return <p className="p-6 text-center">Cargando...</p>
+    return (
+      <p className="p-6 text-center text-slate-700 dark:text-sena-texto">Cargando...</p>
+    )
   }
 
   if (errorRed) {
-    return <p className="p-6 text-center text-red-700">{errorRed}</p>
+    return (
+      <p className="p-6 text-center text-red-700 dark:text-red-400">{errorRed}</p>
+    )
   }
 
   if (!user) {

@@ -98,21 +98,26 @@ export default function VerificarCorreo() {
 
   return (
     <TarjetaAuth>
-      <h2 className="text-xl font-semibold text-sena-azul">Verifica tu correo</h2>
+      <h2 className="text-xl font-semibold text-sena-azul dark:text-sena-texto">
+        Verifica tu correo
+      </h2>
 
-      <p className="mt-2 text-sm text-sena-azul/80">
+      <p className="mt-2 text-sm text-sena-azul/80 dark:text-sena-texto-suave">
         Enviamos un código de 6 dígitos a <strong>{user.email}</strong>. Válido
         durante {MINUTOS_VALIDEZ} minutos.
       </p>
 
       {errorGlobal && (
-        <p role="alert" className="mt-4 rounded bg-red-100 p-3 text-sm text-red-700">
+        <p
+          role="alert"
+          className="mt-4 rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+        >
           {errorGlobal}
         </p>
       )}
 
       <form onSubmit={confirmar} className="mt-4 flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
+        <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
           Código
           <input
             type="text"
@@ -122,9 +127,9 @@ export default function VerificarCorreo() {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             required
-            className="rounded border border-sena-azul/20 p-2 text-center text-2xl tracking-[0.5em] font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
+            className="rounded border border-sena-azul/20 p-2 text-center text-2xl tracking-[0.5em] font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
           />
-          {errores.code && <span className="text-xs text-red-600">{errores.code}</span>}
+          {errores.code && <span className="text-xs text-red-600 dark:text-red-400">{errores.code}</span>}
         </label>
 
         <button
@@ -141,7 +146,7 @@ export default function VerificarCorreo() {
           type="button"
           onClick={reenviar}
           disabled={reenviando || bloqueado}
-          className="text-sena-oscuro hover:text-sena hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              className="text-sena-oscuro hover:text-sena hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-sena-acento dark:hover:text-sena"
         >
           {reenviando
             ? 'Enviando...'
@@ -150,7 +155,11 @@ export default function VerificarCorreo() {
               : 'Reenviar código'}
         </button>
 
-        <button type="button" onClick={logout} className="text-sena-azul/70 hover:text-sena hover:underline">
+        <button
+          type="button"
+          onClick={logout}
+          className="text-sena-azul/70 hover:text-sena hover:underline dark:text-sena-texto-suave dark:hover:text-sena"
+        >
           Cerrar sesión
         </button>
       </div>

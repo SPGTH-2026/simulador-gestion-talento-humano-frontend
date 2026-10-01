@@ -5,8 +5,8 @@ import LogoSena from './LogoSena'
 // SENA 2024 (paleta en src/index.css, tipografía Work Sans).
 export default function TarjetaAuth({ children }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-sena-cielo/30 p-4">
-      <div className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-sena-cielo/30 p-4 dark:bg-sena-noche">
+      <div className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-lg dark:bg-sena-superficie dark:shadow-black/40">
         {/* Franja con el verde institucional del logosímbolo SENA */}
         <div className="h-2 bg-sena" />
 
@@ -17,8 +17,10 @@ export default function TarjetaAuth({ children }) {
             <LogoSena className="h-16 w-16 text-sena" />
           </div>
 
-          <h1 className="mb-1 text-center text-2xl font-bold text-sena-azul">SPGTH</h1>
-          <p className="mb-6 text-center text-sm text-sena-azul/70">
+          <h1 className="mb-1 text-center text-2xl font-bold text-sena-azul dark:text-sena-texto">
+            SPGTH
+          </h1>
+          <p className="mb-6 text-center text-sm text-sena-azul/70 dark:text-sena-texto-suave">
             Simulador de Procesos de Gestión de Talento Humano
           </p>
           {children}

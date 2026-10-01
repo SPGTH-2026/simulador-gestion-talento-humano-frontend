@@ -10,7 +10,26 @@
       href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SPGTH · Simulador de Procesos de Gestión de Talento Humano</title>
+    <title>SPGTH — Simulador de Procesos de Gestión de Talento Humano</title>
+
+    <!-- Debe ejecutarse antes de que React monte: si la clase dark se añadiera
+         después, la primera pintada saldría en claro y se vería un fogonazo.
+         Sin preferencia guardada se respeta el tema del sistema. El try/catch
+         evita que un navegador con almacenamiento bloqueado rompa la app. -->
+    <script>
+      ;(function () {
+        try {
+          var guardado = localStorage.getItem('spgth-tema')
+          var oscuro = guardado
+            ? guardado === 'oscuro'
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+          document.documentElement.classList.toggle('dark', oscuro)
+          document.documentElement.style.colorScheme = oscuro ? 'dark' : 'light'
+        } catch (e) {
+          /* modo claro como respaldo */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

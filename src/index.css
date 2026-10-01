@@ -15,4 +15,29 @@
   --color-sena-violeta: #71277a; /* Violeta */
   --color-sena-amarillo: #fdc300; /* Amarillo */
   --color-sena-cielo: #50e5f9; /* Azul claro */
+
+  /* Modo oscuro. Superficies derivadas del azul institucional: el fondo
+     general es más profundo que la tarjeta, para que la jerarquía se lea.
+     Ratios de contraste verificados contra estas superficies:
+       texto principal  #e8f0f7 sobre #00304d -> 11.92:1
+       texto secundario #9fb8cc sobre #00304d ->  6.67:1
+       verde #39a900 sobre #00304d            ->  4.48:1  (no alcanza 4.5:1
+                                                  para texto normal, por eso
+                                                  el acento de texto es otro)
+       acento #5fdd0a sobre #00304d            ->  7.73:1 */
+  --color-sena-noche: #00121f;
+  --color-sena-superficie: #00304d;
+  --color-sena-superficie-alta: #0a3a5c;
+  --color-sena-borde: #14506f;
+  --color-sena-texto: #e8f0f7;
+  --color-sena-texto-suave: #9fb8cc;
+  --color-sena-acento: #5fdd0a;
 }
+
+/* Modo oscuro por clase en <html> y no por preferencia del sistema: el
+   toggle manual tiene que poder forzarlo en cualquier momento. Sin esto,
+   Tailwind resuelve dark: con prefers-color-scheme y el botón no haría nada
+   mientras el sistema no cambiara. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Barras de desplazamiento. */

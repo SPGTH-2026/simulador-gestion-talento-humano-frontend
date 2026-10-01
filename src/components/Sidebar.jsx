@@ -21,7 +21,7 @@ export default function Sidebar() {
   const items = filtrarMenu(menu, can)
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col gap-4 bg-slate-800 p-4 text-white">
+    <aside className="flex w-64 shrink-0 flex-col gap-4 bg-slate-800 p-4 text-white dark:bg-sena-noche">
       {/* Versión negativa (blanco) del logosímbolo: el manual la autoriza
           sobre fondos oscuros para garantizar el contraste. */}
       <div className="flex shrink-0 items-center gap-3">
