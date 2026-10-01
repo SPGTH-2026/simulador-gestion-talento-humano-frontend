@@ -1,36 +1,24 @@
-// Marco centrado de las pantallas públicas (login, registro, recuperación).
-// `marca="sena"` viste la pantalla con la paleta del Manual de Identidad Visual
-// SENA 2024 (tokens en src/index.css). Sin marca mantiene el estilo neutro.
-export default function TarjetaAuth({ children, marca }) {
-  const esSena = marca === 'sena'
+import LogoSena from './LogoSena'
 
+// Marco centrado de las pantallas públicas (login, registro, recuperación,
+// verificación). Estilo institucional según el Manual de Identidad Visual
+// SENA 2024 (paleta en src/index.css, tipografía Work Sans).
+export default function TarjetaAuth({ children }) {
   return (
-    <div
-      className={`flex min-h-screen items-center justify-center p-4 ${
-        esSena ? 'bg-sena-cielo/30' : 'bg-slate-100'
-      }`}
-    >
-      <div
-        className={`w-full max-w-md rounded-lg bg-white ${
-          esSena ? 'overflow-hidden shadow-lg' : 'p-8 shadow'
-        }`}
-      >
+    <div className="flex min-h-screen items-center justify-center bg-sena-cielo/30 p-4">
+      <div className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-lg">
         {/* Franja con el verde institucional del logosímbolo SENA */}
-        {esSena && <div className="h-2 bg-sena" />}
+        <div className="h-2 bg-sena" />
 
-        <div className={esSena ? 'p-8' : ''}>
-          <h1
-            className={`mb-1 text-center text-2xl font-bold ${
-              esSena ? 'text-sena-azul' : ''
-            }`}
-          >
-            SPGTH
-          </h1>
-          <p
-            className={`mb-6 text-center text-sm ${
-              esSena ? 'text-sena-azul/70' : 'text-slate-500'
-            }`}
-          >
+        <div className="p-8">
+          {/* El logosímbolo va sobre el texto y no al lado: ya contiene las
+              letras SENA, así que en horizontal competirían ambas versiones. */}
+          <div className="mb-5 flex justify-center">
+            <LogoSena className="h-16 w-16 text-sena" />
+          </div>
+
+          <h1 className="mb-1 text-center text-2xl font-bold text-sena-azul">SPGTH</h1>
+          <p className="mb-6 text-center text-sm text-sena-azul/70">
             Simulador de Procesos de Gestión de Talento Humano
           </p>
           {children}
