@@ -43,7 +43,7 @@ export default function Registro() {
         </p>
       )}
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto dark:text-sena-texto">
+      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
         Nombre completo
         <input
           name="name"
