@@ -1,27 +1,34 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import TarjetaAuth from '../components/ui/TarjetaAuth'
 
 export default function AuthLayout() {
-  const { user, loading } = useAuth()
+  const { user, authResolved, errorRed } = useAuth()
 
-  if (loading) {
+  if (!authResolved) {
     return <p className="p-6 text-center">Cargando...</p>
   }
 
-  // Si ya hay sesión, no tiene sentido ver login o registro
+  // With the server down we can neither log in nor render the form
+  // reliably, so we tell the user what is wrong.
+  if (errorRed) {
+    return (
+      <TarjetaAuth>
+        <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700">
+          {errorRed}
+        </p>
+      </TarjetaAuth>
+    )
+  }
+
+  // If there is already a session, it makes no sense to see login or register.
   if (user) {
-    return <Navigate to="/" replace />
+    return <Navigate to={user.email_verified ? '/' : '/verificar-correo'} replace />
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
-        <h1 className="mb-1 text-center text-2xl font-bold">SPGTH</h1>
-        <p className="mb-6 text-center text-sm text-slate-500">
-          Simulador de Procesos de Gestión de Talento Humano
-        </p>
-        <Outlet />
-      </div>
-    </div>
+    <TarjetaAuth>
+      <Outlet />
+    </TarjetaAuth>
   )
 }

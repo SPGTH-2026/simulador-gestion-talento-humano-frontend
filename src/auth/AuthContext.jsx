@@ -1,87 +1,86 @@
-import { createContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useEffect, useState } from 'react'
 import * as authApi from '../api/auth'
 
 export const AuthContext = createContext(null)
 
-const leerUsuarioGuardado = () => {
-  try {
-    return JSON.parse(localStorage.getItem('user'))
-  } catch {
-    return null
-  }
-}
-
-const guardarSesion = (token, user) => {
-  localStorage.setItem('token', token)
-  localStorage.setItem('user', JSON.stringify(user))
-}
-
-const borrarSesion = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-}
-
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(leerUsuarioGuardado)
-  // true mientras verificamos un token ya guardado
-  const [loading, setLoading] = useState(() => !!localStorage.getItem('token'))
+  const [user, setUser] = useState(null)
+  // While GET /auth/me is in flight: false. Until it resolves the router must
+  // not render, otherwise the login flashes before the session is known.
+  const [authResolved, setAuthResolved] = useState(false)
+  // Backend down / network error. This is NOT a logout: user stays null.
+  const [errorRed, setErrorRed] = useState('')
 
+  // Startup: the session lives in an HttpOnly cookie, so the only way to know
+  // who the user is (including after a full-page Google redirect) is me().
   useEffect(() => {
-    if (!localStorage.getItem('token')) return
+    let vivo = true
 
     authApi
       .me()
       .then((data) => {
-        localStorage.setItem('user', JSON.stringify(data.user))
-        setUser(data.user)
+        if (vivo) setUser(data.user)
       })
-      .catch(() => {
-        // Si fue 401, el interceptor de client.js ya cerró la sesión
+      .catch((error) => {
+        if (!vivo) return
+        // 401 = not logged in, that is a normal answer. Anything else (no
+        // response at all) is a network problem: we must not close a session.
+        if (error.response?.status === 401) {
+          setUser(null)
+        } else {
+          setErrorRed('No se pudo contactar al servidor. Revisa que esté corriendo.')
+        }
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (vivo) setAuthResolved(true)
+      })
+
+    return () => {
+      vivo = false
+    }
   }, [])
 
-  const login = async (email, password) => {
+  // Any 401 on any request means the session is gone. client.js raises the
+  // event; here we just reflect it so the router sends the user to /login.
+  useEffect(() => {
+    const cerrarSesion = () => setUser(null)
+    window.addEventListener('auth:expirada', cerrarSesion)
+    return () => window.removeEventListener('auth:expirada', cerrarSesion)
+  }, [])
+
+  // login and register already return { user }, so no extra me() is needed.
+  const login = useCallback(async (email, password) => {
     const data = await authApi.login(email, password)
-    guardarSesion(data.token, data.user)
     setUser(data.user)
     return data.user
-  }
+  }, [])
 
-  const register = async (formData) => {
+  const register = useCallback(async (formData) => {
     const data = await authApi.register(formData)
-    guardarSesion(data.token, data.user)
     setUser(data.user)
     return data.user
-  }
+  }, [])
 
-  // Google: llega solo el token; el usuario se trae con me()
-  const loginConToken = async (token) => {
-    localStorage.setItem('token', token)
-    try {
-      const data = await authApi.me()
-      localStorage.setItem('user', JSON.stringify(data.user))
-      setUser(data.user)
-      return data.user
-    } catch (error) {
-      borrarSesion()
-      throw error
-    }
-  }
-
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await authApi.logout()
     } catch {
-      // Aunque falle la petición, cerramos la sesión en el navegador
+      // Even if the request fails, close the session in the browser.
     }
-    borrarSesion()
     setUser(null)
-  }
+  }, [])
+
+  // After confirming the email we need email_verified = true in the context,
+  // otherwise ProtectedRoute would bounce the user right back.
+  const refrescar = useCallback(async () => {
+    const data = await authApi.me()
+    setUser(data.user)
+    return data.user
+  }, [])
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, loginConToken, logout }}
+      value={{ user, authResolved, errorRed, login, register, logout, refrescar }}
     >
       {children}
     </AuthContext.Provider>

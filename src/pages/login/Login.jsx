@@ -1,17 +1,33 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { mensajeError } from '../../api/mensajeError'
-import GoogleCallback from './GoogleCallback'
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+const GOOGLE_URL = import.meta.env.VITE_GOOGLE_URL ?? 'http://localhost:8000/api/auth/google/redirect'
+
+const MENSAJES_ERROR = {
+  oauth: 'No se pudo iniciar sesión con Google. Inténtalo de nuevo.',
+  sin_correo: 'Tu cuenta de Google no compartió un correo, así que no podemos crear tu acceso.',
+  correo_en_uso: 'Ese correo ya está registrado con contraseña. Entra con tu correo y contraseña.',
+  desactivado: 'Tu usuario está desactivado. Contacta al instructor.',
+}
+
+const MENSAJE_EXITO = {
+  contrasena: 'Tu contraseña fue actualizada. Ahora puedes iniciar sesión.',
+}
 
 export default function Login() {
   const { login } = useAuth()
+  const [busqueda] = useSearchParams()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+
+  // Errores que devuelve el backend al callback de Google (?error=...)
+  const errorOauth = busqueda.get('error')
+  const exitoContrasena = busqueda.get('contrasena')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,7 +36,7 @@ export default function Login() {
 
     try {
       await login(email, password)
-      // AuthLayout detecta la sesión y redirige solo
+      // AuthLayout detecta la sesión y redirige según email_verified.
     } catch (err) {
       setError(mensajeError(err))
     } finally {
@@ -28,16 +44,29 @@ export default function Login() {
     }
   }
 
-  // Google necesita navegar de verdad (no axios): el backend redirige a Google
   const entrarConGoogle = () => {
-    window.location.href = `${API_URL}/auth/google/redirect`
+    // Navegación completa (no fetch): el backend redirige a Google y vuelve.
+    window.location.href = GOOGLE_URL
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">Iniciar sesión</h2>
 
-      <GoogleCallback />
+      {(errorOauth || exitoContrasena) && (
+        <>
+          {errorOauth && (
+            <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700">
+              {MENSAJES_ERROR[errorOauth] ?? MENSAJES_ERROR.oauth}
+            </p>
+          )}
+          {exitoContrasena && (
+            <p role="status" className="rounded bg-green-100 p-3 text-sm text-green-700">
+              {MENSAJE_EXITO[exitoContrasena] ?? 'Operación completada con éxito.'}
+            </p>
+          )}
+        </>
+      )}
 
       {error && (
         <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700">
@@ -68,6 +97,12 @@ export default function Login() {
           className="rounded border border-slate-300 p-2"
         />
       </label>
+
+      <div className="flex justify-end text-sm">
+        <Link to="/recuperar" className="text-blue-600 hover:underline">
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </div>
 
       <button
         type="submit"
