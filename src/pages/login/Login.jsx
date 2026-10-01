@@ -51,7 +51,7 @@ export default function Login() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">Iniciar sesión</h2>
+      <h2 className="text-xl font-semibold text-sena-azul">Iniciar sesión</h2>
 
       {(errorOauth || exitoContrasena) && (
         <>
@@ -61,7 +61,10 @@ export default function Login() {
             </p>
           )}
           {exitoContrasena && (
-            <p role="status" className="rounded bg-green-100 p-3 text-sm text-green-700">
+            <p
+              role="status"
+              className="rounded border border-sena/40 bg-sena/10 p-3 text-sm text-sena-oscuro"
+            >
               {MENSAJE_EXITO[exitoContrasena] ?? 'Operación completada con éxito.'}
             </p>
           )}
@@ -74,7 +77,7 @@ export default function Login() {
         </p>
       )}
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
         Correo
         <input
           type="email"
@@ -82,11 +85,11 @@ export default function Login() {
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
-          className="rounded border border-slate-300 p-2"
+          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
         Contraseña
         <input
           type="password"
@@ -94,12 +97,12 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
           required
           autoComplete="current-password"
-          className="rounded border border-slate-300 p-2"
+          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
         />
       </label>
 
       <div className="flex justify-end text-sm">
-        <Link to="/recuperar" className="text-blue-600 hover:underline">
+        <Link to="/recuperar" className="text-sena-oscuro hover:text-sena hover:underline">
           ¿Olvidaste tu contraseña?
         </Link>
       </div>
@@ -107,7 +110,7 @@ export default function Login() {
       <button
         type="submit"
         disabled={enviando}
-        className="rounded bg-blue-600 p-2 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+        className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
       >
         {enviando ? 'Entrando...' : 'Entrar'}
       </button>
@@ -115,14 +118,14 @@ export default function Login() {
       <button
         type="button"
         onClick={entrarConGoogle}
-        className="rounded border border-slate-300 p-2 font-medium hover:bg-slate-50"
+        className="rounded border border-sena-azul/25 p-2 font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30"
       >
         Entrar con Google
       </button>
 
-      <p className="text-center text-sm">
+      <p className="text-center text-sm text-sena-azul/80">
         ¿No tienes cuenta?{' '}
-        <Link to="/registro" className="text-blue-600 hover:underline">
+        <Link to="/registro" className="font-medium text-sena-oscuro hover:text-sena hover:underline">
           Crear cuenta de aspirante
         </Link>
       </p>
