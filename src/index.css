@@ -40,4 +40,59 @@
    mientras el sistema no cambiara. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Barras de desplazamiento. */
+/* Barras de desplazamiento.
+   Se declaran las propiedades estándar y los pseudo-elementos webkit porque
+   cada motor soporta un juego distinto: solo con las estándar la barra se ve
+   plana, y solo con las webkit no funciona en Firefox. Pista transparente,
+   6px y pulgar redondeado. El hover cambia opacidad, no grosor: el ancho
+   forma parte del cálculo del layout y no se puede animar.
+   Colores fijados por contraste, no a criterio: sobre el fondo del menú
+   (#1e293b) el verde institucional da 4.77:1, sobre fondo claro (#f8fafc)
+   da solo 2.93:1 y no cumpliría, así que ahí se usa el verde oscuro. */
+.scroll-sena-lateral {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(57, 169, 0, 0.55) transparent;
+}
+.scroll-sena-lateral::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-sena-lateral::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-sena-lateral::-webkit-scrollbar-thumb {
+  background-color: rgba(57, 169, 0, 0.55);
+  border-radius: 9999px;
+}
+.scroll-sena-lateral:is(:hover, :focus-within)::-webkit-scrollbar-thumb {
+  background-color: #39a900;
+}
+
+.scroll-sena-contenido {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 120, 50, 0.5) transparent;
+}
+.scroll-sena-contenido::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-sena-contenido::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-sena-contenido::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 120, 50, 0.5);
+  border-radius: 9999px;
+}
+.scroll-sena-contenido:is(:hover, :focus-within)::-webkit-scrollbar-thumb {
+  background-color: #007832;
+}
+
+/* En oscuro la superficie pasa a #00121f y el verde institucional vuelve a
+   cumplir con 6.19:1, asi que se recupera. */
+.dark .scroll-sena-contenido {
+  scrollbar-color: rgba(57, 169, 0, 0.6) transparent;
+}
+.dark .scroll-sena-contenido::-webkit-scrollbar-thumb {
+  background-color: rgba(57, 169, 0, 0.6);
+}
+.dark .scroll-sena-contenido:is(:hover, :focus-within)::-webkit-scrollbar-thumb {
+  background-color: #39a900;
+}
