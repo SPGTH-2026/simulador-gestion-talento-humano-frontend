@@ -4,7 +4,7 @@ export function mensajeError(error) {
   // Sin respuesta: el backend está apagado, o no hay red, o el navegador
   // bloqueó la petición. Nunca se confunde con "sesión perdida".
   if (!error.response) {
-    return 'No se pudo conectar con el servidor. Revisa que el backend esté corriendo.'
+    return 'No pudimos conectarnos. Inténtalo de nuevo en un momento.'
   }
 
   const { status, data } = error.response
@@ -42,7 +42,7 @@ export function mensajeError(error) {
   return data?.message ?? 'Ocurrió un error inesperado.'
 }
 
-// 422 por campo, para paintedarlo en el input que corresponde.
+// 422 por campo, para pintarlo en el input que corresponde.
 // 'El código no es válido' -> { code: 'El código no es válido' }
 export function erroresDeCampo(error) {
   const errores = error.response?.data?.errors
