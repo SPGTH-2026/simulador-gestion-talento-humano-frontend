@@ -98,15 +98,11 @@ export default function VerificarCorreo() {
 
   return (
     <TarjetaAuth>
-      <h2 className="text-xl font-semibold">Verifica tu correo</h2>
+      <h2 className="text-xl font-semibold text-sena-azul">Verifica tu correo</h2>
 
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-2 text-sm text-sena-azul/80">
         Enviamos un código de 6 dígitos a <strong>{user.email}</strong>. Válido
         durante {MINUTOS_VALIDEZ} minutos.
-      </p>
-      <p className="mt-1 text-xs text-slate-500">
-        En desarrollo el correo no se envía: el código queda en{' '}
-        <code>storage/logs/laravel.log</code> del backend.
       </p>
 
       {errorGlobal && (
@@ -116,7 +112,7 @@ export default function VerificarCorreo() {
       )}
 
       <form onSubmit={confirmar} className="mt-4 flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
           Código
           <input
             type="text"
@@ -126,7 +122,7 @@ export default function VerificarCorreo() {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             required
-            className="rounded border border-slate-300 p-2 text-center text-2xl tracking-[0.5em]"
+            className="rounded border border-sena-azul/20 p-2 text-center text-2xl tracking-[0.5em] font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
           />
           {errores.code && <span className="text-xs text-red-600">{errores.code}</span>}
         </label>
@@ -134,7 +130,7 @@ export default function VerificarCorreo() {
         <button
           type="submit"
           disabled={enviando || code.length !== 6}
-          className="rounded bg-blue-600 p-2 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+          className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
         >
           {enviando ? 'Verificando...' : 'Confirmar correo'}
         </button>
@@ -145,7 +141,7 @@ export default function VerificarCorreo() {
           type="button"
           onClick={reenviar}
           disabled={reenviando || bloqueado}
-          className="text-blue-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+          className="text-sena-oscuro hover:text-sena hover:underline disabled:cursor-not-allowed disabled:opacity-60"
         >
           {reenviando
             ? 'Enviando...'
@@ -154,7 +150,7 @@ export default function VerificarCorreo() {
               : 'Reenviar código'}
         </button>
 
-        <button type="button" onClick={logout} className="text-slate-600 hover:underline">
+        <button type="button" onClick={logout} className="text-sena-azul/70 hover:text-sena hover:underline">
           Cerrar sesión
         </button>
       </div>

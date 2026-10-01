@@ -134,7 +134,7 @@ export default function RecuperarContrasena() {
 
   return (
     <TarjetaAuth>
-      <h2 className="text-xl font-semibold">Restablecer contraseña</h2>
+      <h2 className="text-xl font-semibold text-sena-azul">Restablecer contraseña</h2>
 
       {errorGlobal && (
         <p role="alert" className="mt-3 rounded bg-red-100 p-3 text-sm text-red-700">
@@ -150,11 +150,11 @@ export default function RecuperarContrasena() {
           }}
           className="mt-4 flex flex-col gap-4"
         >
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-sena-azul/80">
             Escribe tu correo y te enviamos un código de 6 dígitos.
           </p>
 
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
             Correo
             <input
               type="email"
@@ -162,7 +162,7 @@ export default function RecuperarContrasena() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="rounded border border-slate-300 p-2"
+              className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
             />
             {errores.email && <span className="text-xs text-red-600">{errores.email}</span>}
           </label>
@@ -170,7 +170,7 @@ export default function RecuperarContrasena() {
           <button
             type="submit"
             disabled={enviando || bloqueado}
-            className="rounded bg-blue-600 p-2 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+            className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
           >
             {enviando
               ? 'Enviando...'
@@ -179,25 +179,21 @@ export default function RecuperarContrasena() {
                 : 'Enviar código'}
           </button>
 
-          <p className="text-center text-sm">
-            <Link to="/login" className="text-blue-600 hover:underline">
+          <p className="text-center text-sm text-sena-azul/80">
+            <Link to="/login" className="text-sena-oscuro hover:text-sena hover:underline">
               Volver a iniciar sesión
             </Link>
           </p>
         </form>
       ) : (
         <>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-sena-azul/80">
             Enviamos un código a <strong>{enmascararEmail(email)}</strong>. Válido
             durante {MINUTOS_VALIDEZ} minutos.
           </p>
-          <p className="mt-1 text-xs text-slate-500">
-            En desarrollo el código queda en{' '}
-            <code>storage/logs/laravel.log</code> del backend.
-          </p>
 
           <form onSubmit={restablecer} className="mt-4 flex flex-col gap-4">
-            <label className="flex flex-col gap-1 text-sm">
+            <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
               Código
               <input
                 type="text"
@@ -207,12 +203,12 @@ export default function RecuperarContrasena() {
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 required
-                className="rounded border border-slate-300 p-2 text-center text-2xl tracking-[0.5em]"
+                className="rounded border border-sena-azul/20 p-2 text-center text-2xl tracking-[0.5em] font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
               />
               {errores.code && <span className="text-xs text-red-600">{errores.code}</span>}
             </label>
 
-            <label className="flex flex-col gap-1 text-sm">
+            <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
               Nueva contraseña
               <input
                 type="password"
@@ -221,17 +217,17 @@ export default function RecuperarContrasena() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="rounded border border-slate-300 p-2"
+                className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
               />
               {errores.password && (
                 <span className="text-xs text-red-600">{errores.password}</span>
               )}
-              <span className="text-xs text-slate-500">
+              <span className="text-xs font-normal text-sena-azul/70">
                 Mínimo 8 caracteres, con letras y números.
               </span>
             </label>
 
-            <label className="flex flex-col gap-1 text-sm">
+            <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
               Repetir contraseña
               <input
                 type="password"
@@ -240,14 +236,14 @@ export default function RecuperarContrasena() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="rounded border border-slate-300 p-2"
+                className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
               />
             </label>
 
             <button
               type="submit"
               disabled={enviando || bloqueado}
-              className="rounded bg-blue-600 p-2 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
             >
               {enviando ? 'Guardando...' : 'Restablecer contraseña'}
             </button>
@@ -258,7 +254,7 @@ export default function RecuperarContrasena() {
               type="button"
               onClick={reenviar}
               disabled={reenviando || bloqueado}
-              className="text-blue-600 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+              className="text-sena-oscuro hover:text-sena hover:underline disabled:cursor-not-allowed disabled:opacity-60"
             >
               {reenviando
                 ? 'Enviando...'
@@ -270,7 +266,7 @@ export default function RecuperarContrasena() {
             <button
               type="button"
               onClick={volverAlPaso1}
-              className="text-slate-600 hover:underline"
+              className="text-sena-azul/70 hover:text-sena hover:underline"
             >
               Cambiar correo
             </button>
