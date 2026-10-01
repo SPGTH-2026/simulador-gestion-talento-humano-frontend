@@ -3,7 +3,9 @@ import { NavLink, useLocation } from 'react-router-dom'
 
 const claseLink = ({ isActive }) =>
   `block rounded px-3 py-2 text-sm ${
-    isActive ? 'bg-blue-600 text-white' : 'text-slate-200 hover:bg-slate-700'
+    isActive
+      ? 'bg-sena text-white'
+      : 'text-slate-200 hover:bg-slate-700 hover:text-white'
   }`
 
 export default function SidebarItem({ item }) {

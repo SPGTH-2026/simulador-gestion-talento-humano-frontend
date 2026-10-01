@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import ThemeToggle from './ThemeToggle'
 
 // Convierte la clave del rol en un texto legible.
 // Ej: 'revisor_documental' -> 'Revisor documental'
@@ -49,11 +50,13 @@ export default function Topbar() {
   const { user, logout, can } = useAuth()
 
   return (
-    <header className="flex h-16 items-center justify-end gap-4 border-b border-slate-200 bg-white px-6">
+    <header className="flex h-16 items-center justify-end gap-4 border-b border-slate-200 bg-white px-6 dark:border-sena-borde dark:bg-sena-noche">
+      <ThemeToggle />
+
       {can('propio:notificaciones') && (
         <Link
           to="/notificaciones"
-          className="rounded-full p-2 text-slate-600 hover:bg-slate-100"
+          className="rounded-full p-2 text-slate-600 hover:bg-slate-100 dark:text-sena-texto-suave dark:hover:bg-sena-superficie-alta dark:hover:text-sena-texto"
           aria-label="Notificaciones"
         >
           <IconoCampana />
@@ -61,8 +64,10 @@ export default function Topbar() {
       )}
 
       <div className="text-right leading-tight">
-        <p className="text-sm font-medium text-slate-800">{user?.name}</p>
-        <p className="text-xs text-slate-500">
+        <p className="text-sm font-medium text-slate-800 dark:text-sena-texto">
+          {user?.name}
+        </p>
+        <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
           {etiqueta(user?.role)}
           {user?.subrole ? ` · ${etiqueta(user.subrole)}` : ''}
         </p>
@@ -71,7 +76,7 @@ export default function Topbar() {
       <button
         type="button"
         onClick={logout}
-        className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+        className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
       >
         <IconoSalir />
         Cerrar sesión
