@@ -1,0 +1,173 @@
+# Configuración de nginx para el frontend.
+#
+# Este archivo es una PLANTILLA: la imagen oficial de nginx la procesa con
+# envsubst al arrancar, y sustituye los marcadores SPGTH_* por el valor de la
+# variable de entorno del mismo nombre. Por eso el proxy puede apuntar a donde
+# sea sin tener que recompilar la imagen.
+#
+# Dos cosas que conviene tener presentes al tocarlo:
+#
+# 1. Las variables propias de nginx ($uri, $request_uri, $host...) NO se
+#    tocan. envsubst solo sustituye nombres que existan como variables de
+#    entorno, y Docker no define ninguna en minúsculas que choque.
+#
+# 2. 'add_header' NO se hereda si el bloque hijo declara uno propio. Por eso la
+#    cache se decide con un map() y los cabeceros de seguridad viven solo en
+#    el server: así todos los bloques los reciben, incluidos los que sirven el
+#    index.html, que es al que acaba llegando cualquier ruta de la SPA.
+
+# Cache por ruta. Se resuelve una vez, arriba, para poder aplicarla con un
+# único add_header y que todo el mundo la herede.
+map $uri $spgth_cache_control {
+    # Vite pone un hash en el nombre de estos archivos. Si el nombre cambia,
+    # el contenido tambien, asi que se pueden cachear para siempre.
+    "~^/assets/"  "public, max-age=31536000, immutable";
+
+    # El unico archivo cuyo nombre no cambia es el que apunta a los assets con
+    # hash. Cachearlo es justo lo que obliga a un Ctrl+F5 tras desplegar.
+    "/index.html" "no-cache, no-store, must-revalidate";
+
+    # El resto: los SVG de public/ y cualquier cosa que se anada despues.
+    default       "no-cache, must-revalidate";
+}
+
+server {
+    listen      80;
+    listen      [::]:80;
+    server_name _;
+
+    root  /usr/share/nginx/html;
+    index index.html;
+
+    charset utf-8;
+
+    # --- Cabeceros ---------------------------------------------------
+    # Se declaran aqui y una sola vez. Ningun location vuelve a declarar un
+    # add_header, que es lo que haria que estos dejaran de llegar.
+    add_header Cache-Control         $spgth_cache_control      always;
+    add_header X-Content-Type-Options "nosniff"                 always;
+    add_header X-Frame-Options        "SAMEORIGIN"              always;
+    add_header Referrer-Policy        "strict-origin-when-cross-origin" always;
+
+    # --- Compresion ---------------------------------------------------
+    # El bundle pasa de 345 KB a 109 KB. Sin 'gzip_proxied any' no se
+    # comprime nada, porque la peticion llega a traves de un proxy.
+    gzip              on;
+    gzip_vary         on;
+    gzip_min_length   1024;
+    gzip_proxied      any;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/javascript
+        application/json
+        application/xml
+        image/svg+xml;
+
+    # --- Sonda de salud -----------------------------------------------
+    # La usa el HEALTHCHECK del Dockerfile. No toca disco ni PHP, asi que
+    # responde aunque el backend este caido: dice si el frontend vive, no si
+    # vive el sistema entero.
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # --- DNS de Docker -------------------------------------------------
+    # 127.0.0.11 es el resolver interno de Docker. Es lo que permite que nginx
+    # ARRANQUE aunque el backend todavia no exista: el nombre se resuelve en
+    # cada peticion en vez de una vez al leer la configuracion. Sin esto,
+    # 'docker compose up' falla con "host not found in upstream" en cuanto el
+    # backend tarda un poco mas en levantar.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    # --- Proxy al backend ----------------------------------------------
+    # Se hace proxy de /api y /sanctum para que el navegador llame al backend
+    # en SU MISMO origen. Eso quita el CORS de en medio y hace que la cookie
+    # de sesion viaje sin problemas de SameSite ni de dominio.
+    #
+    # 'proxy_pass' lleva una variable ($api_upstream) y por eso hay que
+    # anadir $request_uri a mano: con un upstream estatico nginx sustituye el
+    # prefijo solo, y con variables no. $request_uri trae la ruta original
+    # con su query string, que es justo lo que hay que reenviar.
+    location /api/ {
+        set $api_upstream "${SPGTH_API_UPSTREAM}";
+
+        proxy_pass $api_upstream$request_uri;
+
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host  $host;
+
+        # Sanctum decide si una peticion trae sesion por cookie comparando el
+        # Referer (o el Origin) con SANCTUM_STATEFUL_DOMAINS. Si nginx
+        # reescribiera alguno de los dos, el backend dejaria de reconocer el
+        # frontend y responderia 401 en /auth/me con la sesion valida.
+        # Se reenvian tal cual.
+        proxy_set_header Referer $http_referer;
+        proxy_set_header Origin  $http_origin;
+
+        # La sesion va en cookie, no en cabecera. El backend decide si
+        # acepta Connection: upgrade.
+        proxy_set_header Connection "";
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout    60s;
+        proxy_read_timeout    60s;
+
+        # /api responde JSON casi siempre, y JSON no se cachea. Con esto se
+        # evita que nginx sirva una sesion vieja.
+        proxy_buffering off;
+    }
+
+    # /sanctum/csrf-cookie NO vive bajo /api, asi que necesita su propia
+    # regla. Sin ella, el GET que pide la cookie XSRF-TOKEN devolveria el
+    # index.html de la SPA y el login no se podria completar.
+    location /sanctum/ {
+        set $sanctum_upstream "${SPGTH_SANCTUM_UPSTREAM}";
+
+        proxy_pass $sanctum_upstream$request_uri;
+
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Referer          $http_referer;
+        proxy_set_header Origin           $http_origin;
+        proxy_set_header Connection        "";
+
+        # La cookie CSRF tiene que llegar al navegador con sus atributos.
+        proxy_pass_header Set-Cookie;
+
+        proxy_connect_timeout 5s;
+        proxy_read_timeout    30s;
+    }
+
+    # --- Assets con hash ------------------------------------------------
+    # La cache la decide el map de arriba. Aqui solo se comprueba que el
+    # archivo exista de verdad: un 404 en /assets no debe caer en el
+    # fallback de la SPA, que devolveria HTML donde el navegador espera JS.
+    location /assets/ {
+        try_files $uri =404;
+    }
+
+    # --- El resto -------------------------------------------------------
+    # Fallback de la SPA. Sin esto, recargar en /procesos o en /login daria
+    # un 404 de nginx, porque esos archivos no existen en disco: solo existen
+    # dentro del router de React.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /robots.txt {
+        access_log off;
+        log_not_found off;
+    }
+}
