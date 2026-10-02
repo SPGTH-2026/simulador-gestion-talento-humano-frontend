@@ -1,0 +1,40 @@
+# La imagen compila el bundle y lo sirve con nginx. Este archivo acota lo que
+# entra en el contexto de build: lo que no aparece aquí, la imagen no lo tiene.
+
+# Dependencias y artefactos: los reconstruye la propia imagen.
+node_modules
+dist
+dist-ssr
+
+# Git: dentro del contenedor no sirve de nada.
+.git
+.gitignore
+.gitattributes
+.github
+
+# Documentación: pesa mucho y no hace falta para compilar.
+# 'documentos/' son 1.1 MB de .docx que nadie va a necesitar en la imagen.
+docs/
+documentos/
+*.docx
+*.md
+DOCKER.md
+auditar.py
+verificar_docx.ps1
+
+# Variables de entorno. El build recibe las suyas por --build-arg, y un .env
+# local con la configuración de desarrollo NO debe entrar nunca en la imagen.
+.env
+.env.local
+.env.*.local
+
+# Editores y archivos del sistema.
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs.
+*.log
+npm-debug.log*
