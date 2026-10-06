@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import * as authApi from '../../api/auth'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import { segundosReintento } from '../../api/reintento'
-import TarjetaAuth from '../../components/ui/TarjetaAuth'
 import {
   borrarOtp,
   enmascararEmail,
@@ -38,7 +37,16 @@ export default function RecuperarContrasena() {
   const [reenviando, setReenviando] = useState(false)
   const { segundos, iniciar, bloqueado } = useCuentaAtras()
 
+  // El backend invalida el código anterior en cada envío, así que una segunda
+  // petición en ráfaga dejaría sin validez el correo recién recibido. El estado
+  // `enviando` se aplica recién en el siguiente render y un doble evento en el
+  // mismo lote se cuela: el ref corta en seco, sin esperar a React.
+  const enVuelo = useRef(false)
+
   const pedirCodigo = async (correo) => {
+    if (enVuelo.current) return
+    enVuelo.current = true
+
     setErrores({})
     setErrorGlobal('')
     setEnviando(true)
@@ -57,10 +65,14 @@ export default function RecuperarContrasena() {
       if (espera) iniciar(espera)
     } finally {
       setEnviando(false)
+      enVuelo.current = false
     }
   }
 
   const reenviar = async () => {
+    if (enVuelo.current) return
+    enVuelo.current = true
+
     setErrores({})
     setErrorGlobal('')
     setReenviando(true)
@@ -77,6 +89,7 @@ export default function RecuperarContrasena() {
       if (espera) iniciar(espera)
     } finally {
       setReenviando(false)
+      enVuelo.current = false
     }
   }
 
@@ -133,7 +146,7 @@ export default function RecuperarContrasena() {
   }
 
   return (
-    <TarjetaAuth>
+    <>
       <h2 className="text-xl font-semibold text-sena-azul dark:text-sena-texto">
         Restablecer contraseña
       </h2>
@@ -281,6 +294,6 @@ export default function RecuperarContrasena() {
           </div>
         </>
       )}
-    </TarjetaAuth>
+    </>
   )
 }
