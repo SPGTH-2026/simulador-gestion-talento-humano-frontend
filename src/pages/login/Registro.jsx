@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { mensajeError } from '../../api/mensajeError'
 
 export default function Registro() {
   const { register } = useAuth()
+  const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -20,7 +21,7 @@ export default function Registro() {
 
     try {
       await register(form)
-      // AuthLayout detecta la sesión y redirige solo
+      navigate('/login?registro=exitoso', { replace: true })
     } catch (err) {
       setError(mensajeError(err))
     } finally {
