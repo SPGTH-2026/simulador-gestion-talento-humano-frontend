@@ -57,7 +57,6 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (formData) => {
     const data = await authApi.register(formData)
-    setUser(data.user)
     return data.user
   }, [])
 
