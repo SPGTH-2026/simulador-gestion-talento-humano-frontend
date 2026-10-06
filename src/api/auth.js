@@ -1,6 +1,6 @@
 import client from './client'
 
-// POST /api/auth/register  ->  201 { user }  (además deja sesión iniciada)
+// POST /api/auth/register  ->  201 { user }  (no deja sesión: hay que hacer login)
 export const register = (datos) =>
   client.post('/auth/register', datos).then((res) => res.data)
 
