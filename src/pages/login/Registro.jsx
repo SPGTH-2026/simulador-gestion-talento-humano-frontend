@@ -128,18 +128,19 @@ export default function Registro() {
       </label>
 
       <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-        Código de ficha (opcional)
+        Código de ficha
         <input
           name="ficha_codigo"
           value={form.ficha_codigo}
           onChange={handleChange}
+          required
           maxLength={50}
           placeholder="Ej. 3173334"
           autoComplete="off"
           className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
         />
         <span className="text-xs font-normal text-sena-azul/70 dark:text-sena-texto-suave">
-          Se valida que exista. Si no la tienes, puedes dejarla después.
+          Aquí la escribes antes de la verificación, para no pedirla después.
         </span>
       </label>
 
