@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { mensajeError } from '../../api/mensajeError'
 
@@ -7,7 +7,6 @@ const GOOGLE_URL = import.meta.env.VITE_GOOGLE_URL ?? 'http://localhost:8000/api
 
 export default function Registro() {
   const { register } = useAuth()
-  const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '', ficha_codigo: '' })
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -23,8 +22,9 @@ export default function Registro() {
     setEnviando(true)
 
     try {
+      // El registro abre sesión, así que AuthLayout detecta al usuario (correo
+      // aún sin confirmar) y lo manda a /verificar-correo donde se envía el OTP.
       await register(form)
-      navigate('/login?registro=exitoso', { replace: true })
     } catch (err) {
       setError(mensajeError(err))
     } finally {
