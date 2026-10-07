@@ -8,7 +8,6 @@ const GOOGLE_URL = import.meta.env.VITE_GOOGLE_URL ?? 'http://localhost:8000/api
 const MENSAJES_ERROR = {
   oauth: 'No se pudo iniciar sesión con Google. Inténtalo de nuevo.',
   sin_correo: 'Tu cuenta de Google no compartió un correo, así que no podemos crear tu acceso.',
-  correo_en_uso: 'Ese correo ya está registrado con contraseña. Entra con tu correo y contraseña.',
   desactivado: 'Tu usuario está desactivado. Contacta al instructor.',
 }
 
