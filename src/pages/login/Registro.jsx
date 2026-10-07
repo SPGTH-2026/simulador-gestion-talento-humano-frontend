@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { mensajeError } from '../../api/mensajeError'
 
-const GOOGLE_URL = import.meta.env.VITE_GOOGLE_URL ?? 'http://localhost:8000/api/auth/google/redirect'
+const GOOGLE_URL = import.meta.env.VITE_GOOGLE_URL ?? '/api/auth/google/redirect'
 
 export default function Registro() {
   const { register } = useAuth()

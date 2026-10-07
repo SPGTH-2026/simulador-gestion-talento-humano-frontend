@@ -1,7 +1,9 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
-const CSRF_URL = import.meta.env.VITE_CSRF_URL ?? 'http://localhost:8000/sanctum/csrf-cookie'
+// Rutas relativas por defecto: en producción las redirige netlify.toml al
+// backend de Render. En local, el .env las substituye por http://localhost:8000.
+const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+const CSRF_URL = import.meta.env.VITE_CSRF_URL ?? '/sanctum/csrf-cookie'
 
 const MUTADORES = new Set(['post', 'put', 'patch', 'delete'])
 
