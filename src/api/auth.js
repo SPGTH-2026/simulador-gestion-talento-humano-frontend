@@ -33,3 +33,8 @@ export const sendVerification = () =>
 // POST /api/auth/verification/confirm  body { code }  ->  { ok: true }
 export const confirmVerification = (code) =>
   client.post('/auth/verification/confirm', { code }).then((res) => res.data)
+
+// POST /api/auth/ficha  body { ficha_codigo }  ->  { user }  (aspirante, correo verificado)
+// El aspirante asocia su ficha; el rol NO cambia (eso lo hace el instructor).
+export const guardarFicha = (codigo) =>
+  client.post('/auth/ficha', { ficha_codigo: codigo }).then((res) => res.data)
