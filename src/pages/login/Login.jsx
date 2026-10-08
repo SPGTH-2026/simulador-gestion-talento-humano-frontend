@@ -51,19 +51,24 @@ export default function Login() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold text-sena-azul">Iniciar sesión</h2>
+      <h2 className="text-xl font-semibold text-sena-azul dark:text-sena-texto">
+        Iniciar sesión
+      </h2>
 
       {(errorOauth || exitoContrasena) && (
         <>
           {errorOauth && (
-            <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700">
+            <p
+              role="alert"
+              className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+            >
               {MENSAJES_ERROR[errorOauth] ?? MENSAJES_ERROR.oauth}
             </p>
           )}
           {exitoContrasena && (
             <p
               role="status"
-              className="rounded border border-sena/40 bg-sena/10 p-3 text-sm text-sena-oscuro"
+              className="rounded border border-sena/40 bg-sena/10 p-3 text-sm text-sena-oscuro dark:border-sena/50 dark:bg-sena/15 dark:text-sena-acento"
             >
               {MENSAJE_EXITO[exitoContrasena] ?? 'Operación completada con éxito.'}
             </p>
@@ -72,12 +77,15 @@ export default function Login() {
       )}
 
       {error && (
-        <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700">
+        <p
+          role="alert"
+          className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+        >
           {error}
         </p>
       )}
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
+      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
         Correo
         <input
           type="email"
@@ -85,11 +93,11 @@ export default function Login() {
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
-          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
+          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
+      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
         Contraseña
         <input
           type="password"
@@ -97,12 +105,15 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
           required
           autoComplete="current-password"
-          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
+          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
         />
       </label>
 
       <div className="flex justify-end text-sm">
-        <Link to="/recuperar" className="text-sena-oscuro hover:text-sena hover:underline">
+        <Link
+          to="/recuperar"
+          className="text-sena-oscuro hover:text-sena hover:underline dark:text-sena-acento dark:hover:text-sena"
+        >
           ¿Olvidaste tu contraseña?
         </Link>
       </div>
@@ -118,14 +129,17 @@ export default function Login() {
       <button
         type="button"
         onClick={entrarConGoogle}
-        className="rounded border border-sena-azul/25 p-2 font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30"
+        className="rounded border border-sena-azul/25 p-2 font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
       >
         Entrar con Google
       </button>
 
-      <p className="text-center text-sm text-sena-azul/80">
+      <p className="text-center text-sm text-sena-azul/80 dark:text-sena-texto-suave">
         ¿No tienes cuenta?{' '}
-        <Link to="/registro" className="font-medium text-sena-oscuro hover:text-sena hover:underline">
+        <Link
+          to="/registro"
+          className="font-medium text-sena-oscuro hover:text-sena hover:underline dark:text-sena-acento dark:hover:text-sena"
+        >
           Crear cuenta de aspirante
         </Link>
       </p>

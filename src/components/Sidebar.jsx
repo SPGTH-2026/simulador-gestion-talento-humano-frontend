@@ -21,7 +21,7 @@ export default function Sidebar() {
   const items = filtrarMenu(menu, can)
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col gap-4 bg-slate-800 p-4 text-white">
+    <aside className="flex w-64 shrink-0 flex-col gap-4 bg-slate-800 p-4 text-white dark:bg-sena-noche">
       {/* Versión negativa (blanco) del logosímbolo: el manual la autoriza
           sobre fondos oscuros para garantizar el contraste. */}
       <div className="flex shrink-0 items-center gap-3">
@@ -35,7 +35,7 @@ export default function Sidebar() {
           un flex item en columna no baja de su altura minima y el contenido
           se desborda en vez de generar barra. Asi, con todos los permisos
           abiertos, las ultimas opciones quedan alcanzables. */}
-      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden pr-1">
+      <nav className="scroll-sena-lateral flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden pr-1">
         {items.map((item) => (
           <SidebarItem key={item.id} item={item} />
         ))}

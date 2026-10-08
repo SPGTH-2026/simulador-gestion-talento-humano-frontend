@@ -6,7 +6,7 @@ export default function AuthLayout() {
   const { user, authResolved, errorRed } = useAuth()
 
   if (!authResolved) {
-    return <p className="p-6 text-center">Cargando...</p>
+    return <p className="p-6 text-center dark:text-sena-texto">Cargando...</p>
   }
 
   // With the server down we can neither log in nor render the form
@@ -14,7 +14,10 @@ export default function AuthLayout() {
   if (errorRed) {
     return (
       <TarjetaAuth>
-        <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700">
+        <p
+          role="alert"
+          className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
+        >
           {errorRed}
         </p>
       </TarjetaAuth>
