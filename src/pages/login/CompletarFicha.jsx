@@ -90,7 +90,7 @@ export default function CompletarFicha() {
         <button
           type="submit"
           disabled={enviando}
-          className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
+          className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul dark:hover:bg-sena disabled:opacity-60"
         >
           {enviando ? 'Guardando...' : 'Guardar y entrar'}
         </button>

@@ -7,6 +7,25 @@ export function mensajeError(error) {
     return 'No pudimos conectarnos. Inténtalo de nuevo en un momento.'
   }
 
+  const TRADUCCIONES_BACKEND = {
+    'The email has already been taken.': 'Este correo ya se encuentra registrado.',
+    'The email field is required.': 'El correo es obligatorio.',
+    'The password field is required.': 'La contraseña es obligatoria.',
+    'The password must be at least 8 characters.':
+      'La contraseña debe tener mínimo 8 caracteres.',
+    'The name field is required.': 'El nombre completo es obligatorio.',
+    'The ficha codigo field is required.': 'El código de ficha es obligatorio.',
+    'The password field must contain at least one letter.':
+      'La contraseña debe contener al menos una letra.',
+
+    'The password field must contain at least one number.':
+      'La contraseña debe contener al menos un número.',
+  }
+
+  function traducirMensaje(mensaje) {
+    return TRADUCCIONES_BACKEND[mensaje] ?? mensaje
+  }
+
   const { status, data } = error.response
 
   if (status === 401) {
@@ -36,10 +55,10 @@ export function mensajeError(error) {
   // Laravel: { message, errors: { email: ['mensaje'], password: ['mensaje'] } }
   if (status === 422 && data?.errors) {
     const primerCampo = Object.values(data.errors)[0]
-    return primerCampo?.[0] ?? 'Los datos enviados no son válidos.'
+    return traducirMensaje(primerCampo?.[0]) ?? 'Los datos enviados no son válidos.'
   }
 
-  return data?.message ?? 'Ocurrió un error inesperado.'
+  return traducirMensaje(data?.message) ?? 'Ocurrió un error inesperado.'
 }
 
 // 422 por campo, para pintarlo en el input que corresponde.

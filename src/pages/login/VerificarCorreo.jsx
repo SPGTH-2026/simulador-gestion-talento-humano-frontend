@@ -135,7 +135,7 @@ export default function VerificarCorreo() {
         <button
           type="submit"
           disabled={enviando || code.length !== 6}
-          className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
+          className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul dark:hover:bg-sena disabled:opacity-60"
         >
           {enviando ? 'Verificando...' : 'Confirmar correo'}
         </button>
@@ -146,7 +146,7 @@ export default function VerificarCorreo() {
           type="button"
           onClick={reenviar}
           disabled={reenviando || bloqueado}
-              className="text-sena-oscuro hover:text-sena hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-sena-acento dark:hover:text-sena"
+          className="text-sena-oscuro hover:text-sena hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-sena-acento dark:hover:text-sena"
         >
           {reenviando
             ? 'Enviando...'
