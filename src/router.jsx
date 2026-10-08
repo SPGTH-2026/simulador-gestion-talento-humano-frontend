@@ -9,6 +9,7 @@ import Login from './pages/login/Login'
 import Registro from './pages/login/Registro'
 import RecuperarContrasena from './pages/login/RecuperarContrasena'
 import VerificarCorreo from './pages/login/VerificarCorreo'
+import CompletarFicha from './pages/login/CompletarFicha'
 import NotFound from './pages/errores/NotFound'
 
 import Dashboard from './pages/dashboard/Dashboard'
@@ -44,6 +45,9 @@ export default function AppRouter() {
           compartiera layout con las rutas de negocio acabaríamos en un bucle. */}
       <Route element={<ProtectedRoute />}>
         <Route path="/verificar-correo" element={<VerificarCorreo />} />
+
+        {/* El aspirante sin ficha solo puede ver esta pantalla hasta asociarla. */}
+        <Route path="/completar-ficha" element={<CompletarFicha />} />
 
         <Route element={<AppLayout />}>
           <Route element={<PermissionRoute permiso="dashboard:ver" />}>

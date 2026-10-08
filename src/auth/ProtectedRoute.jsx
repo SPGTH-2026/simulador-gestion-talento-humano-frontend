@@ -28,5 +28,16 @@ export default function ProtectedRoute() {
     return <Navigate to="/verificar-correo" replace />
   }
 
+  // The aspirant signs up without an instructor, so until he associates the
+  // ficha he can only go to /completar-ficha. It does NOT become an aprendiz:
+  // the instructor assigns the role from Usuarios.
+  if (
+    user.role === 'aspirante' &&
+    !user.ficha &&
+    location.pathname !== '/completar-ficha'
+  ) {
+    return <Navigate to="/completar-ficha" replace />
+  }
+
   return <Outlet />
 }

@@ -57,6 +57,9 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (formData) => {
     const data = await authApi.register(formData)
+    // El registro abre sesión (cookie) y el usuario viene sin email verificado:
+    // al setearlo, AuthLayout lo manda a /verificar-correo, que envía el OTP.
+    setUser(data.user)
     return data.user
   }, [])
 
