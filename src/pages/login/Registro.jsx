@@ -30,7 +30,7 @@ export default function Registro() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">Crear cuenta de aspirante</h2>
+      <h2 className="text-xl font-semibold text-sena-azul">Crear cuenta de aspirante</h2>
 
       {error && (
         <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700">
@@ -38,7 +38,7 @@ export default function Registro() {
         </p>
       )}
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
         Nombre completo
         <input
           name="name"
@@ -46,11 +46,11 @@ export default function Registro() {
           onChange={handleChange}
           required
           autoComplete="name"
-          className="rounded border border-slate-300 p-2"
+          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
         Correo
         <input
           type="email"
@@ -59,11 +59,11 @@ export default function Registro() {
           onChange={handleChange}
           required
           autoComplete="email"
-          className="rounded border border-slate-300 p-2"
+          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
         />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul">
         Contraseña
         <input
           type="password"
@@ -73,9 +73,9 @@ export default function Registro() {
           required
           minLength={8}
           autoComplete="new-password"
-          className="rounded border border-slate-300 p-2"
+          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40"
         />
-        <span className="text-xs text-slate-500">
+        <span className="text-xs font-normal text-sena-azul/70">
           Mínimo 8 caracteres, con letras y números.
         </span>
       </label>
@@ -83,14 +83,14 @@ export default function Registro() {
       <button
         type="submit"
         disabled={enviando}
-        className="rounded bg-blue-600 p-2 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+        className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
       >
         {enviando ? 'Creando cuenta...' : 'Crear cuenta'}
       </button>
 
-      <p className="text-center text-sm">
+      <p className="text-center text-sm text-sena-azul/80">
         ¿Ya tienes cuenta?{' '}
-        <Link to="/login" className="text-blue-600 hover:underline">
+        <Link to="/login" className="font-medium text-sena-oscuro hover:text-sena hover:underline">
           Iniciar sesión
         </Link>
       </p>

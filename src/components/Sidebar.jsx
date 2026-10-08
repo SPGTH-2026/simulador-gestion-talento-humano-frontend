@@ -1,6 +1,7 @@
 import { useAuth } from '../auth/useAuth'
 import { menu } from '../config/menu'
 import SidebarItem from './SidebarItem'
+import LogoSena from './ui/LogoSena'
 
 // Deja solo lo que el usuario puede ver, incluyendo los hijos
 function filtrarMenu(items, can) {
@@ -21,7 +22,14 @@ export default function Sidebar() {
 
   return (
     <aside className="flex w-64 shrink-0 flex-col gap-4 bg-slate-800 p-4 text-white">
-      <p className="text-lg font-bold">SPGTH</p>
+      {/* Versión negativa (blanco) del logosímbolo: el manual la autoriza
+          sobre fondos oscuros para garantir el contraste. */}
+      <div className="flex items-center gap-3">
+        {/* 52 px: el Manual de Identidad Visual exige un minimo de 50 px
+            y no se deforma la geometria original del logosimbolo. */}
+        <LogoSena className="size-[52px]" />
+        <p className="text-lg font-bold">SPGTH</p>
+      </div>
       <nav className="flex flex-col gap-1">
         {items.map((item) => (
           <SidebarItem key={item.id} item={item} />

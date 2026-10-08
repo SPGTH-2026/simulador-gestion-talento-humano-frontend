@@ -7,6 +7,8 @@ import AppLayout from './layouts/AppLayout'
 
 import Login from './pages/login/Login'
 import Registro from './pages/login/Registro'
+import RecuperarContrasena from './pages/login/RecuperarContrasena'
+import VerificarCorreo from './pages/login/VerificarCorreo'
 import NotFound from './pages/errores/NotFound'
 
 import Dashboard from './pages/dashboard/Dashboard'
@@ -30,14 +32,19 @@ import Notificaciones from './pages/aspirante/Notificaciones'
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Sin sesión: login y registro */}
+      {/* Sin sesión: login, registro y recuperación de contraseña */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
+        <Route path="/recuperar" element={<RecuperarContrasena />} />
       </Route>
 
-      {/* Con sesión: menú lateral + página */}
+      {/* Con sesión. /verificar-correo vive FUERA de AppLayout a propósito:
+          ProtectedRoute manda aquí a quien no tenga el correo confirmado, y si
+          compartiera layout con las rutas de negocio acabaríamos en un bucle. */}
       <Route element={<ProtectedRoute />}>
+        <Route path="/verificar-correo" element={<VerificarCorreo />} />
+
         <Route element={<AppLayout />}>
           <Route element={<PermissionRoute permiso="dashboard:ver" />}>
             <Route index element={<Dashboard />} />

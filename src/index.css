@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+/* Paleta institucional SENA.
+   Fuente: Manual de Identidad Visual SENA 2024 (Resolución 1825 de 2024),
+   capítulo "Arquitectura del color". Genera utilidades bg-sena*, text-sena*,
+   border-sena*, etc., y admite modificadores de opacidad (bg-sena/10).
+   Work Sans es la tipografía institucional y se carga desde index.html. */
+@theme {
+  --font-sans: "Work Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  --color-sena: #39a900; /* Verde institucional, color principal del logosímbolo */
+  --color-sena-oscuro: #007832; /* Verde oscuro */
+  --color-sena-azul: #00304d; /* Azul oscuro */
+  --color-sena-violeta: #71277a; /* Violeta */
+  --color-sena-amarillo: #fdc300; /* Amarillo */
+  --color-sena-cielo: #50e5f9; /* Azul claro */
+}
