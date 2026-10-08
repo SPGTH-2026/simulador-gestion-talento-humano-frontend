@@ -96,3 +96,43 @@
 .dark .scroll-sena-contenido:is(:hover, :focus-within)::-webkit-scrollbar-thumb {
   background-color: #39a900;
 }
+/* Fondo de autenticación con profundidad sutil */
+.auth-fondo {
+  background:
+    radial-gradient(
+      circle at 18% 12%,
+      rgba(80, 229, 249, 0.18),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 86% 82%,
+      rgba(57, 169, 0, 0.10),
+      transparent 30%
+    ),
+    linear-gradient(
+      145deg,
+      #eefcff 0%,
+      #dff7fb 48%,
+      #eef9f1 100%
+    );
+}
+
+.dark .auth-fondo {
+  background:
+    radial-gradient(
+      circle at 18% 12%,
+      rgba(80, 229, 249, 0.10),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 86% 82%,
+      rgba(57, 169, 0, 0.07),
+      transparent 30%
+    ),
+    linear-gradient(
+      145deg,
+      #00121f 0%,
+      #00243a 50%,
+      #001827 100%
+    );
+}

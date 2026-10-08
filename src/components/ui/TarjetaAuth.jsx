@@ -1,12 +1,16 @@
 import LogoSena from './LogoSena'
+import ThemeToggle from '../ThemeToggle'
 
 // Marco centrado de las pantallas públicas (login, registro, recuperación,
 // verificación). Estilo institucional según el Manual de Identidad Visual
 // SENA 2024 (paleta en src/index.css, tipografía Work Sans).
 export default function TarjetaAuth({ children }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-sena-cielo/30 p-4 dark:bg-sena-noche">
-      <div className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-lg dark:bg-sena-superficie dark:shadow-black/40">
+    <div className="auth-fondo relative flex min-h-screen items-center justify-center p-4">
+      <div className="absolute right-4 top-4 z-10 rounded-full bg-white/70 shadow-sm backdrop-blur-sm dark:bg-sena-superficie/70">
+        <ThemeToggle />
+      </div>
+      <div className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-2xl ring-1 ring-sena-azul/10 dark:bg-sena-superficie dark:ring-white/5">
         {/* Franja con el verde institucional del logosímbolo SENA */}
         <div className="h-2 bg-sena" />
 
