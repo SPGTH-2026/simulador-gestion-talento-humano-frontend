@@ -14,6 +14,7 @@ const MENSAJES_ERROR = {
 
 const MENSAJE_EXITO = {
   contrasena: 'Tu contraseña fue actualizada. Ahora puedes iniciar sesión.',
+  registro: 'Tu cuenta fue creada correctamente. Inicia sesión para verificar tu correo.',
 }
 
 export default function Login() {
@@ -28,6 +29,7 @@ export default function Login() {
   // Errores que devuelve el backend al callback de Google (?error=...)
   const errorOauth = busqueda.get('error')
   const exitoContrasena = busqueda.get('contrasena')
+  const exitoRegistro = busqueda.get('registro')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -55,7 +57,7 @@ export default function Login() {
         Iniciar sesión
       </h2>
 
-      {(errorOauth || exitoContrasena) && (
+      {(errorOauth || exitoContrasena || exitoRegistro) && (
         <>
           {errorOauth && (
             <p
@@ -74,6 +76,15 @@ export default function Login() {
             </p>
           )}
         </>
+      )}
+
+      {exitoRegistro && (
+        <p
+          role="status"
+          className="rounded border border-sena/40 bg-sena/10 p-3 text-sm text-sena-oscuro dark:border-sena/50 dark:bg-sena/15 dark:text-sena-acento"
+        >
+          {MENSAJE_EXITO.registro}
+        </p>
       )}
 
       {error && (
