@@ -23,14 +23,19 @@ export default function Sidebar() {
   return (
     <aside className="flex w-64 shrink-0 flex-col gap-4 bg-slate-800 p-4 text-white">
       {/* Versión negativa (blanco) del logosímbolo: el manual la autoriza
-          sobre fondos oscuros para garantir el contraste. */}
-      <div className="flex items-center gap-3">
+          sobre fondos oscuros para garantizar el contraste. */}
+      <div className="flex shrink-0 items-center gap-3">
         {/* 52 px: el Manual de Identidad Visual exige un minimo de 50 px
             y no se deforma la geometria original del logosimbolo. */}
         <LogoSena className="size-[52px]" />
         <p className="text-lg font-bold">SPGTH</p>
       </div>
-      <nav className="flex flex-col gap-1">
+
+      {/* El nav es lo unico que desplaza. min-h-0 es imprescindible: sin el,
+          un flex item en columna no baja de su altura minima y el contenido
+          se desborda en vez de generar barra. Asi, con todos los permisos
+          abiertos, las ultimas opciones quedan alcanzables. */}
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden pr-1">
         {items.map((item) => (
           <SidebarItem key={item.id} item={item} />
         ))}
