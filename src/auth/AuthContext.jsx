@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
         if (error.response?.status === 401) {
           setUser(null)
         } else {
-          setErrorRed('No se pudo contactar al servidor. Revisa que esté corriendo.')
+          setErrorRed('No pudimos conectarnos. Inténtalo de nuevo en un momento.')
         }
       })
       .finally(() => {
