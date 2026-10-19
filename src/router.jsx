@@ -28,6 +28,7 @@ import Usuarios from './pages/usuarios/Usuarios'
 import Reportes from './pages/reportes/Reportes'
 import Supervision from './pages/supervision/Supervision'
 import MisPostulaciones from './pages/aspirante/MisPostulaciones'
+import DocumentosPostulacion from './pages/aspirante/DocumentosPostulacion'
 import MisDocumentos from './pages/aspirante/MisDocumentos'
 import MisEvaluaciones from './pages/aspirante/MisEvaluaciones'
 import Notificaciones from './pages/aspirante/Notificaciones'
@@ -104,6 +105,9 @@ export default function AppRouter() {
           </Route>
           <Route element={<PermissionRoute permiso="propio:documentos" />}>
             <Route path="mis-documentos" element={<MisDocumentos />} />
+            {/* Paso de documentos/skills de UNA postulación propia. Va aquí
+                porque el backend lo protege con el permiso 'propio:documentos'. */}
+            <Route path="postulaciones/:id/documentos" element={<DocumentosPostulacion />} />
           </Route>
           <Route element={<PermissionRoute permiso="propio:evaluaciones" />}>
             <Route path="mis-evaluaciones" element={<MisEvaluaciones />} />
