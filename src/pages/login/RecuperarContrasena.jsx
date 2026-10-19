@@ -11,6 +11,10 @@ import {
   MINUTOS_VALIDEZ,
 } from '../../lib/otpSesion'
 import { useCuentaAtras } from '../../lib/useCuentaAtras'
+import Boton from '../../components/ui/Boton'
+import Campo from '../../components/ui/Campo'
+import { MensajeError } from '../../components/ui/Mensaje'
+import { CLASE_INPUT, CLASE_INPUT_CODIGO } from '../../lib/estilos'
 
 const PANTALLA = 'recuperar'
 
@@ -151,14 +155,7 @@ export default function RecuperarContrasena() {
         Restablecer contraseña
       </h2>
 
-      {errorGlobal && (
-        <p
-          role="alert"
-          className="mt-3 rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-        >
-          {errorGlobal}
-        </p>
-      )}
+      {errorGlobal && <MensajeError className="mt-3">{errorGlobal}</MensajeError>}
 
       {paso === 1 ? (
         <form
@@ -172,30 +169,24 @@ export default function RecuperarContrasena() {
             Escribe tu correo y te enviamos un código de 6 dígitos.
           </p>
 
-          <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-            Correo
+          <Campo etiqueta="Correo" error={errores.email}>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+              className={CLASE_INPUT}
             />
-            {errores.email && <span className="text-xs text-red-600 dark:text-red-400">{errores.email}</span>}
-          </label>
+          </Campo>
 
-          <button
-            type="submit"
-            disabled={enviando || bloqueado}
-            className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul dark:hover:bg-sena disabled:opacity-60"
-          >
+          <Boton type="submit" disabled={enviando || bloqueado}>
             {enviando
               ? 'Enviando...'
               : bloqueado
                 ? `Espera ${segundos} s`
                 : 'Enviar código'}
-          </button>
+          </Boton>
 
           <p className="text-center text-sm text-sena-azul/80 dark:text-sena-texto-suave">
             <Link
@@ -214,8 +205,7 @@ export default function RecuperarContrasena() {
           </p>
 
           <form onSubmit={restablecer} className="mt-4 flex flex-col gap-4">
-            <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-              Código
+            <Campo etiqueta="Código" error={errores.code}>
               <input
                 type="text"
                 inputMode="numeric"
@@ -224,13 +214,11 @@ export default function RecuperarContrasena() {
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 required
-                className="rounded border border-sena-azul/20 p-2 text-center text-2xl tracking-[0.5em] font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+                className={CLASE_INPUT_CODIGO}
               />
-              {errores.code && <span className="text-xs text-red-600 dark:text-red-400">{errores.code}</span>}
-            </label>
+            </Campo>
 
-            <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-              Nueva contraseña
+            <Campo etiqueta="Nueva contraseña" error={errores.password}>
               <input
                 type="password"
                 value={password}
@@ -238,18 +226,14 @@ export default function RecuperarContrasena() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+                className={CLASE_INPUT}
               />
-              {errores.password && (
-                <span className="text-xs text-red-600 dark:text-red-400">{errores.password}</span>
-              )}
-              <span className="text-xs font-normal text-sena-azul/70">
+              <span className="text-xs font-normal text-sena-azul/70 dark:text-sena-texto-suave">
                 Mínimo 8 caracteres, con letras y números.
               </span>
-            </label>
+            </Campo>
 
-            <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-              Repetir contraseña
+            <Campo etiqueta="Repetir contraseña">
               <input
                 type="password"
                 value={confirmacion}
@@ -257,17 +241,13 @@ export default function RecuperarContrasena() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+                className={CLASE_INPUT}
               />
-            </label>
+            </Campo>
 
-            <button
-              type="submit"
-              disabled={enviando || bloqueado}
-              className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul dark:hover:bg-sena disabled:opacity-60"
-            >
+            <Boton type="submit" disabled={enviando || bloqueado}>
               {enviando ? 'Guardando...' : 'Restablecer contraseña'}
-            </button>
+            </Boton>
           </form>
 
           <div className="mt-4 flex flex-col items-center gap-2 text-sm">

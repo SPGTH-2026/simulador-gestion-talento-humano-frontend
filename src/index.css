@@ -16,22 +16,68 @@
   --color-sena-amarillo: #fdc300; /* Amarillo */
   --color-sena-cielo: #50e5f9; /* Azul claro */
 
-  /* Modo oscuro. Superficies derivadas del azul institucional: el fondo
-     general es más profundo que la tarjeta, para que la jerarquía se lea.
-     Ratios de contraste verificados contra estas superficies:
-       texto principal  #e8f0f7 sobre #00304d -> 11.92:1
-       texto secundario #9fb8cc sobre #00304d ->  6.67:1
-       verde #39a900 sobre #00304d            ->  4.48:1  (no alcanza 4.5:1
-                                                  para texto normal, por eso
-                                                  el acento de texto es otro)
-       acento #5fdd0a sobre #00304d            ->  7.73:1 */
-  --color-sena-noche: #00121f;
-  --color-sena-superficie: #00304d;
-  --color-sena-superficie-alta: #0a3a5c;
-  --color-sena-borde: #14506f;
-  --color-sena-texto: #e8f0f7;
-  --color-sena-texto-suave: #9fb8cc;
+  /* Superficies en modo claro. Neutros fríos derivados del azul institucional:
+     el fondo es un gris-azulado suave y las tarjetas, blancas. Así la jerarquía
+     se lee sin bordes fuertes y el conjunto no se ve deslavado.
+       texto azul sobre fondo #eef3f9 -> 12.30:1 */
+  --color-sena-fondo: #eef3f9; /* fondo de la aplicación */
+  --color-sena-hundido: #e3ecf5; /* zonas hundidas y estados hover */
+  --color-sena-linea: #d6e3ef; /* bordes y separadores */
+
+  /* Menú lateral: azul institucional. Se mantiene azul en ambos temas para que
+     sea el ancla de color de la interfaz.
+       blanco      sobre #00314f -> 13.53:1
+       slate-200   sobre #00314f -> 10.97:1
+       verde #39a900 sobre #00314f -> 4.49:1 (acento, no texto) */
+  --color-sena-menu: #00314f;
+  --color-sena-menu-bajo: #001f36;
+
+  /* Modo oscuro. Escala de un mismo azul: el fondo general es más profundo que
+     las tarjetas y estas, a su vez, que los elementos elevados. Ratios de
+     contraste verificados contra estas superficies:
+       texto principal  #eaf2f9 sobre #0a3550 -> 11.34:1
+       texto secundario #a3bdd2 sobre #0a3550 ->  6.57:1
+       acento #5fdd0a   sobre #0a3550        ->  7.22:1
+       texto principal  #eaf2f9 sobre #001a2e -> 15.64:1 */
+  --color-sena-noche: #001a2e;
+  --color-sena-superficie: #0a3550;
+  --color-sena-superficie-alta: #12496b;
+  --color-sena-borde: #24608a;
+  --color-sena-texto: #eaf2f9;
+  --color-sena-texto-suave: #a3bdd2;
   --color-sena-acento: #5fdd0a;
+
+  /* Alias semánticos. No agregan una paleta nueva: reutilizan colores que ya
+     existían en la app (verde oscuro institucional, ámbar y rojo de avisos).
+     Los componentes usan text-exito / bg-peligro/10 en vez de repetir escalas
+     crudas. En modo oscuro se redefinen (bloque html.dark, abajo) para que el
+     contraste siga cumpliendo sobre las superficies azules. */
+  --color-exito: #007832; /* = sena-oscuro */
+  --color-aviso: #92400e; /* = ámbar oscuro ya usado en avisos */
+  --color-peligro: #b91c1c; /* = rojo oscuro ya usado en errores */
+}
+
+/* En oscuro los alias toman los tonos claros que ya usaba la app, para leer
+   sobre las superficies #0a3550 / #12496b. */
+html.dark {
+  --color-exito: #5fdd0a; /* = sena-acento */
+  --color-aviso: #fde68a; /* = ámbar claro */
+  --color-peligro: #fca5a5; /* = rojo claro */
+}
+
+/* Foco visible por teclado. Se acota a los controles interactivos y de
+   formulario. Vive en la capa base: los botones y enlaces que no traen su
+   propio anillo lo reciben, y los campos (que ya usan focus:ring) conservan
+   su anillo sin duplicar el indicador. */
+@layer base {
+  :where(a, button, input, select, textarea):focus-visible {
+    outline: 2px solid #007832; /* verde oscuro: ≥ 3:1 sobre fondo claro */
+    outline-offset: 2px;
+  }
+
+  html.dark :where(a, button, input, select, textarea):focus-visible {
+    outline-color: #5fdd0a; /* acento: 7.22:1 sobre la superficie oscura */
+  }
 }
 
 /* Modo oscuro por clase en <html> y no por preferencia del sistema: el
@@ -47,8 +93,8 @@
    6px y pulgar redondeado. El hover cambia opacidad, no grosor: el ancho
    forma parte del cálculo del layout y no se puede animar.
    Colores fijados por contraste, no a criterio: sobre el fondo del menú
-   (#1e293b) el verde institucional da 4.77:1, sobre fondo claro (#f8fafc)
-   da solo 2.93:1 y no cumpliría, así que ahí se usa el verde oscuro. */
+   (#00314f) el verde institucional ronda 4.5:1; sobre el fondo claro
+   (#eef3f9) no alcanzaría, así que ahí se usa el verde oscuro. */
 .scroll-sena-lateral {
   scrollbar-width: thin;
   scrollbar-color: rgba(57, 169, 0, 0.55) transparent;
@@ -85,8 +131,8 @@
   background-color: #007832;
 }
 
-/* En oscuro la superficie pasa a #00121f y el verde institucional vuelve a
-   cumplir con 6.19:1, asi que se recupera. */
+/* En oscuro la superficie pasa a #001a2e y el verde institucional vuelve a
+   cumplir con creces, asi que se recupera. */
 .dark .scroll-sena-contenido {
   scrollbar-color: rgba(57, 169, 0, 0.6) transparent;
 }
@@ -100,39 +146,44 @@
 .auth-fondo {
   background:
     radial-gradient(
-      circle at 18% 12%,
-      rgba(80, 229, 249, 0.18),
-      transparent 34%
+      circle at 16% 10%,
+      rgba(80, 229, 249, 0.26),
+      transparent 36%
     ),
     radial-gradient(
-      circle at 86% 82%,
-      rgba(57, 169, 0, 0.10),
-      transparent 30%
+      circle at 88% 84%,
+      rgba(57, 169, 0, 0.16),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 78% 6%,
+      rgba(0, 48, 77, 0.08),
+      transparent 42%
     ),
     linear-gradient(
-      145deg,
-      #eefcff 0%,
-      #dff7fb 48%,
-      #eef9f1 100%
+      150deg,
+      #eaf7fd 0%,
+      #dbedf8 46%,
+      #e7f6ee 100%
     );
 }
 
 .dark .auth-fondo {
   background:
     radial-gradient(
-      circle at 18% 12%,
-      rgba(80, 229, 249, 0.10),
-      transparent 34%
+      circle at 16% 10%,
+      rgba(80, 229, 249, 0.14),
+      transparent 36%
     ),
     radial-gradient(
-      circle at 86% 82%,
-      rgba(57, 169, 0, 0.07),
-      transparent 30%
+      circle at 88% 84%,
+      rgba(57, 169, 0, 0.10),
+      transparent 32%
     ),
     linear-gradient(
-      145deg,
-      #00121f 0%,
-      #00243a 50%,
-      #001827 100%
+      150deg,
+      #001a2e 0%,
+      #06304c 52%,
+      #00141f 100%
     );
 }

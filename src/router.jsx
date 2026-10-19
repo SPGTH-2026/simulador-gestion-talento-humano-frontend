@@ -15,6 +15,8 @@ import NotFound from './pages/errores/NotFound'
 import Dashboard from './pages/dashboard/Dashboard'
 import ConvocatoriasListado from './pages/convocatorias/ConvocatoriasListado'
 import ConvocatoriaNueva from './pages/convocatorias/ConvocatoriaNueva'
+import ConvocatoriaEditar from './pages/convocatorias/ConvocatoriaEditar'
+import ConvocatoriaDetalle from './pages/convocatorias/ConvocatoriaDetalle'
 import DocumentosListado from './pages/documentos/DocumentosListado'
 import DocumentoCargar from './pages/documentos/DocumentoCargar'
 import DocumentoValidacion from './pages/documentos/DocumentoValidacion'
@@ -26,6 +28,7 @@ import Usuarios from './pages/usuarios/Usuarios'
 import Reportes from './pages/reportes/Reportes'
 import Supervision from './pages/supervision/Supervision'
 import MisPostulaciones from './pages/aspirante/MisPostulaciones'
+import DocumentosPostulacion from './pages/aspirante/DocumentosPostulacion'
 import MisDocumentos from './pages/aspirante/MisDocumentos'
 import MisEvaluaciones from './pages/aspirante/MisEvaluaciones'
 import Notificaciones from './pages/aspirante/Notificaciones'
@@ -56,9 +59,11 @@ export default function AppRouter() {
 
           <Route element={<PermissionRoute permiso="convocatorias:ver" />}>
             <Route path="convocatorias" element={<ConvocatoriasListado />} />
+            <Route path="convocatorias/:id" element={<ConvocatoriaDetalle />} />
           </Route>
           <Route element={<PermissionRoute permiso="convocatorias:gestionar" />}>
             <Route path="convocatorias/nueva" element={<ConvocatoriaNueva />} />
+            <Route path="convocatorias/:id/editar" element={<ConvocatoriaEditar />} />
           </Route>
 
           <Route element={<PermissionRoute permiso="documentos:ver" />}>
@@ -100,6 +105,9 @@ export default function AppRouter() {
           </Route>
           <Route element={<PermissionRoute permiso="propio:documentos" />}>
             <Route path="mis-documentos" element={<MisDocumentos />} />
+            {/* Paso de documentos/skills de UNA postulación propia. Va aquí
+                porque el backend lo protege con el permiso 'propio:documentos'. */}
+            <Route path="postulaciones/:id/documentos" element={<DocumentosPostulacion />} />
           </Route>
           <Route element={<PermissionRoute permiso="propio:evaluaciones" />}>
             <Route path="mis-evaluaciones" element={<MisEvaluaciones />} />

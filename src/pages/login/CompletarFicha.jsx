@@ -4,6 +4,10 @@ import { useAuth } from '../../auth/useAuth'
 import * as authApi from '../../api/auth'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import TarjetaAuth from '../../components/ui/TarjetaAuth'
+import Boton from '../../components/ui/Boton'
+import Campo from '../../components/ui/Campo'
+import { MensajeError } from '../../components/ui/Mensaje'
+import { CLASE_INPUT_FICHA } from '../../lib/estilos'
 
 // Para un Aspirante sin ficha: deja su código y se valida que exista. Asociar la
 // ficha NO lo convierte en aprendiz; el instructor le asigna el rol desde Usuarios.
@@ -59,18 +63,10 @@ export default function CompletarFicha() {
         El sistema verifica que exista para dejarte entrar como aspirante.
       </p>
 
-      {errorGlobal && (
-        <p
-          role="alert"
-          className="mt-4 rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-        >
-          {errorGlobal}
-        </p>
-      )}
+      {errorGlobal && <MensajeError className="mt-4">{errorGlobal}</MensajeError>}
 
       <form onSubmit={guardar} className="mt-4 flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-          Código de ficha
+        <Campo etiqueta="Código de ficha" error={errores.ficha_codigo}>
           <input
             type="text"
             value={codigo}
@@ -78,22 +74,13 @@ export default function CompletarFicha() {
             placeholder="Ej. 3173334"
             required
             autoComplete="off"
-            className="rounded border border-sena-azul/20 p-2 text-center text-lg font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+            className={CLASE_INPUT_FICHA}
           />
-          {errores.ficha_codigo && (
-            <span className="text-xs text-red-600 dark:text-red-400">
-              {errores.ficha_codigo}
-            </span>
-          )}
-        </label>
+        </Campo>
 
-        <button
-          type="submit"
-          disabled={enviando}
-          className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul dark:hover:bg-sena disabled:opacity-60"
-        >
+        <Boton type="submit" disabled={enviando}>
           {enviando ? 'Guardando...' : 'Guardar y entrar'}
-        </button>
+        </Boton>
       </form>
 
       <div className="mt-4 flex flex-col items-center gap-2 text-sm">

@@ -17,6 +17,7 @@ export function mensajeError(error) {
     'The ficha codigo field is required.': 'El código de ficha es obligatorio.',
     'The password field must contain at least one letter.':
       'La contraseña debe contener al menos una letra.',
+    'This action is unauthorized.': 'No tienes permiso para realizar esta acción.',
 
     'The password field must contain at least one number.':
       'La contraseña debe contener al menos un número.',
@@ -38,7 +39,9 @@ export function mensajeError(error) {
   }
 
   if (status === 403) {
-    return data?.message ?? 'No tienes permiso para hacer esto.'
+    // Se pasa por traducirMensaje: el Gate de Laravel responde en inglés
+    // ('This action is unauthorized.') cuando el aprendiz no tiene el permiso.
+    return traducirMensaje(data?.message) ?? 'No tienes permiso para hacer esto.'
   }
 
   if (status === 429) {

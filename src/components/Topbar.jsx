@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import ThemeToggle from './ThemeToggle'
+import Boton from './ui/Boton'
 
 // Convierte la clave del rol en un texto legible.
 // Ej: 'revisor_documental' -> 'Revisor documental'
@@ -8,6 +9,24 @@ function etiqueta(clave) {
   if (!clave) return ''
   const texto = clave.replace(/_/g, ' ')
   return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
+
+function IconoMenu() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-6 w-6"
+      aria-hidden="true"
+    >
+      <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+    </svg>
+  )
 }
 
 function IconoCampana() {
@@ -46,41 +65,49 @@ function IconoSalir() {
   )
 }
 
-export default function Topbar() {
+export default function Topbar({ onAbrirMenu }) {
   const { user, logout, can } = useAuth()
 
   return (
-    <header className="flex h-16 items-center justify-end gap-4 border-b border-slate-200 bg-white px-6 dark:border-sena-borde dark:bg-sena-noche">
-      <ThemeToggle />
-
-      {can('propio:notificaciones') && (
-        <Link
-          to="/notificaciones"
-          className="rounded-full p-2 text-slate-600 hover:bg-slate-100 dark:text-sena-texto-suave dark:hover:bg-sena-superficie-alta dark:hover:text-sena-texto"
-          aria-label="Notificaciones"
-        >
-          <IconoCampana />
-        </Link>
-      )}
-
-      <div className="text-right leading-tight">
-        <p className="text-sm font-medium text-slate-800 dark:text-sena-texto">
-          {user?.name}
-        </p>
-        <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
-          {etiqueta(user?.role)}
-          {user?.subrole ? ` · ${etiqueta(user.subrole)}` : ''}
-        </p>
-      </div>
-
+    <header className="flex h-14 items-center gap-3 border-b border-sena-linea bg-white px-3 shadow-sm dark:border-sena-borde dark:bg-sena-superficie sm:px-4">
+      {/* Solo en móvil/tablet: abre el cajón de navegación. */}
       <button
         type="button"
-        onClick={logout}
-        className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
+        onClick={onAbrirMenu}
+        aria-label="Abrir menú"
+        className="rounded-md p-2 text-slate-600 transition-colors hover:bg-sena-hundido hover:text-sena-azul dark:text-sena-texto-suave dark:hover:bg-sena-superficie-alta dark:hover:text-sena-texto lg:hidden"
       >
-        <IconoSalir />
-        Cerrar sesión
+        <IconoMenu />
       </button>
+
+      <div className="ml-auto flex items-center gap-3 sm:gap-4">
+        <ThemeToggle />
+
+        {can('propio:notificaciones') && (
+          <Link
+            to="/notificaciones"
+            className="rounded-full p-2 text-slate-600 transition-colors hover:bg-sena-hundido hover:text-sena-azul dark:text-sena-texto-suave dark:hover:bg-sena-superficie-alta dark:hover:text-sena-texto"
+            aria-label="Notificaciones"
+          >
+            <IconoCampana />
+          </Link>
+        )}
+
+        <div className="hidden text-right leading-tight sm:block">
+          <p className="text-sm font-medium text-slate-800 dark:text-sena-texto">
+            {user?.name}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
+            {etiqueta(user?.role)}
+            {user?.subrole ? ` · ${etiqueta(user.subrole)}` : ''}
+          </p>
+        </div>
+
+        <Boton variante="secundario" onClick={logout} aria-label="Cerrar sesión">
+          <IconoSalir />
+          <span className="hidden sm:inline">Cerrar sesión</span>
+        </Boton>
+      </div>
     </header>
   )
 }

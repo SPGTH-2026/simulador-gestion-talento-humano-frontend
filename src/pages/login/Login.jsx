@@ -3,6 +3,10 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { mensajeError } from '../../api/mensajeError'
 import GoogleIcon from '../../components/ui/GoogleIcon'
+import Boton from '../../components/ui/Boton'
+import Campo from '../../components/ui/Campo'
+import { MensajeError, MensajeExito } from '../../components/ui/Mensaje'
+import { CLASE_INPUT } from '../../lib/estilos'
 
 const GOOGLE_URL = import.meta.env.VITE_GOOGLE_URL ?? '/api/auth/google/redirect'
 
@@ -97,48 +101,21 @@ export default function Login() {
         Iniciar sesión
       </h2>
 
-      {(errorOauth || exitoContrasena || exitoRegistro) && (
-        <>
-          {errorOauth && (
-            <p
-              role="alert"
-              className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-            >
-              {MENSAJES_ERROR[errorOauth] ?? MENSAJES_ERROR.oauth}
-            </p>
-          )}
-
-          {exitoContrasena && (
-            <p
-              role="status"
-              className="rounded border border-sena/40 bg-sena/10 p-3 text-sm text-sena-oscuro dark:border-sena/50 dark:bg-sena/15 dark:text-sena-acento"
-            >
-              {MENSAJE_EXITO[exitoContrasena] ?? 'Operación completada con éxito.'}
-            </p>
-          )}
-        </>
+      {errorOauth && (
+        <MensajeError>{MENSAJES_ERROR[errorOauth] ?? MENSAJES_ERROR.oauth}</MensajeError>
       )}
 
-      {exitoRegistro && (
-        <p
-          role="status"
-          className="rounded border border-sena/40 bg-sena/10 p-3 text-sm text-sena-oscuro dark:border-sena/50 dark:bg-sena/15 dark:text-sena-acento"
-        >
-          {MENSAJE_EXITO.registro}
-        </p>
+      {exitoContrasena && (
+        <MensajeExito>
+          {MENSAJE_EXITO[exitoContrasena] ?? 'Operación completada con éxito.'}
+        </MensajeExito>
       )}
 
-      {error && (
-        <p
-          role="alert"
-          className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-        >
-          {error}
-        </p>
-      )}
+      {exitoRegistro && <MensajeExito>{MENSAJE_EXITO.registro}</MensajeExito>}
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-        Correo
+      {error && <MensajeError>{error}</MensajeError>}
+
+      <Campo etiqueta="Correo">
         <input
           type="email"
           value={email}
@@ -147,15 +124,12 @@ export default function Login() {
           onInput={(e) => e.currentTarget.setCustomValidity('')}
           required
           autoComplete="email"
-          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+          className={CLASE_INPUT}
         />
-      </label>
+      </Campo>
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-        Contraseña
-
+      <Campo etiqueta="Contraseña">
         <div className="relative">
-
           <input
             type={verClave ? 'text' : 'password'}
             value={password}
@@ -171,7 +145,7 @@ export default function Login() {
             }}
             required
             autoComplete="current-password"
-            className="w-full rounded border border-sena-azul/20 p-2 pr-10 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+            className={`w-full pr-10 ${CLASE_INPUT}`}
           />
 
           {password.length > 0 && (
@@ -220,7 +194,7 @@ export default function Login() {
             </button>
           )}
         </div>
-      </label>
+      </Campo>
 
       <div className="flex justify-end text-sm">
         <Link
@@ -231,13 +205,9 @@ export default function Login() {
         </Link>
       </div>
 
-      <button
-        type="submit"
-        disabled={enviando}
-        className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul dark:hover:bg-sena disabled:opacity-60"      >
-
+      <Boton type="submit" disabled={enviando} className="w-full">
         {enviando ? 'Entrando...' : 'Entrar'}
-      </button>
+      </Boton>
 
       <div className="flex items-center gap-3 text-xs text-sena-azul/60 dark:text-sena-texto-suave">
         <span className="h-px flex-1 bg-sena-azul/20 dark:bg-sena-borde" />
@@ -245,14 +215,15 @@ export default function Login() {
         <span className="h-px flex-1 bg-sena-azul/20 dark:bg-sena-borde" />
       </div>
 
-      <button
+      <Boton
+        variante="secundario"
         type="button"
         onClick={entrarConGoogle}
-        className="flex items-center justify-center gap-2 rounded border border-sena-azul/25 p-2 font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
+        className="w-full"
       >
         <GoogleIcon />
         Entrar con Google
-      </button>
+      </Boton>
 
       <p className="text-center text-sm text-sena-azul/80 dark:text-sena-texto-suave">
         ¿No tienes cuenta?{' '}

@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import TarjetaAuth from '../components/ui/TarjetaAuth'
+import { MensajeError } from '../components/ui/Mensaje'
 
 export default function AuthLayout() {
   const { user, authResolved, errorRed } = useAuth()
@@ -14,12 +15,7 @@ export default function AuthLayout() {
   if (errorRed) {
     return (
       <TarjetaAuth>
-        <p
-          role="alert"
-          className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-        >
-          {errorRed}
-        </p>
+        <MensajeError>{errorRed}</MensajeError>
       </TarjetaAuth>
     )
   }

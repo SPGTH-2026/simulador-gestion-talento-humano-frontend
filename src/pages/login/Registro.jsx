@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { mensajeError } from '../../api/mensajeError'
 import GoogleIcon from '../../components/ui/GoogleIcon'
+import Boton from '../../components/ui/Boton'
+import Campo from '../../components/ui/Campo'
+import { MensajeError } from '../../components/ui/Mensaje'
+import { CLASE_INPUT } from '../../lib/estilos'
 
 const GOOGLE_URL =
   import.meta.env.VITE_GOOGLE_URL ?? '/api/auth/google/redirect'
@@ -139,23 +143,17 @@ export default function Registro() {
         Crear cuenta de aspirante
       </h2>
 
-      {error && (
-        <p
-          role="alert"
-          className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-        >
-          {error}
-        </p>
-      )}
+      {error && <MensajeError>{error}</MensajeError>}
 
-      <button
+      <Boton
+        variante="secundario"
         type="button"
         onClick={registrarseConGoogle}
-        className="flex items-center justify-center gap-2 rounded border border-sena-azul/25 p-2 font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
+        className="w-full"
       >
         <GoogleIcon />
         Registrarse con Google
-      </button>
+      </Boton>
 
       <div className="flex items-center gap-3 text-xs text-sena-azul/60 dark:text-sena-texto-suave">
         <span className="h-px flex-1 bg-sena-azul/20 dark:bg-sena-borde" />
@@ -163,22 +161,18 @@ export default function Registro() {
         <span className="h-px flex-1 bg-sena-azul/20 dark:bg-sena-borde" />
       </div>
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-        Nombre completo
-
+      <Campo etiqueta="Nombre completo">
         <input
           name="name"
           value={form.name}
           onChange={handleChange}
           onInput={limpiarValidacion}
           autoComplete="name"
-          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+          className={CLASE_INPUT}
         />
-      </label>
+      </Campo>
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-        Correo
-
+      <Campo etiqueta="Correo">
         <input
           type="email"
           name="email"
@@ -186,13 +180,11 @@ export default function Registro() {
           onChange={handleChange}
           onInput={limpiarValidacion}
           autoComplete="email"
-          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+          className={CLASE_INPUT}
         />
-      </label>
+      </Campo>
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-        Contraseña
-
+      <Campo etiqueta="Contraseña">
         <div className="relative">
           <input
             type={verClave ? 'text' : 'password'}
@@ -201,7 +193,7 @@ export default function Registro() {
             onChange={handleChange}
             onInput={limpiarValidacion}
             autoComplete="new-password"
-            className="w-full rounded border border-sena-azul/20 p-2 pr-10 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+            className={`w-full pr-10 ${CLASE_INPUT}`}
           />
 
           {form.password.length > 0 && (
@@ -257,11 +249,9 @@ export default function Registro() {
         <span className="text-xs font-normal text-sena-azul/70 dark:text-sena-texto-suave">
           Mínimo 8 caracteres, con letras y números.
         </span>
-      </label>
+      </Campo>
 
-      <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-        Código de ficha
-
+      <Campo etiqueta="Código de ficha">
         <input
           name="ficha_codigo"
           value={form.ficha_codigo}
@@ -270,21 +260,17 @@ export default function Registro() {
           maxLength={50}
           placeholder="Ej. 3173334"
           autoComplete="off"
-          className="rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+          className={CLASE_INPUT}
         />
 
         <span className="text-xs font-normal text-sena-azul/70 dark:text-sena-texto-suave">
           Aquí la escribes antes de la verificación, para no pedirla después.
         </span>
-      </label>
+      </Campo>
 
-      <button
-        type="submit"
-        disabled={enviando}
-        className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul dark:hover:bg-sena disabled:opacity-60"
-      >
+      <Boton type="submit" disabled={enviando} className="w-full">
         {enviando ? 'Creando cuenta...' : 'Crear cuenta'}
-      </button>
+      </Boton>
 
       <p className="text-center text-sm text-sena-azul/80 dark:text-sena-texto-suave">
         ¿Ya tienes cuenta?{' '}

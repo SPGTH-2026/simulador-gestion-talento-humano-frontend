@@ -2,6 +2,22 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import { listaUsuarios, listaFichas, asignarRol } from '../../api/usuarios'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import Boton from '../../components/ui/Boton'
+import Cargando from '../../components/ui/Cargando'
+import EstadoVacio from '../../components/ui/EstadoVacio'
+import Etiqueta from '../../components/ui/Etiqueta'
+import { MensajeError, MensajeExito } from '../../components/ui/Mensaje'
+import Tarjeta from '../../components/ui/Tarjeta'
+import {
+  CLASE_FILA,
+  CLASE_INPUT,
+  CLASE_LABEL,
+  CLASE_TABLA,
+  CLASE_TBODY,
+  CLASE_TD,
+  CLASE_TH,
+  CLASE_THEAD,
+} from '../../lib/estilos'
 
 const ROLES = [
   { valor: 'super_admin', etiqueta: 'Super admin' },
@@ -18,15 +34,13 @@ const SUBROLES = [
   { valor: 'gestor_convocatorias', etiqueta: 'Gestor de convocatorias' },
 ]
 
-const COLORES_ROL = {
-  super_admin: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-  instructor: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-  aprendiz: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
-  aspirante: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+// Tonos del sistema para los chips de rol y de estado de la cuenta.
+const TONOS_ROL = {
+  super_admin: 'peligro',
+  instructor: 'aviso',
+  aprendiz: 'azul',
+  aspirante: 'neutral',
 }
-
-const CLASE_INPUT =
-  'rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto'
 
 function etiquetaRol(rol) {
   return ROLES.find((r) => r.valor === rol)?.etiqueta ?? rol
@@ -173,49 +187,37 @@ export default function Usuarios() {
         </div>
       </div>
 
-      {error && (
-        <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </p>
-      )}
-      {exito && (
-        <p
-          role="status"
-          className="rounded border border-sena/40 bg-sena/10 p-3 text-sm text-sena-oscuro dark:border-sena/50 dark:bg-sena/15 dark:text-sena-acento"
-        >
-          {exito}
-        </p>
-      )}
+      {error && <MensajeError>{error}</MensajeError>}
+      {exito && <MensajeExito>{exito}</MensajeExito>}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-sena-borde dark:bg-sena-superficie">
-        <table className="w-full min-w-175 text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-sena-borde dark:text-sena-texto-suave">
+      <Tarjeta className="overflow-x-auto">
+        <table className={`${CLASE_TABLA} min-w-175`}>
+          <thead className={CLASE_THEAD}>
             <tr>
-              <th className="p-3">Usuario</th>
-              <th className="p-3">Rol</th>
-              <th className="p-3">Subrol</th>
-              <th className="p-3">Ficha</th>
-              <th className="p-3">Estado</th>
-              <th className="p-3 text-right">Acciones</th>
+              <th className={CLASE_TH}>Usuario</th>
+              <th className={CLASE_TH}>Rol</th>
+              <th className={CLASE_TH}>Subrol</th>
+              <th className={CLASE_TH}>Ficha</th>
+              <th className={CLASE_TH}>Estado</th>
+              <th className={`${CLASE_TH} text-right`}>Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-sena-borde">
+          <tbody className={CLASE_TBODY}>
             {cargando && (
               <tr>
-                <td colSpan="6" className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
-                  Cargando usuarios...
+                <td colSpan="6">
+                  <Cargando>Cargando usuarios...</Cargando>
                 </td>
               </tr>
             )}
 
-            {!cargando &&
-              usuarios.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
-                    No hay usuarios que coincidan con los filtros.
-                  </td>
-                </tr>
-              )}
+            {!cargando && usuarios.length === 0 && (
+              <tr>
+                <td colSpan="6">
+                  <EstadoVacio>No hay usuarios que coincidan con los filtros.</EstadoVacio>
+                </td>
+              </tr>
+            )}
 
             {!cargando &&
               [...usuarios]
@@ -223,12 +225,12 @@ export default function Usuarios() {
                 .map((u) =>
                   editandoId === u.id ? (
                     <tr key={u.id} className="bg-sena-cielo/30 dark:bg-sena-superficie-alta/30">
-                      <td colSpan="6" className="p-3">
+                      <td colSpan="6" className={CLASE_TD}>
                         <form
                           onSubmit={guardar}
-                          className="flex flex-wrap items-end gap-3 rounded border border-sena/30 p-3 dark:border-sena-borde"
+                          className="flex flex-wrap items-end gap-3 rounded-md border border-sena/30 p-3 dark:border-sena-borde"
                         >
-                          <label className="flex flex-col gap-1 text-xs font-medium text-sena-azul dark:text-sena-texto">
+                          <label className={CLASE_LABEL}>
                             Rol
                             <select
                               value={form.role}
@@ -241,13 +243,11 @@ export default function Usuarios() {
                                 </option>
                               ))}
                             </select>
-                            {errores.role && (
-                              <span className="text-xs text-red-600 dark:text-red-400">{errores.role}</span>
-                            )}
+                            {errores.role && <span className="text-xs text-peligro">{errores.role}</span>}
                           </label>
 
                           {form.role === 'aprendiz' && (
-                            <label className="flex flex-col gap-1 text-xs font-medium text-sena-azul dark:text-sena-texto">
+                            <label className={CLASE_LABEL}>
                               Subrol
                               <select
                                 value={form.subrole}
@@ -261,13 +261,13 @@ export default function Usuarios() {
                                 ))}
                               </select>
                               {errores.subrole && (
-                                <span className="text-xs text-red-600 dark:text-red-400">{errores.subrole}</span>
+                                <span className="text-xs text-peligro">{errores.subrole}</span>
                               )}
                             </label>
                           )}
 
                           {(form.role === 'aprendiz' || form.role === 'aspirante') && (
-                            <label className="flex flex-col gap-1 text-xs font-medium text-sena-azul dark:text-sena-texto">
+                            <label className={CLASE_LABEL}>
                               Ficha
                               <select
                                 value={form.ficha_id}
@@ -282,12 +282,12 @@ export default function Usuarios() {
                                 ))}
                               </select>
                               {errores.ficha_id && (
-                                <span className="text-xs text-red-600 dark:text-red-400">{errores.ficha_id}</span>
+                                <span className="text-xs text-peligro">{errores.ficha_id}</span>
                               )}
                             </label>
                           )}
 
-                          <label className="flex items-center gap-2 pb-2 text-xs font-medium text-sena-azul dark:text-sena-texto">
+                          <label className="flex items-center gap-2 pb-2 text-sm font-medium text-sena-azul dark:text-sena-texto">
                             <input
                               type="checkbox"
                               checked={form.active}
@@ -298,88 +298,69 @@ export default function Usuarios() {
                           </label>
 
                           <div className="ml-auto flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditandoId(null)}
-                              className="rounded border border-sena-azul/25 px-3 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-                            >
+                            <Boton variante="secundario" onClick={() => setEditandoId(null)}>
                               Cancelar
-                            </button>
-                            <button
-                              type="submit"
-                              disabled={guardando}
-                              className="rounded bg-sena-oscuro px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
-                            >
+                            </Boton>
+                            <Boton type="submit" disabled={guardando}>
                               {guardando ? 'Guardando...' : 'Guardar'}
-                            </button>
+                            </Boton>
                           </div>
                         </form>
                       </td>
                     </tr>
                   ) : (
-                    <tr key={u.id} className="hover:bg-sena-cielo/20 dark:hover:bg-sena-superficie-alta/20">
-                      <td className="p-3">
+                    <tr key={u.id} className={CLASE_FILA}>
+                      <td className={CLASE_TD}>
                         <div className="font-semibold text-slate-800 dark:text-sena-texto">{u.name}</div>
                         <div className="text-xs text-slate-500 dark:text-sena-texto-suave">{u.email}</div>
                       </td>
-                      <td className="p-3">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${COLORES_ROL[u.role] ?? COLORES_ROL.aspirante}`}
-                        >
-                          {etiquetaRol(u.role)}
-                        </span>
+                      <td className={CLASE_TD}>
+                        <Etiqueta tono={TONOS_ROL[u.role] ?? 'neutral'}>{etiquetaRol(u.role)}</Etiqueta>
                       </td>
-                      <td className="p-3 capitalize text-slate-700 dark:text-sena-texto">
+                      <td className={`${CLASE_TD} capitalize text-slate-700 dark:text-sena-texto`}>
                         {u.subrole ? etiquetaSubrol(u.subrole) : '—'}
                       </td>
-                      <td className="p-3 text-slate-700 dark:text-sena-texto">
+                      <td className={`${CLASE_TD} text-slate-700 dark:text-sena-texto`}>
                         {u.ficha ? `${u.ficha.codigo}` : '—'}
                       </td>
-                      <td className="p-3">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            u.active
-                              ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
-                              : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                          }`}
-                        >
+                      <td className={CLASE_TD}>
+                        <Etiqueta tono={u.active ? 'exito' : 'peligro'}>
                           {u.active ? 'Activo' : 'Inactivo'}
-                        </span>
+                        </Etiqueta>
                       </td>
-                      <td className="p-3 text-right">
-                        <button
-                          onClick={() => empezarEdicion(u)}
-                          className="rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-                        >
+                      <td className={`${CLASE_TD} text-right`}>
+                        <Boton variante="secundario" tamano="sm" onClick={() => empezarEdicion(u)}>
                           Cambiar rol
-                        </button>
+                        </Boton>
                       </td>
                     </tr>
                   ),
                 )}
           </tbody>
         </table>
-      </div>
+      </Tarjeta>
 
       <div className="flex items-center justify-between text-sm text-slate-600 dark:text-sena-texto-suave">
         <span>
           Página {meta.current_page} de {Math.max(meta.last_page, 1)} · {meta.total} usuario(s)
         </span>
         <div className="flex gap-2">
-          <button
+          <Boton
+            variante="secundario"
+            tamano="sm"
             onClick={() => setPagina((p) => Math.max(1, p - 1))}
             disabled={meta.current_page <= 1}
-            className="rounded border border-sena-azul/25 px-3 py-1.5 font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
           >
             Anterior
-          </button>
-          <button
+          </Boton>
+          <Boton
+            variante="secundario"
+            tamano="sm"
             onClick={() => setPagina((p) => Math.min(meta.last_page, p + 1))}
             disabled={meta.current_page >= meta.last_page}
-            className="rounded border border-sena-azul/25 px-3 py-1.5 font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
           >
             Siguiente
-          </button>
+          </Boton>
         </div>
       </div>
     </div>
