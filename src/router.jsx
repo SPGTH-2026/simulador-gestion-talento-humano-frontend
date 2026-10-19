@@ -15,6 +15,8 @@ import NotFound from './pages/errores/NotFound'
 import Dashboard from './pages/dashboard/Dashboard'
 import ConvocatoriasListado from './pages/convocatorias/ConvocatoriasListado'
 import ConvocatoriaNueva from './pages/convocatorias/ConvocatoriaNueva'
+import ConvocatoriaEditar from './pages/convocatorias/ConvocatoriaEditar'
+import ConvocatoriaDetalle from './pages/convocatorias/ConvocatoriaDetalle'
 import DocumentosListado from './pages/documentos/DocumentosListado'
 import DocumentoCargar from './pages/documentos/DocumentoCargar'
 import DocumentoValidacion from './pages/documentos/DocumentoValidacion'
@@ -56,9 +58,11 @@ export default function AppRouter() {
 
           <Route element={<PermissionRoute permiso="convocatorias:ver" />}>
             <Route path="convocatorias" element={<ConvocatoriasListado />} />
+            <Route path="convocatorias/:id" element={<ConvocatoriaDetalle />} />
           </Route>
           <Route element={<PermissionRoute permiso="convocatorias:gestionar" />}>
             <Route path="convocatorias/nueva" element={<ConvocatoriaNueva />} />
+            <Route path="convocatorias/:id/editar" element={<ConvocatoriaEditar />} />
           </Route>
 
           <Route element={<PermissionRoute permiso="documentos:ver" />}>
