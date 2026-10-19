@@ -5,6 +5,10 @@ import * as authApi from '../../api/auth'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import { segundosReintento } from '../../api/reintento'
 import TarjetaAuth from '../../components/ui/TarjetaAuth'
+import Boton from '../../components/ui/Boton'
+import Campo from '../../components/ui/Campo'
+import { MensajeError } from '../../components/ui/Mensaje'
+import { CLASE_INPUT_CODIGO } from '../../lib/estilos'
 import { borrarOtp, guardarOtp, leerOtp, MINUTOS_VALIDEZ } from '../../lib/otpSesion'
 import { useCuentaAtras } from '../../lib/useCuentaAtras'
 
@@ -107,18 +111,10 @@ export default function VerificarCorreo() {
         durante {MINUTOS_VALIDEZ} minutos.
       </p>
 
-      {errorGlobal && (
-        <p
-          role="alert"
-          className="mt-4 rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300"
-        >
-          {errorGlobal}
-        </p>
-      )}
+      {errorGlobal && <MensajeError className="mt-4">{errorGlobal}</MensajeError>}
 
       <form onSubmit={confirmar} className="mt-4 flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-          Código
+        <Campo etiqueta="Código" error={errores.code}>
           <input
             type="text"
             inputMode="numeric"
@@ -127,18 +123,13 @@ export default function VerificarCorreo() {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             required
-            className="rounded border border-sena-azul/20 p-2 text-center text-2xl tracking-[0.5em] font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+            className={CLASE_INPUT_CODIGO}
           />
-          {errores.code && <span className="text-xs text-red-600 dark:text-red-400">{errores.code}</span>}
-        </label>
+        </Campo>
 
-        <button
-          type="submit"
-          disabled={enviando || code.length !== 6}
-          className="rounded bg-sena-oscuro p-2 font-semibold text-white transition-colors hover:bg-sena-azul dark:hover:bg-sena disabled:opacity-60"
-        >
+        <Boton type="submit" disabled={enviando || code.length !== 6}>
           {enviando ? 'Verificando...' : 'Confirmar correo'}
-        </button>
+        </Boton>
       </form>
 
       <div className="mt-4 flex flex-col items-center gap-2 text-sm">
