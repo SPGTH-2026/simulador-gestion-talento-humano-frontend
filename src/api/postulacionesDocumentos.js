@@ -93,7 +93,7 @@ export const quitarCertificado = (postulacionId, skillId) =>
 
 // ── Descargas autorizadas ──────────────────────────────────────────────
 
-function dispararDescarga(blob, nombre) {
+export function dispararDescarga(blob, nombre) {
   const url = URL.createObjectURL(blob)
   const enlace = document.createElement('a')
   enlace.href = url
