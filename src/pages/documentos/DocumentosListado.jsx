@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { listaFichas } from '../../api/usuarios'
 import { listaAspirantes } from '../../api/portafolios'
 import Mensaje from '../../components/ui/Mensaje'
 import Boton from '../../components/ui/Boton'
-import Campo from '../../components/ui/Campo'
 import Cargando from '../../components/ui/Cargando'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import { Link } from 'react-router-dom'
@@ -73,25 +72,33 @@ export default function DocumentosListado() {
       </header>
 
       <section className="flex flex-col sm:flex-row gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-        <Campo
-          label="Buscar"
-          placeholder="Nombre, email..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          className="flex-1 min-w-[200px]"
-        />
-        <Campo
-          label="Ficha"
-          as="select"
-          value={fichaId}
-          onChange={(e) => { setFichaId(e.target.value); setPagina(1); }}
-          className="w-full sm:w-64"
-        >
-          <option value="">Todas las fichas</option>
-          {fichas.map(f => (
-            <option key={f.id} value={f.id}>{f.codigo} - {f.nombre_programa}</option>
-          ))}
-        </Campo>
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            Buscar
+          </label>
+          <input
+            type="text"
+            placeholder="Nombre, email..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sena-azul focus:border-transparent"
+          />
+        </div>
+        <div className="w-full sm:w-64">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            Ficha
+          </label>
+          <select
+            value={fichaId}
+            onChange={(e) => { setFichaId(e.target.value); setPagina(1); }}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sena-azul focus:border-transparent"
+          >
+            <option value="">Todas las fichas</option>
+            {fichas.map(f => (
+              <option key={f.id} value={f.id}>{f.codigo} - {f.nombre_programa}</option>
+            ))}
+          </select>
+        </div>
       </section>
 
       {error && <Mensaje tipo="error">{error}</Mensaje>}
