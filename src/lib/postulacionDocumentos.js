@@ -31,10 +31,13 @@ export function pideLibreta(documentos) {
 }
 
 // Motivo por el que el paso NO es editable ('' si sí lo es). Se apoya en el
-// 'ventana' que manda el backend ('abierta'|'antes'|'cerrada'|'no_publicada') y
-// en el estado de la postulación.
+// 'motivo_edicion' que manda el backend (prioritario), y en 'ventana'/'estado'
+// como fallback. El backend ya decide la regla exacta de editabilidad.
 export function motivoNoEditable(estado) {
   if (!estado || estado.editable) return ''
+
+  // Prioridad: mensaje explícito del backend (motivo_edicion)
+  if (estado.motivo_edicion) return estado.motivo_edicion
 
   if (estado.postulacion?.estado?.codigo === 'retirada') {
     return 'Tu postulación está retirada. Reábrela para editar tus documentos.'

@@ -14,13 +14,10 @@ export const menu = [
   },
 
   {
-    id: 'documentos',
-    label: 'Gestión Documental',
-    children: [
-      { label: 'Listado', to: '/documentos', permiso: 'documentos:ver' },
-      { label: 'Cargar documento', to: '/documentos/cargar', permiso: 'documentos:cargar' },
-      { label: 'Validación', to: '/documentos/validacion', permiso: 'documentos:validar' },
-    ],
+    id: 'portafolios',
+    label: 'Portafolios',
+    permiso: 'usuarios:gestionar',
+    to: '/documentos',
   },
 
   {

@@ -30,7 +30,6 @@ const SUBROLES = [
   { valor: 'general', etiqueta: 'General' },
   { valor: 'evaluador', etiqueta: 'Evaluador' },
   { valor: 'seleccionador', etiqueta: 'Seleccionador' },
-  { valor: 'revisor_documental', etiqueta: 'Revisor documental' },
   { valor: 'gestor_convocatorias', etiqueta: 'Gestor de convocatorias' },
 ]
 

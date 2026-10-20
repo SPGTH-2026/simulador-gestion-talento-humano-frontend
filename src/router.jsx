@@ -18,8 +18,7 @@ import ConvocatoriaNueva from './pages/convocatorias/ConvocatoriaNueva'
 import ConvocatoriaEditar from './pages/convocatorias/ConvocatoriaEditar'
 import ConvocatoriaDetalle from './pages/convocatorias/ConvocatoriaDetalle'
 import DocumentosListado from './pages/documentos/DocumentosListado'
-import DocumentoCargar from './pages/documentos/DocumentoCargar'
-import DocumentoValidacion from './pages/documentos/DocumentoValidacion'
+import PortafolioDetalle from './pages/documentos/PortafolioDetalle'
 import EvaluacionListado from './pages/evaluacion/EvaluacionListado'
 import EvaluacionEvaluar from './pages/evaluacion/EvaluacionEvaluar'
 import SeleccionRanking from './pages/seleccion/SeleccionRanking'
@@ -66,14 +65,9 @@ export default function AppRouter() {
             <Route path="convocatorias/:id/editar" element={<ConvocatoriaEditar />} />
           </Route>
 
-          <Route element={<PermissionRoute permiso="documentos:ver" />}>
+          <Route element={<PermissionRoute permiso="usuarios:gestionar" />}>
             <Route path="documentos" element={<DocumentosListado />} />
-          </Route>
-          <Route element={<PermissionRoute permiso="documentos:cargar" />}>
-            <Route path="documentos/cargar" element={<DocumentoCargar />} />
-          </Route>
-          <Route element={<PermissionRoute permiso="documentos:validar" />}>
-            <Route path="documentos/validacion" element={<DocumentoValidacion />} />
+            <Route path="documentos/:userId" element={<PortafolioDetalle />} />
           </Route>
 
           <Route element={<PermissionRoute permiso="evaluacion:ver" />}>
