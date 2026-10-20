@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { listaFichas } from '../../api/usuarios'
 import { listaAspirantes } from '../../api/portafolios'
 import Mensaje from '../../components/ui/Mensaje'
