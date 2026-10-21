@@ -352,7 +352,7 @@ export default function SeccionSkills({
           onDescargar: () => {
             window.dispatchEvent(new CustomEvent('document:view', {
               detail: { certificado: skill.certificado, clave: `skill-${skill.id}` }
-            }))
+            })
           },
           onQuitarCertificado: () => quitarCertificadoDe(skill),
           onArchivo: (archivo) => elegirCertificado(skill, archivo),
