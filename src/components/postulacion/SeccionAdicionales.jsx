@@ -13,6 +13,7 @@ import {
   mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import DocumentActions from './DocumentActions'
 
 const ESTILO_TARJETA =
   'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
@@ -56,39 +57,6 @@ export default function SeccionAdicionales({
 
   const tope = adicionales.length >= MAX_DOCUMENTOS_ADICIONALES
   const puedeAgregar = editable && !tope
-
-  const pidSeguro = async () => vista.postulacion?.id ?? (await asegurar()).postulacionId
-
-  const marcarEnVuelo = (id, activo) =>
-    setEnVueloIds((prev) => {
-      const siguiente = new Set(prev)
-      if (activo) siguiente.add(id)
-      else siguiente.delete(id)
-      return siguiente
-    })
-
-  const limpiar = () => {
-    setTitulo('')
-    setNota('')
-    setArchivo(null)
-    setErrores({})
-    if (refArchivo.current) refArchivo.current.value = ''
-  }
-
-  const elegirArchivo = (elegido) => {
-    const validacion = validarArchivoPostulacion(elegido)
-    if (!validacion.ok) {
-      setArchivo(null)
-      setErrores((prev) => ({ ...prev, archivo: validacion.mensaje }))
-      return
-    }
-    setArchivo(elegido)
-    setErrores((prev) => {
-      const siguiente = { ...prev }
-      delete siguiente.archivo
-      return siguiente
-    })
-  }
 
   const enviar = async (evento) => {
     evento.preventDefault()
@@ -135,22 +103,6 @@ export default function SeccionAdicionales({
     }
   }
 
-  const descargar = async (adicional) => {
-    marcarEnVuelo(adicional.id, true)
-    try {
-      await descargarDocumento(
-        await pidSeguro(),
-        adicional.archivo.id,
-        adicional.archivo.nombre_original,
-      )
-    } catch (e) {
-      const delBlob = await mensajeErrorBlob(e)
-      onError(delBlob || mensajeError(e))
-    } finally {
-      marcarEnVuelo(adicional.id, false)
-    }
-  }
-
   return (
     <section className={ESTILO_TARJETA}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -182,8 +134,7 @@ export default function SeccionAdicionales({
                   )}
                   {adicional.archivo && (
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
-                      {adicional.archivo.nombre_original} ·{' '}
-                      {formatearTamano(adicional.archivo.tamano_bytes)}
+                      {adicional.archivo.nombre_original} · {formatearTamano(adicional.archivo.tamano_bytes)}
                     </p>
                   )}
                 </div>
@@ -193,18 +144,28 @@ export default function SeccionAdicionales({
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => descargar(adicional)}
-                      className={CLASE_BOTON}
+                      onClick={() => {
+                        // Emitir evento para que el padre maneje el preview
+                        window.dispatchEvent(new CustomEvent('document:view', {
+                          detail: { archivo: adicional.archivo, codigo: 'adicional' }
+                        }))
+                      }}
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
                     >
-                      Descargar
+                      <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 5.943 7.523 0 12 0c4.478 0 8.268 5.943 8.008 10.734C16.732 18.057 11.278 24 12 24c-4.478 0-8.268-5.943-8.008-10.734z" />
+                      </svg>
+                      Ver
                     </button>
                   )}
+
                   {editable && (
                     <button
                       type="button"
                       disabled={enProceso}
                       onClick={() => eliminar(adicional)}
-                      className={CLASE_ELIMINAR}
+                      className="rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
                     >
                       Eliminar
                     </button>
@@ -234,7 +195,7 @@ export default function SeccionAdicionales({
               value={titulo}
               maxLength={MAX_TITULO_ADICIONAL}
               onChange={(e) => setTitulo(e.target.value)}
-              className={CLASE_INPUT}
+              className="rounded border border-sena-azul/20 p-2 text-sm text-slate-700 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
               placeholder="Ej.: Certificado de inglés B2"
             />
             {errores.titulo && (
@@ -254,7 +215,7 @@ export default function SeccionAdicionales({
               maxLength={MAX_NOTA_ADICIONAL}
               rows={2}
               onChange={(e) => setNota(e.target.value)}
-              className={CLASE_INPUT}
+              className="rounded border border-sena-azul/20 p-2 text-sm text-slate-700 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
               placeholder="Detalle breve, si lo necesitas"
             />
             {errores.nota && (
@@ -287,7 +248,7 @@ export default function SeccionAdicionales({
           </div>
 
           <div>
-            <button type="submit" disabled={enviando} className={CLASE_ENVIAR}>
+            <button type="submit" disabled={enviando} className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50">
               {enviando ? 'Agregando...' : 'Agregar documento adicional'}
             </button>
           </div>

@@ -9,6 +9,7 @@ import {
   mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import DocumentActions from './DocumentActions'
 
 const ESTILO_TARJETA =
   'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
@@ -28,9 +29,6 @@ const CLASE_ETIQUETA =
 // Documentos que pide la convocatoria: uno por tipo, con subir/reemplazar.
 // La primera acción de guardado dispara el borrador silencioso (asegurar), así
 // que la sección funciona con y sin postulación existente.
-//
-// LIBRETA MILITAR: aplica solo a hombres. Sin sexo registrado el botón queda
-// bloqueado pidiendo elegirlo; con 'mujer' queda bloqueado con "No aplica".
 export default function SeccionDocumentosRequeridos({
   vista,
   editable,
@@ -107,20 +105,6 @@ export default function SeccionDocumentosRequeridos({
     }
   }
 
-  const descargar = async (documento, codigo) => {
-    marcarEnVuelo(codigo, true)
-    limpiarError(codigo)
-    try {
-      await descargarDocumento(await pidSeguro(), documento.id, documento.nombre_original)
-    } catch (e) {
-      // El error de un Blob viene como Blob: se lee su JSON para el mensaje real.
-      const delBlob = await mensajeErrorBlob(e)
-      setErrores((prev) => ({ ...prev, [codigo]: delBlob || mensajeError(e) }))
-    } finally {
-      marcarEnVuelo(codigo, false)
-    }
-  }
-
   return (
     <section className={ESTILO_TARJETA}>
       <h2 className={ESTILO_TITULO}>Documentos requeridos</h2>
@@ -188,14 +172,25 @@ export default function SeccionDocumentosRequeridos({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {estadoDoc === 'subido' && archivo && (
+                  {/* Botón Ver (preview) - solo si hay archivo */}
+                  {archivo && (
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => descargar(archivo, codigo)}
-                      className={CLASE_BOTON}
+                      onClick={() => {
+                        // Se manejará desde el componente padre via DocumentActions
+                        // Aquí solo emitimos un evento personalizado
+                        window.dispatchEvent(new CustomEvent('document:view', {
+                          detail: { archivo, codigo }
+                        }))
+                      }}
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
                     >
-                      Descargar
+                      <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 5.943 7.523 0 12 0c4.478 0 8.268 5.943 8.008 10.734C16.732 18.057 11.278 24 12 24c-4.478 0-8.268-5.943-8.008-10.734z" />
+                      </svg>
+                      Ver
                     </button>
                   )}
 
