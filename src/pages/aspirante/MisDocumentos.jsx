@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { listaMisPostulaciones } from '../../api/postulaciones'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
-import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
 import { Link } from 'react-router-dom'
 
 export default function MisDocumentos() {
@@ -70,8 +69,7 @@ export default function MisDocumentos() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <EtiquetaPostulacion postulacion={p} />
-                  <EtiquetaEstado codigo={p.estado?.codigo} nombre={p.estado?.nombre} />
+                  <EtiquetaPostulacion codigo={p.estado?.codigo} nombre={p.estado?.nombre} />
                 </div>
                 <p className="font-medium text-slate-900 dark:text-white">{p.convocatoria?.nombre}</p>
                 <p className="text-sm text-slate-500 dark:text-slate-400">

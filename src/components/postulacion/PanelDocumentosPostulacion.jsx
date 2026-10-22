@@ -101,6 +101,27 @@ export default function PanelDocumentosPostulacion({
     }
   }, [])
 
+  // Un solo escuchador para los botones "Ver" de TODAS las secciones (documentos
+  // requeridos, adicionales y certificados de skills): abren el PDF en una pestaña
+  // nueva con ?inline=1, que el backend entrega con Content-Disposition: inline.
+  useEffect(() => {
+    const abrirEnPestana = (evento) => {
+      const { documentoId, skillId } = evento.detail ?? {}
+      if (!idPostulacion) return
+
+      const ruta = documentoId
+        ? `/api/postulaciones/${idPostulacion}/documentos/${documentoId}/archivo`
+        : skillId
+          ? `/api/postulaciones/${idPostulacion}/skills/${skillId}/certificado/archivo`
+          : null
+
+      if (ruta) window.open(`${ruta}?inline=1`, '_blank', 'noopener')
+    }
+
+    window.addEventListener('document:view', abrirEnPestana)
+    return () => window.removeEventListener('document:view', abrirEnPestana)
+  }, [idPostulacion])
+
   const recargar = useCallback(() => {
     if (!idPostulacion) return Promise.resolve()
     return estadoDocumentos(idPostulacion)

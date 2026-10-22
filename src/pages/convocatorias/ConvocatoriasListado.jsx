@@ -6,7 +6,7 @@ import {
   cambiarEstadoConvocatoria,
   listaParametros,
 } from '../../api/convocatorias'
-import { listaFichas } from '../../api/usuarios'
+import { listaFichas } from '../../api/fichas'
 import { mensajeError } from '../../api/mensajeError'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
 import {

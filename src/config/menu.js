@@ -39,6 +39,7 @@ export const menu = [
   },
 
   { id: 'usuarios', label: 'Usuarios y Roles', to: '/usuarios', permiso: 'usuarios:gestionar' },
+  { id: 'fichas', label: 'Fichas', to: '/fichas', permiso: 'usuarios:gestionar' },
   { id: 'reportes', label: 'Reportes', to: '/reportes', permiso: 'reportes:ver' },
   { id: 'supervision', label: 'Supervisión', to: '/supervision', permiso: 'supervision:gestionar' },
 
