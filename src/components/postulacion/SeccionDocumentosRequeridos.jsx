@@ -8,8 +8,6 @@ import EtiquetaDocumento from '../ui/EtiquetaDocumento'
 import {
   subirDocumento,
   eliminarDocumento,
-  verDocumento,
-  mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 
@@ -105,31 +103,11 @@ export default function SeccionDocumentosRequeridos({
     }
   }
 
-  // "Ver": abre el PDF en una pestaña nueva. La pestaña se abre DENTRO del mismo
-  // evento de clic (antes del await), para que el navegador no la bloquee como
-  // emergente; luego se le asigna la URL del Blob. Misma llamada autenticada que
-  // la descarga: no cambia la autenticación ni el backend.
-  const ver = async (documento, codigo) => {
-    const pestana = window.open('', '_blank', 'noopener')
-    marcarEnVuelo(codigo, true)
-    limpiarError(codigo)
-    try {
-      const abierto = await verDocumento(await pidSeguro(), documento.id, pestana)
-      if (!abierto) {
-        setErrores((prev) => ({
-          ...prev,
-          [codigo]: 'No se pudo abrir el archivo. Revisa el bloqueador de ventanas emergentes.',
-        }))
-      }
-    } catch (e) {
-      if (pestana) pestana.close()
-      // El error de un Blob viene como Blob: se lee su JSON para el mensaje real.
-      const delBlob = await mensajeErrorBlob(e)
-      setErrores((prev) => ({ ...prev, [codigo]: delBlob || mensajeError(e) }))
-    } finally {
-      marcarEnVuelo(codigo, false)
-    }
-  }
+  // "Ver": el PDF lo abre PanelDocumentosPostulacion (evento document:view).
+  const ver = (documento) =>
+    window.dispatchEvent(new CustomEvent('document:view', {
+      detail: { documentoId: documento.id, nombre: documento.nombre_original },
+    }))
 
   return (
     <section className={ESTILO_TARJETA}>
@@ -205,7 +183,7 @@ export default function SeccionDocumentosRequeridos({
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => ver(archivo, codigo)}
+                      onClick={() => ver(archivo)}
                       className={CLASE_BOTON}
                     >
                       Ver

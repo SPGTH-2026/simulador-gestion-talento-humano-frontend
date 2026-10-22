@@ -11,8 +11,6 @@ import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 import {
   subirAdicional,
   eliminarDocumento,
-  verDocumento,
-  mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 
@@ -126,30 +124,11 @@ export default function SeccionAdicionales({
     }
   }
 
-  // "Ver": abre el PDF en una pestaña nueva. La pestaña se abre DENTRO del mismo
-  // evento de clic (antes del await) para no caer en el bloqueador de
-  // emergentes; luego se le pone la URL del Blob. Misma llamada autenticada que
-  // la descarga: no cambia la autenticación ni el backend.
-  const ver = async (adicional) => {
-    const pestana = window.open('', '_blank', 'noopener')
-    marcarEnVuelo(adicional.id, true)
-    try {
-      const abierto = await verDocumento(
-        await pidSeguro(),
-        adicional.archivo.id,
-        pestana,
-      )
-      if (!abierto) {
-        onError('No se pudo abrir el archivo. Revisa el bloqueador de ventanas emergentes.')
-      }
-    } catch (e) {
-      if (pestana) pestana.close()
-      const delBlob = await mensajeErrorBlob(e)
-      onError(delBlob || mensajeError(e))
-    } finally {
-      marcarEnVuelo(adicional.id, false)
-    }
-  }
+  // "Ver": el PDF lo abre PanelDocumentosPostulacion (evento document:view).
+  const ver = (adicional) =>
+    window.dispatchEvent(new CustomEvent('document:view', {
+      detail: { documentoId: adicional.archivo.id, nombre: adicional.archivo.nombre_original },
+    }))
 
   return (
     <section className={ESTILO_TARJETA}>

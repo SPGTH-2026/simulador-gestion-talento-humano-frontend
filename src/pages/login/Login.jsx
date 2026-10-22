@@ -12,6 +12,8 @@ const GOOGLE_URL = import.meta.env.VITE_GOOGLE_URL ?? '/api/auth/google/redirect
 
 const MENSAJES_ERROR = {
   oauth: 'No se pudo iniciar sesión con Google. Inténtalo de nuevo.',
+  oauth_codigo:
+    'La autenticación de Google se caducó o ya se usó. Vuelve a pulsar "Entrar con Google".',
   sin_correo: 'Tu cuenta de Google no compartió un correo, así que no podemos crear tu acceso.',
   desactivado: 'Tu usuario está desactivado. Contacta al instructor.',
 }
@@ -29,6 +31,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [entrandoConGoogle, setEntrandoConGoogle] = useState(false)
   const [verClave, setVerClave] = useState(false)
   const validarFormulario = (formulario) => {
     const email = formulario.elements.namedItem('email')
@@ -88,6 +91,12 @@ export default function Login() {
 
   const entrarConGoogle = () => {
     // Navegación completa (no fetch): el backend redirige a Google y vuelve.
+    // Se bloquea el botón para que un doble clic no genere dos códigos: el
+    // segundo callback llega con un código ya gastado (invalid_grant).
+    if (entrandoConGoogle) {
+      return
+    }
+    setEntrandoConGoogle(true)
     window.location.href = GOOGLE_URL
   }
 
@@ -219,10 +228,11 @@ export default function Login() {
         variante="secundario"
         type="button"
         onClick={entrarConGoogle}
+        disabled={entrandoConGoogle}
         className="w-full"
       >
         <GoogleIcon />
-        Entrar con Google
+        {entrandoConGoogle ? 'Redirigiendo a Google...' : 'Entrar con Google'}
       </Boton>
 
       <p className="text-center text-sm text-sena-azul/80 dark:text-sena-texto-suave">

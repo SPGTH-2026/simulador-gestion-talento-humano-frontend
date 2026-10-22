@@ -7,8 +7,6 @@ import {
   eliminarSkill,
   subirCertificado,
   quitarCertificado,
-  verCertificado,
-  mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 
@@ -292,25 +290,11 @@ export default function SeccionSkills({
     }
   }
 
-  const verCertificadoDe = async (skill) => {
-    // La pestaña se abre DENTRO del evento de clic (antes del await) para esquivar
-    // el bloqueador de emergentes. Misma llamada autenticada que la descarga.
-    const pestana = window.open('', '_blank', 'noopener')
-    setEnVuelo(`cert-${skill.id}`)
-    setError('')
-    try {
-      const abierto = await verCertificado(await pidSeguro(), skill.id, pestana)
-      if (!abierto) {
-        setError('No se pudo abrir el archivo. Revisa el bloqueador de ventanas emergentes.')
-      }
-    } catch (e) {
-      if (pestana) pestana.close()
-      const delBlob = await mensajeErrorBlob(e)
-      setError(delBlob || mensajeError(e))
-    } finally {
-      setEnVuelo(null)
-    }
-  }
+  // "Ver" certificado: el PDF lo abre PanelDocumentosPostulacion (evento document:view).
+  const verCertificadoDe = (skill) =>
+    window.dispatchEvent(new CustomEvent('document:view', {
+      detail: { skillId: skill.id, nombre: skill.certificado?.nombre_original },
+    }))
 
   const registrarRef = (id) => (el) => {
     refsCertificado.current[id] = el

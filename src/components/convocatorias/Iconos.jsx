@@ -20,7 +20,7 @@ export function IconoOjo({ className = 'h-5 w-5' }) {
   )
 }
 
-export function IconoLapiz({ className = 'h-5 w-5' }) {
+export function IconoLapiz() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -30,7 +30,7 @@ export function IconoLapiz({ className = 'h-5 w-5' }) {
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className="h-5 w-5"
       aria-hidden="true"
     >
       <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
@@ -39,7 +39,7 @@ export function IconoLapiz({ className = 'h-5 w-5' }) {
   )
 }
 
-export function IconoCandado({ className = 'h-5 w-5' }) {
+export function IconoCandado() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -49,7 +49,7 @@ export function IconoCandado({ className = 'h-5 w-5' }) {
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className="h-5 w-5"
       aria-hidden="true"
     >
       <path d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
@@ -57,7 +57,7 @@ export function IconoCandado({ className = 'h-5 w-5' }) {
   )
 }
 
-export function IconoDocumento({ className = 'h-5 w-5' }) {
+export function IconoDocumento() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -67,7 +67,7 @@ export function IconoDocumento({ className = 'h-5 w-5' }) {
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className="h-5 w-5"
       aria-hidden="true"
     >
       <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
@@ -111,7 +111,7 @@ export function IconoBasura() {
   )
 }
 
-export function IconoLupa({ className = 'h-5 w-5' }) {
+export function IconoLupa() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -121,7 +121,7 @@ export function IconoLupa({ className = 'h-5 w-5' }) {
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className="h-5 w-5"
       aria-hidden="true"
     >
       <path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -183,6 +183,37 @@ export function IconoMaletin({ className = 'h-4 w-4' }) {
       <path d="M20.25 14.15v4.073a2.25 2.25 0 0 1-2.25 2.25h-12a2.25 2.25 0 0 1-2.25-2.25V14.15M20.25 14.15a2.25 2.25 0 0 1 0-4.5m0 4.5a2.25 2.25 0 0 0 0-4.5M3.75 14.15a2.25 2.25 0 0 0 0-4.5m0 4.5a2.25 2.25 0 0 1 0-4.5m0 0V6.75A2.25 2.25 0 0 1 6 4.5h12a2.25 2.25 0 0 1 2.25 2.25v2.9M3.75 9.65v2.9" />
       <path d="M9 4.5V3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V4.5" />
     </svg>
+  )
+}
+
+const TONOS = {
+  azul: 'text-sena-azul hover:bg-sena-cielo/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta',
+  rojo: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50',
+}
+
+// Botón cuadrado para las acciones. 'etiqueta' es a la vez el aria-label y el
+// texto del tooltip. Se deshabilita mientras su petición está en vuelo.
+export function BotonIcono({ etiqueta, onClick, disabled = false, tono = 'azul', children }) {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={etiqueta}
+        className={`rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          TONOS[tono] ?? TONOS.azul
+        }`}
+      >
+        {children}
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md bg-sena-azul px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-sena-superficie-alta dark:text-sena-texto"
+      >
+        {etiqueta}
+      </span>
+    </span>
   )
 }
 
@@ -261,6 +292,7 @@ export function IconoFlechaDerecha({ className = 'h-5 w-5' }) {
 // Iconos del detalle: empleo, contrato, modalidad, salario, área, ficha.
 // Comparten el trazo de 1.5 px del resto del sistema y aceptan className para
 // ajustar el tamaño según dónde se usen.
+
 export function IconoEmpleo({ className = 'h-4 w-4' }) {
   return (
     <svg
@@ -367,36 +399,5 @@ export function IconoFicha({ className = 'h-4 w-4' }) {
     >
       <path d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
     </svg>
-  )
-}
-
-const TONOS = {
-  azul: 'text-sena-azul hover:bg-sena-cielo/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta',
-  rojo: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50',
-}
-
-// Botón cuadrado para las acciones. 'etiqueta' es a la vez el aria-label y el
-// texto del tooltip. Se deshabilita mientras su petición está en vuelo.
-export function BotonIcono({ etiqueta, onClick, disabled = false, tono = 'azul', className = '', children }) {
-  return (
-    <span className="group relative inline-flex">
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        aria-label={etiqueta}
-        className={`inline-flex items-center justify-center rounded-md p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-          TONOS[tono] ?? TONOS.azul
-        } ${className}`}
-      >
-        {children}
-      </button>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md bg-sena-azul px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-sena-superficie-alta dark:text-sena-texto"
-      >
-        {etiqueta}
-      </span>
-    </span>
   )
 }
