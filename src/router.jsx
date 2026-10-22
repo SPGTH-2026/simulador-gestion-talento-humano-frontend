@@ -24,6 +24,7 @@ import EvaluacionEvaluar from './pages/evaluacion/EvaluacionEvaluar'
 import SeleccionRanking from './pages/seleccion/SeleccionRanking'
 import SeleccionDecidir from './pages/seleccion/SeleccionDecidir'
 import Usuarios from './pages/usuarios/Usuarios'
+import FichasListado from './pages/fichas/FichasListado'
 import Reportes from './pages/reportes/Reportes'
 import Supervision from './pages/supervision/Supervision'
 import MisPostulaciones from './pages/aspirante/MisPostulaciones'
@@ -86,6 +87,7 @@ export default function AppRouter() {
 
           <Route element={<PermissionRoute permiso="usuarios:gestionar" />}>
             <Route path="usuarios" element={<Usuarios />} />
+            <Route path="fichas" element={<FichasListado />} />
           </Route>
           <Route element={<PermissionRoute permiso="reportes:ver" />}>
             <Route path="reportes" element={<Reportes />} />

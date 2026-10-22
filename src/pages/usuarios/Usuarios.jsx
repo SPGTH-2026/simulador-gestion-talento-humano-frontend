@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
-import { listaUsuarios, listaFichas, asignarRol } from '../../api/usuarios'
+import { listaUsuarios, asignarRol } from '../../api/usuarios'
+import { listaFichas } from '../../api/fichas'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import Boton from '../../components/ui/Boton'
 import Cargando from '../../components/ui/Cargando'

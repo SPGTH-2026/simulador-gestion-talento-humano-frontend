@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { listaFichas } from '../../api/usuarios'
+import { useState, useEffect, useCallback } from 'react'
+import { listaFichas } from '../../api/fichas'
 import { listaAspirantes } from '../../api/portafolios'
 import Mensaje from '../../components/ui/Mensaje'
 import Boton from '../../components/ui/Boton'
@@ -59,9 +59,6 @@ export default function DocumentosListado() {
     cargarAspirantes(nueva)
   }
 
-  const aspirantesConPostulaciones = useMemo(() =>
-    aspirantes.filter(a => a.postulaciones_count > 0), [aspirantes])
-
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -105,7 +102,7 @@ export default function DocumentosListado() {
 
       {cargando ? (
         <Cargando mensaje="Cargando aspirantes..." />
-      ) : aspirantesConPostulaciones.length === 0 ? (
+      ) : aspirantes.length === 0 ? (
         <EstadoVacio
           icono="📂"
           titulo="Sin aspirantes"
@@ -124,7 +121,7 @@ export default function DocumentosListado() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {aspirantesConPostulaciones.map(a => (
+              {aspirantes.map(a => (
                 <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <td className="py-3 pr-4">
                     <div className="font-medium text-slate-900 dark:text-white">{a.name}</div>

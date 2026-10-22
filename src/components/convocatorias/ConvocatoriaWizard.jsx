@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { listaParametros } from '../../api/convocatorias'
+import { listaFichas } from '../../api/fichas'
 import {
   DOCUMENTOS_OBLIGATORIOS,
   esObligatorioFijo,
@@ -28,6 +29,8 @@ const ETAPA_DE_CAMPO = {
   cargo: 1,
   area: 1,
   vacantes: 1,
+  ficha: 1,
+  ficha_id: 1,
   tipo_convocatoria: 1,
   tipo_empleo: 1,
   tipo_contrato: 1,
@@ -79,6 +82,7 @@ function formInicial(valores) {
     cargo: valores?.cargo ?? '',
     area: valores?.area ?? '',
     vacantes: valores?.vacantes != null ? String(valores.vacantes) : '1',
+    ficha_id: valores?.ficha?.id ? String(valores.ficha.id) : '',
     tipo_convocatoria: valores?.tipo_convocatoria?.codigo ?? '',
     tipo_empleo: valores?.tipo_empleo?.codigo ?? '',
     tipo_contrato: valores?.tipo_contrato?.codigo ?? '',
@@ -134,6 +138,7 @@ export default function ConvocatoriaWizard({
   const [etapa, setEtapa] = useState(1)
   const [form, setForm] = useState(() => formInicial(valoresIniciales))
   const [catalogos, setCatalogos] = useState(null)
+  const [fichas, setFichas] = useState([])
   const [erroresLocales, setErroresLocales] = useState({})
   const [nuevaSkill, setNuevaSkill] = useState('')
   const [errorSkill, setErrorSkill] = useState('')
@@ -157,6 +162,26 @@ export default function ConvocatoriaWizard({
       activo = false
     }
   }, [])
+
+  // Fichas del alcance del usuario. Solo se piden al crear: si tiene una sola,
+  // el backend la hereda de la sesión; si tiene varias, hay que elegir en cuál
+  // se crea la convocatoria.
+  useEffect(() => {
+    if (!esNueva) return
+
+    let activo = true
+    listaFichas()
+      .then((res) => {
+        if (activo) setFichas(res.data ?? [])
+      })
+      .catch(() => {
+        // Sin fichas el formulario igual se muestra; el backend avisa.
+        if (activo) setFichas([])
+      })
+    return () => {
+      activo = false
+    }
+  }, [esNueva])
 
   // Valor por defecto de las clasificaciones al crear.
   useEffect(() => {
@@ -284,6 +309,10 @@ export default function ConvocatoriaWizard({
     for (const campo of campos) {
       if (!String(form[campo] ?? '').trim()) faltantes[campo] = 'Obligatorio para publicar.'
     }
+    // Con varias fichas en alcance hay que decir en cuál se crea.
+    if (numero === 1 && esNueva && fichas.length > 1 && !form.ficha_id) {
+      faltantes.ficha_id = 'Elige la ficha de la convocatoria.'
+    }
     setErroresLocales((prev) => ({ ...prev, ...faltantes }))
   }
 
@@ -318,6 +347,10 @@ export default function ConvocatoriaWizard({
     fecha_evaluacion: form.fecha_evaluacion || null,
     skills: form.skills,
     documentos: form.documentos,
+    // La ficha solo se manda al crear y solo si el usuario tiene más de una:
+    // con una sola, el backend la hereda de la sesión. Al editar no se envía:
+    // la convocatoria ya tiene ficha y no se puede mover.
+    ...(esNueva && fichas.length > 1 ? { ficha_id: form.ficha_id || null } : {}),
   })
 
   const guardar = () => onGuardar?.(construirPayload())
@@ -406,6 +439,30 @@ export default function ConvocatoriaWizard({
             <Campo etiqueta="Número de vacantes" error={errorDe('vacantes')}>
               <input type="number" min={1} {...campo('vacantes')} />
             </Campo>
+
+            {/* La ficha solo se elige si hay varias en el alcance del usuario.
+                Al editar se muestra la de la convocatoria, pero no se cambia. */}
+            {(esNueva ? fichas.length > 1 : Boolean(valoresIniciales?.ficha)) && (
+              <Campo
+                etiqueta="Ficha"
+                requerido={esNueva}
+                error={errorDe('ficha_id') ?? errorDe('ficha')}
+              >
+                <select
+                  value={esNueva ? form.ficha_id : String(valoresIniciales?.ficha?.id ?? '')}
+                  onChange={cambiar('ficha_id')}
+                  disabled={soloLectura || !esNueva}
+                  className={CLASE_INPUT}
+                >
+                  <option value="">— Selecciona la ficha —</option>
+                  {(esNueva ? fichas : [valoresIniciales.ficha]).map((ficha) => (
+                    <option key={ficha.id} value={ficha.id}>
+                      {ficha.codigo} · {ficha.nombre_programa}
+                    </option>
+                  ))}
+                </select>
+              </Campo>
+            )}
 
             <Campo etiqueta="Tipo de convocatoria" error={errorDe('tipo_convocatoria')}>
               <select {...campo('tipo_convocatoria')}>
