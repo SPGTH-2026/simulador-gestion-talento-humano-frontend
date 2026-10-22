@@ -15,8 +15,10 @@ export default function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onAbrirMenu={() => setMenuAbierto(true)} />
 
-        <main className="scroll-sena-contenido flex-1 overflow-y-auto p-3 sm:p-4">
-          <Outlet />
+        <main className="scroll-sena-contenido flex-1 overflow-y-auto p-4 lg:p-6">
+          <div className="mx-auto w-full max-w-[1440px]">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

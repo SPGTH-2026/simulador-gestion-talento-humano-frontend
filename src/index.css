@@ -55,6 +55,13 @@
   --color-exito: #007832; /* = sena-oscuro */
   --color-aviso: #92400e; /* = ámbar oscuro ya usado en avisos */
   --color-peligro: #b91c1c; /* = rojo oscuro ya usado en errores */
+
+  /* Separador de bloques dentro de una tarjeta: divisores de la banda de fechas
+     y líneas entre filas. Es más marcado que el borde de la tarjeta para que se
+     lea sin gritar (objetivo 2–3:1 sobre la superficie, 1 px).
+       claro : #94a3b8 sobre blanco #ffffff        -> 2.56:1
+       oscuro: #4d7ba1 sobre sena-superficie #0a3550 -> 2.82:1 */
+  --color-sena-separador: #94a3b8;
 }
 
 /* En oscuro los alias toman los tonos claros que ya usaba la app, para leer
@@ -63,6 +70,7 @@ html.dark {
   --color-exito: #5fdd0a; /* = sena-acento */
   --color-aviso: #fde68a; /* = ámbar claro */
   --color-peligro: #fca5a5; /* = rojo claro */
+  --color-sena-separador: #4d7ba1; /* separador sobre sena-superficie -> 2.82:1 */
 }
 
 /* Foco visible por teclado. Se acota a los controles interactivos y de

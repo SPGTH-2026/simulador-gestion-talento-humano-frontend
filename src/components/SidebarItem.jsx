@@ -1,25 +1,51 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 
+// El ítem activo se pinta con el verde institucional y texto azul oscuro: el
+// verde puro no alcanza 4.5:1 con blanco, pero sí con el azul de la marca.
 const claseLink = ({ isActive }) =>
-  `block rounded-md px-2.5 py-1.5 text-[13px] transition-colors ${
+  `block rounded-lg px-3 py-2 text-sm transition-colors ${
     isActive
-      ? 'bg-exito font-semibold text-white dark:text-sena-noche'
+      ? 'bg-sena font-semibold text-sena-menu-bajo shadow-sm'
       : 'text-slate-200 hover:bg-white/10 hover:text-white'
   }`
+
+function IconoChevron({ abierto }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+        abierto ? 'rotate-180' : ''
+      }`}
+      aria-hidden="true"
+    >
+      <path d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+    </svg>
+  )
+}
 
 // onNavegar es opcional: en móvil el menú es un cajón y necesita cerrarse
 // cuando se elige una opción. Conserva la navegación normal del NavLink.
 export default function SidebarItem({ item, onNavegar }) {
   const { pathname } = useLocation()
-  const tieneHijos = Boolean(item.children)
-  const hijoActivo = tieneHijos && item.children.some((hijo) => hijo.to === pathname)
+  const hijos = item.children ?? []
+  // Un módulo con un solo hijo visible no necesita acordeón: se muestra como
+  // enlace directo (por ejemplo, el aspirante solo tiene 'Listado').
+  const tieneHijos = hijos.length > 1
+  const hijoActivo = tieneHijos && hijos.some((hijo) => hijo.to === pathname)
   const [abierto, setAbierto] = useState(hijoActivo)
 
   // Opción simple: un link directo
   if (!tieneHijos) {
+    const destino = hijos.length === 1 ? hijos[0].to : item.to
     return (
-      <NavLink to={item.to} end={item.to === '/'} className={claseLink} onClick={onNavegar}>
+      <NavLink to={destino} end={destino === '/'} className={claseLink} onClick={onNavegar}>
         {item.label}
       </NavLink>
     )
@@ -32,14 +58,18 @@ export default function SidebarItem({ item, onNavegar }) {
         type="button"
         onClick={() => setAbierto(!abierto)}
         aria-expanded={abierto}
-        className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-[13px] text-slate-200 transition-colors hover:bg-white/10 hover:text-white"
+        className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+          hijoActivo
+            ? 'font-semibold text-white'
+            : 'text-slate-200 hover:bg-white/10 hover:text-white'
+        }`}
       >
-        {item.label}
-        <span aria-hidden="true">{abierto ? '▾' : '▸'}</span>
+        <span className="min-w-0 truncate">{item.label}</span>
+        <IconoChevron abierto={abierto} />
       </button>
 
       {abierto && (
-        <div className="ml-3 mt-0.5 flex flex-col gap-0.5 border-l border-white/20 pl-2">
+        <div className="ml-3 mt-1 flex flex-col gap-1 border-l border-white/15 pl-3">
           {item.children.map((hijo) => (
             <NavLink key={hijo.to} to={hijo.to} end className={claseLink} onClick={onNavegar}>
               {hijo.label}

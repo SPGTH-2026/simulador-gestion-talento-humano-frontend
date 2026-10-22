@@ -46,7 +46,7 @@ export default function ThemeToggle() {
       aria-pressed={oscuro}
       aria-label={oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
       title={oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-      className="rounded-full p-2 text-slate-600 transition-colors hover:bg-sena-hundido hover:text-sena-azul dark:text-sena-texto-suave dark:hover:bg-sena-superficie-alta dark:hover:text-sena-texto"
+      className="rounded-full p-2 text-slate-200 transition-colors hover:bg-white/10 hover:text-white"
     >
       {oscuro ? <IconoSol /> : <IconoLuna />}
     </button>
