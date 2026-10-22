@@ -18,7 +18,7 @@ export const DOCUMENTOS_OBLIGATORIOS = [
 // Etiquetas de los documentos opcionales que tienen regla propia. Los decide el
 // gestor; si los incluye, el backend los guarda como obligatorios.
 export const ETIQUETAS_DOCUMENTO = {
-  libreta_militar: 'Solo masculino',
+  libreta_militar: 'Solo para hombres',
   tarjeta_profesional: 'Si el cargo la exige',
 }
 

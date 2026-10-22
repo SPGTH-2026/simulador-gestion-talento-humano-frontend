@@ -1,14 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { detalleConvocatoria } from '../../api/convocatorias'
+import { detalleConvocatoria, cambiarEstadoConvocatoria } from '../../api/convocatorias'
 import { listaMisPostulaciones } from '../../api/postulaciones'
 import { mensajeError } from '../../api/mensajeError'
 import { useAuth } from '../../auth/useAuth'
 import DetalleConvocatoria from '../../components/convocatorias/DetalleConvocatoria'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
+import { IconoCandado, IconoLapiz } from '../../components/convocatorias/Iconos'
 import PanelDocumentosPostulacion from '../../components/postulacion/PanelDocumentosPostulacion'
-import { formatearFecha, formatearFechaHora } from '../../lib/ventanaPostulacion'
+import Boton from '../../components/ui/Boton'
+import { MensajeError } from '../../components/ui/Mensaje'
+import { esEditable, pasoDeEstado } from '../../lib/convocatorias'
+import {
+  estadoVentana,
+  formatearFecha,
+  formatearFechaHora,
+  textoVentana,
+} from '../../lib/ventanaPostulacion'
+import { CLASE_TARJETA } from '../../lib/estilos'
 
 const CLASE_BOTON =
   'rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
@@ -26,7 +36,7 @@ export default function ConvocatoriaDetalle() {
 
 function ContenidoDetalle({ id }) {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, can } = useAuth()
 
   const [detalle, setDetalle] = useState(null)
   const [cargando, setCargando] = useState(true)
@@ -35,6 +45,13 @@ function ContenidoDetalle({ id }) {
   // se rescata el resumen embebido de /postulaciones en vez de un callejón.
   const [noPublicada, setNoPublicada] = useState(null)
   const [buscandoResumen, setBuscandoResumen] = useState(false)
+  // Acción de estado en vuelo (vista de gestión).
+  const [accionando, setAccionando] = useState(false)
+  const [errorAccion, setErrorAccion] = useState('')
+
+  // La vista de gestión la decide el PERMISO (no el rol): el subrol
+  // gestor_convocatorias del aprendiz también entra.
+  const puedeGestionar = can('convocatorias:gestionar')
 
   useEffect(() => {
     let activo = true
@@ -103,9 +120,9 @@ function ContenidoDetalle({ id }) {
     const conv = noPublicada.convocatoria
     return (
       <div className="flex flex-col gap-4">
-        <div className="max-w-2xl rounded-lg border border-slate-200 bg-white p-6 dark:border-sena-borde dark:bg-sena-superficie">
+        <div className={`${CLASE_TARJETA} max-w-2xl p-6`}>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-            {conv?.codigo ?? 'Convocatoria'}
+            Convocatoria
           </p>
           <h1 className="mt-1 text-2xl font-bold text-slate-800 dark:text-sena-texto">
             {conv?.nombre ?? 'Convocatoria'}
@@ -213,30 +230,159 @@ function ContenidoDetalle({ id }) {
   // panel permite llenar TODO (sexo, documentos, skills, extras y envío) en la
   // misma página, sin cambiar de vista. La ventana cerrada no lo bloquea: el
   // propio panel queda en solo lectura con el motivo.
-  const mostrarDocumentos =
+  // El panel se monta para TODO aspirante en una convocatoria publicada, tenga
+  // o no postulación: sin ella el propio panel dibuja las secciones en pendiente
+  // y crea el BORRADOR SILENCIOSO en la primera acción de guardado. Así la
+  // pestaña Documentos es el espacio real de la postulación desde el inicio.
+  const esAspirantePublicada =
     user?.role === 'aspirante' && detalle.estado?.codigo === 'publicada'
+  const estadoPostulacion = detalle.mi_postulacion?.estado?.codigo ?? null
+  const mostrarPanel = esAspirantePublicada
+
+  const ventana = estadoVentana(detalle)
+
+  // ── Acción de la barra inferior ───────────────────────────────────────
+  // Solo para el aspirante que puede postularse: instructor, super admin y el
+  // resto de roles no ven barra. NO es una segunda vía de postulación — no llama
+  // a la API ni crea nada (el borrador lo crea el panel, de forma silenciosa, en
+  // su primera acción de guardado). Aquí solo se salta a la pestaña Documentos,
+  // donde vive el panel.
+  const irADocumentos = () => document.getElementById('tab-documentos')?.click()
+
+  let accionInferior = null
+  if (esAspirantePublicada) {
+    // Ventana cerrada o todavía sin abrir: se muestra el botón DESHABILITADO con
+    // el motivo visible, para que el aspirante entienda por qué no puede seguir.
+    const cerrada = ventana !== 'abierta'
+    if (estadoPostulacion === 'postulada') {
+      accionInferior = {
+        etiqueta: 'Ver mis documentos',
+        motivo: cerrada ? textoVentana(detalle) : '',
+        ayuda: 'Tu postulación ya se envió. Puedes consultar y descargar los documentos que adjuntaste.',
+        deshabilitado: false,
+        onClick: irADocumentos,
+        insignia: true,
+      }
+    } else if (estadoPostulacion === 'retirada') {
+      // La reapertura la decide el panel (y el backend): aquí solo se salta.
+      accionInferior = {
+        etiqueta: 'Reabrir postulación',
+        motivo: cerrada ? textoVentana(detalle) : '',
+        ayuda: 'Retiraste esta postulación. Reábrela para volver a completar tus documentos.',
+        deshabilitado: cerrada,
+        onClick: irADocumentos,
+        insignia: true,
+      }
+    } else {
+      // Sin postulación o con una en borrador: la acción es la misma y siempre
+      // lleva a la pestaña Documentos. El texto corto evita repetir "Siguiente".
+      accionInferior = {
+        etiqueta: 'Continuar a documentos',
+        motivo: cerrada ? textoVentana(detalle) : '',
+        ayuda:
+          estadoPostulacion === 'borrador'
+            ? 'Tu postulación está en borrador. Complétala y envíala desde la pestaña Documentos.'
+            : 'Completa tus datos y adjunta los documentos en la pestaña Documentos.',
+        deshabilitado: cerrada,
+        onClick: irADocumentos,
+        insignia: estadoPostulacion === 'borrador',
+      }
+    }
+  }
+
+  // ── Vista de gestión: acciones según el estado ────────────────────────
+  // Solo quien tiene 'convocatorias:gestionar'. Son las MISMAS acciones del
+  // listado (editar y el candado de un paso), con las reglas de estado ya
+  // escritas: no se inventan transiciones.
+  const paso = pasoDeEstado(detalle.estado?.codigo)
+  const editable = esEditable(detalle)
+
+  const avanzarEstado = async () => {
+    if (!paso) return
+    if (!window.confirm(`¿${paso.etiqueta} de "${detalle.nombre}"?`)) return
+
+    setAccionando(true)
+    setErrorAccion('')
+
+    try {
+      const res = await cambiarEstadoConvocatoria(detalle.id, { estado: paso.destino })
+      setDetalle(res.data)
+    } catch (e) {
+      setErrorAccion(mensajeError(e))
+    } finally {
+      setAccionando(false)
+    }
+  }
+
+  // Mismas acciones y misma jerarquía que las tarjetas del listado: primero
+  // consultar (aquí ya se está), luego editar y por último cerrar.
+  const accionesGestion = puedeGestionar ? (
+    <div className="flex flex-wrap items-center gap-2">
+      {errorAccion && <MensajeError>{errorAccion}</MensajeError>}
+
+      {editable && (
+        <Boton
+          variante="secundario"
+          tamano="sm"
+          className="shrink-0"
+          onClick={() => navigate(`/convocatorias/${detalle.id}/editar`)}
+        >
+          <IconoLapiz className="h-4 w-4" />
+          Editar
+        </Boton>
+      )}
+
+      {paso && (
+        <Boton
+          variante="peligroSuave"
+          tamano="sm"
+          className="ml-1 shrink-0"
+          disabled={accionando}
+          onClick={avanzarEstado}
+        >
+          <IconoCandado className="h-4 w-4" />
+          {paso.etiqueta}
+        </Boton>
+      )}
+    </div>
+  ) : null
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Vista de solo lectura propia. Al pie, el panel único para llenar todo
-          (sexo, documentos, skills, extras y envío) sin cambiar de pantalla. */}
-      <DetalleConvocatoria convocatoria={detalle} onVolver={() => navigate('/convocatorias')}>
-        {mostrarDocumentos && (
-          <PanelDocumentosPostulacion
-            convocatoria={detalle}
-            documentosConvocatoria={detalle.documentos}
-            skillsConvocatoriaNombres={detalle.skills}
-            miPostulacion={detalle.mi_postulacion}
-            onPostulacionCreada={aplicarPostulacion}
-            onVerDocumentos={(pid) => navigate(`/postulaciones/${pid}/documentos`)}
-            onEnviado={() =>
-              navigate('/mis-postulaciones', {
-                state: { exito: `Enviaste tu postulación a "${detalle.nombre}".` },
-              })
-            }
-          />
-        )}
-      </DetalleConvocatoria>
-    </div>
+    <>
+      {accionesGestion && (
+        <div className="flex flex-wrap items-center justify-end gap-2">{accionesGestion}</div>
+      )}
+
+      <DetalleConvocatoria
+        convocatoria={detalle}
+        onVolver={() => navigate('/convocatorias')}
+        panelDocumentos={
+          mostrarPanel ? (
+            <PanelDocumentosPostulacion
+              convocatoria={detalle}
+              documentosConvocatoria={detalle.documentos}
+              skillsConvocatoriaNombres={detalle.skills}
+              miPostulacion={detalle.mi_postulacion}
+              onPostulacionCreada={aplicarPostulacion}
+              onVerDocumentos={(pid) => navigate(`/postulaciones/${pid}/documentos`)}
+              onEnviado={() =>
+                navigate('/mis-postulaciones', {
+                  state: { exito: `¡Tu postulación ha sido registrada!` },
+                })
+              }
+            />
+          ) : null
+        }
+        accionInferior={
+          accionInferior
+            ? {
+                ...accionInferior,
+                codigoEstado: estadoPostulacion,
+                nombreEstado: detalle.mi_postulacion?.estado?.nombre,
+              }
+            : null
+        }
+      />
+    </>
   )
 }

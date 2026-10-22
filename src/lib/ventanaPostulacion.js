@@ -65,6 +65,40 @@ export function puedePostular(convocatoria) {
   return estadoVentana(convocatoria) === 'abierta'
 }
 
+// Días que faltan para la fecha de cierre (hoy = 0). Devuelve null si no hay
+// fecha de cierre, si la fecha ya pasó o si la fecha no se entiende.
+//
+// La cuenta se hace con las dos fechas como cadenas 'AAAA-MM-DD' llevadas a
+// medianoche UTC: al ser los dos operandos del mismo tipo (día calendario,
+// sin hora), no hay desfase de zona horaria. El "hoy" sí es el de Bogotá
+// (hoyEnBogota), igual que en el resto del módulo.
+export function diasParaCierre(fechaCierre) {
+  const cierre = soloFecha(fechaCierre)
+
+  if (!cierre) return null
+
+  const hoy = hoyEnBogota()
+  if (cierre < hoy) return null
+
+  const desde = Date.parse(`${hoy}T00:00:00Z`)
+  const hasta = Date.parse(`${cierre}T00:00:00Z`)
+
+  if (Number.isNaN(desde) || Number.isNaN(hasta)) return null
+
+  return Math.round((hasta - desde) / 86400000)
+}
+
+// Texto corto para el cierre inminente: "Cierra hoy", "Cierra mañana" o
+// "Cierra en N días". Devuelve null si no faltan 3 días o menos.
+export function textoCierraPronto(fechaCierre) {
+  const dias = diasParaCierre(fechaCierre)
+
+  if (dias === null || dias > 3) return null
+  if (dias === 0) return 'Cierra hoy'
+  if (dias === 1) return 'Cierra mañana'
+  return `Cierra en ${dias} días`
+}
+
 // Texto legible del estado de una postulación. El borrador se explicita como
 // "Borrador, sin enviar" (el nombre del parámetro es solo "Borrador") para
 // dejar claro que aún NO cuenta como una postulación enviada. El resto usa el
