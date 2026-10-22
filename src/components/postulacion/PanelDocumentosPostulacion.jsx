@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { postularse, cambiarEstadoPostulacion } from '../../api/postulaciones'
-import { estadoDocumentos, obtenerPerfil } from '../../api/postulacionesDocumentos'
+import {
+  estadoDocumentos,
+  obtenerPerfil,
+  abrirArchivoEnPestana,
+  mensajeErrorBlob,
+} from '../../api/postulacionesDocumentos'
 import { listaParametros } from '../../api/convocatorias'
 import { mensajeError } from '../../api/mensajeError'
 import { estadoVentana } from '../../lib/ventanaPostulacion'
@@ -102,20 +107,30 @@ export default function PanelDocumentosPostulacion({
   }, [])
 
   // Un solo escuchador para los botones "Ver" de TODAS las secciones (documentos
-  // requeridos, adicionales y certificados de skills): abren el PDF en una pestaña
-  // nueva con ?inline=1, que el backend entrega con Content-Disposition: inline.
+  // requeridos, adicionales y certificados de skills): el archivo se pide con la
+  // sesión y se abre en una pestaña nueva desde el blob. Si falla (archivo
+  // perdido, disco sin credenciales), el error se muestra aquí mismo.
   useEffect(() => {
-    const abrirEnPestana = (evento) => {
-      const { documentoId, skillId } = evento.detail ?? {}
+    const abrirEnPestana = async (evento) => {
+      const { documentoId, skillId, nombre } = evento.detail ?? {}
       if (!idPostulacion) return
 
       const ruta = documentoId
-        ? `/api/postulaciones/${idPostulacion}/documentos/${documentoId}/archivo`
+        ? `/postulaciones/${idPostulacion}/documentos/${documentoId}/archivo`
         : skillId
-          ? `/api/postulaciones/${idPostulacion}/skills/${skillId}/certificado/archivo`
+          ? `/postulaciones/${idPostulacion}/skills/${skillId}/certificado/archivo`
           : null
 
-      if (ruta) window.open(`${ruta}?inline=1`, '_blank', 'noopener')
+      if (!ruta) return
+
+      setError('')
+
+      try {
+        await abrirArchivoEnPestana(ruta, { nombre })
+      } catch (error) {
+        const mensaje = await mensajeErrorBlob(error)
+        setError(mensaje || mensajeError(error))
+      }
     }
 
     window.addEventListener('document:view', abrirEnPestana)

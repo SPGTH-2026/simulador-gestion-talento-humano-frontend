@@ -122,6 +122,37 @@ export async function descargarCertificado(postulacionId, skillId, nombre) {
   dispararDescarga(res.data, nombre)
 }
 
+// Abre un archivo del backend en una pestaña nueva.
+//
+// La petición va con la sesión (igual que las descargas) y el contenido se
+// muestra desde el blob, NO abriendo la URL cruda del backend en otra pestaña.
+// Así, si el archivo no está (404) o el disco falla (503), el error se puede
+// mostrar dentro de la app en vez de dejar una pestaña con un JSON de error.
+//
+// La pestaña se abre de inmediato (dentro del gesto del usuario) para que el
+// bloqueador de ventanas emergentes no la corte mientras llega la respuesta.
+export async function abrirArchivoEnPestana(ruta, { nombre } = {}) {
+  const pestana = window.open('', '_blank')
+
+  try {
+    const res = await client.get(ruta, { responseType: 'blob' })
+    const url = URL.createObjectURL(res.data)
+
+    if (pestana) {
+      pestana.location.href = url
+      // La pestaña necesita el blob para pintar el PDF: se libera después.
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } else {
+      // El navegador bloqueó la ventana: se guarda como descarga.
+      URL.revokeObjectURL(url)
+      dispararDescarga(res.data, nombre)
+    }
+  } catch (error) {
+    if (pestana) pestana.close()
+    throw error
+  }
+}
+
 // Los errores de una descarga Blob traen el { message } del backend dentro de un
 // Blob (no como JSON ya parseado). Devuelve el mensaje en español o '' si no se
 // puede leer. Así un archivo físico ausente (404) se muestra sin romper la lista.
