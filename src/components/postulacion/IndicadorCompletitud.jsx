@@ -1,10 +1,9 @@
 import { progresoObligatorios } from '../../lib/postulacionDocumentos'
+import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 
-const ESTILO_TARJETA =
-  'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
+const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
-const ESTILO_TITULO =
-  'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
+const ESTILO_TITULO = CLASE_TITULO_SECCION
 
 // Resumen del paso: cuántos documentos obligatorios están listos y si el paso
 // queda completo. 'completo' lo decide el backend (todos los obligatorios

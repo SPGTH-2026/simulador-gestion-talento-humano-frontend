@@ -1,15 +1,14 @@
 import { useState } from 'react'
 import { enviarPostulacion } from '../../api/postulaciones'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 
-const ESTILO_TARJETA =
-  'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
+const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
-const ESTILO_TITULO =
-  'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
+const ESTILO_TITULO = CLASE_TITULO_SECCION
 
 const CLASE_ENVIAR =
-  'rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50'
+  'rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:cursor-not-allowed disabled:opacity-50'
 
 // Envío del BORRADOR a 'postulada'. Solo se muestra mientras la postulación está
 // en borrador y el paso es editable. Antes de enviar avisa qué falta (obligatorios

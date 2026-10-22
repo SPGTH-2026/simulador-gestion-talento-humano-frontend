@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { listaMisPostulaciones } from '../../api/postulaciones'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
+import { CLASE_CAJA_SUAVE, CLASE_TARJETA } from '../../lib/estilos'
 import { Link } from 'react-router-dom'
 
 export default function MisDocumentos() {
@@ -34,8 +35,8 @@ export default function MisDocumentos() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-red-600">{error}</p>
-        <button onClick={cargar} className="text-sena-azul hover:underline">Reintentar</button>
+        <p className="text-red-600 dark:text-red-300">{error}</p>
+        <button onClick={cargar} className="text-sena-azul hover:underline dark:text-sena-texto">Reintentar</button>
       </div>
     )
   }
@@ -54,8 +55,8 @@ export default function MisDocumentos() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Mis documentos</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-sena-texto">Mis documentos</h1>
+        <p className="text-sm text-slate-500 dark:text-sena-texto-suave mt-1">
           Gestiona los documentos de cada postulación. Cada convocatoria tiene sus propios requisitos.
         </p>
       </header>
@@ -64,16 +65,16 @@ export default function MisDocumentos() {
         {postulaciones.map(p => (
           <article
             key={p.id}
-            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow"
+            className={`${CLASE_TARJETA} p-4`}
           >
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <EtiquetaPostulacion codigo={p.estado?.codigo} nombre={p.estado?.nombre} />
                 </div>
-                <p className="font-medium text-slate-900 dark:text-white">{p.convocatoria?.nombre}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {p.convocatoria?.codigo} • Postulada el {p.fecha_postulacion ? new Date(p.fecha_postulacion).toLocaleDateString('es-CO') : '—'}
+                <p className="font-medium text-slate-900 dark:text-sena-texto">{p.convocatoria?.nombre}</p>
+                <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
+                  Postulada el {p.fecha_postulacion ? new Date(p.fecha_postulacion).toLocaleDateString('es-CO') : '—'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -86,10 +87,8 @@ export default function MisDocumentos() {
               </div>
             </div>
 
-            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-sena-borde flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-sena-texto-suave">
               <span>Estado: <strong>{p.estado?.nombre}</strong></span>
-              <span>•</span>
-              <span>Convocatoria: {p.convocatoria?.codigo}</span>
               <span>•</span>
               <span>Postulada: {p.fecha_postulacion ? new Date(p.fecha_postulacion).toLocaleDateString('es-CO') : '—'}</span>
             </div>
@@ -97,7 +96,7 @@ export default function MisDocumentos() {
         ))}
       </div>
 
-      <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-sm text-slate-600 dark:text-slate-400">
+      <div className={`${CLASE_CAJA_SUAVE} mt-6 p-4 text-sm text-slate-600 dark:text-sena-texto-suave`}>
         <p className="font-medium mb-1">¿Cómo funciona?</p>
         <ul className="list-disc list-inside space-y-1 ml-4">
           <li>Cada postulación tiene su propio espacio de documentos.</li>

@@ -1,18 +1,21 @@
 import { useRef, useState } from 'react'
 import { validarArchivoPostulacion, TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
-import { etiquetasDocumento } from '../../lib/documentosConvocatoria'
+import { ETIQUETAS_DOCUMENTO, esObligatorioFijo } from '../../lib/documentosConvocatoria'
 import { CODIGO_LIBRETA_MILITAR, formatearTamano } from '../../lib/postulacionDocumentos'
+import { formatearFechaHora } from '../../lib/ventanaPostulacion'
+import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
+import EtiquetaDocumento from '../ui/EtiquetaDocumento'
 import {
   subirDocumento,
   eliminarDocumento,
+  verDocumento,
+  mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 
-const ESTILO_TARJETA =
-  'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
+const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
-const ESTILO_TITULO =
-  'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
+const ESTILO_TITULO = CLASE_TITULO_SECCION
 
 const CLASE_BOTON =
   'rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
@@ -21,7 +24,7 @@ const CLASE_ELIMINAR =
   'rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50'
 
 const CLASE_ETIQUETA =
-  'rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
+  'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
 
 // Documentos que pide la convocatoria: uno por tipo, con subir/reemplazar.
 // La primera acción de guardado dispara el borrador silencioso (asegurar), así
@@ -102,6 +105,32 @@ export default function SeccionDocumentosRequeridos({
     }
   }
 
+  // "Ver": abre el PDF en una pestaña nueva. La pestaña se abre DENTRO del mismo
+  // evento de clic (antes del await), para que el navegador no la bloquee como
+  // emergente; luego se le asigna la URL del Blob. Misma llamada autenticada que
+  // la descarga: no cambia la autenticación ni el backend.
+  const ver = async (documento, codigo) => {
+    const pestana = window.open('', '_blank', 'noopener')
+    marcarEnVuelo(codigo, true)
+    limpiarError(codigo)
+    try {
+      const abierto = await verDocumento(await pidSeguro(), documento.id, pestana)
+      if (!abierto) {
+        setErrores((prev) => ({
+          ...prev,
+          [codigo]: 'No se pudo abrir el archivo. Revisa el bloqueador de ventanas emergentes.',
+        }))
+      }
+    } catch (e) {
+      if (pestana) pestana.close()
+      // El error de un Blob viene como Blob: se lee su JSON para el mensaje real.
+      const delBlob = await mensajeErrorBlob(e)
+      setErrores((prev) => ({ ...prev, [codigo]: delBlob || mensajeError(e) }))
+    } finally {
+      marcarEnVuelo(codigo, false)
+    }
+  }
+
   return (
     <section className={ESTILO_TARJETA}>
       <h2 className={ESTILO_TITULO}>Documentos requeridos</h2>
@@ -139,16 +168,18 @@ export default function SeccionDocumentosRequeridos({
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-sena-texto">
                     {parametro.nombre}
-                    {etiquetasDocumento(codigo, obligatorio).map((etiqueta) => (
-                      <span key={etiqueta} className={CLASE_ETIQUETA}>
-                        {etiqueta}
-                      </span>
-                    ))}
+                    <EtiquetaDocumento
+                      obligatorio={Boolean(obligatorio) || esObligatorioFijo(codigo)}
+                    />
+                    {ETIQUETAS_DOCUMENTO[codigo] && (
+                      <span className={CLASE_ETIQUETA}>{ETIQUETAS_DOCUMENTO[codigo]}</span>
+                    )}
                   </p>
 
                   {estadoDoc === 'subido' && archivo && (
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
                       {archivo.nombre_original} · {formatearTamano(archivo.tamano_bytes)}
+                      {archivo.subido_en && <> · Subido el {formatearFechaHora(archivo.subido_en)}</>}
                     </p>
                   )}
                   {estadoDoc === 'pendiente' && !bloqueoLibreta && (
@@ -174,19 +205,9 @@ export default function SeccionDocumentosRequeridos({
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => {
-                        // El padre (PanelDocumentosPostulacion) lo abre en una
-                        // pestaña nueva vía el evento document:view.
-                        window.dispatchEvent(new CustomEvent('document:view', {
-                          detail: { documentoId: archivo.id }
-                        }))
-                      }}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
+                      onClick={() => ver(archivo, codigo)}
+                      className={CLASE_BOTON}
                     >
-                      <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 5.943 7.523 0 12 0c4.478 0 8.268 5.943 8.008 10.734C16.732 18.057 11.278 24 12 24c-4.478 0-8.268-5.943-8.008-10.734z" />
-                      </svg>
                       Ver
                     </button>
                   )}
@@ -203,7 +224,9 @@ export default function SeccionDocumentosRequeridos({
                         ? 'Subiendo...'
                         : estadoDoc === 'subido'
                           ? 'Reemplazar'
-                          : 'Subir'}
+                          : error
+                            ? 'Reintentar'
+                            : 'Subir'}
                     </button>
                   )}
 

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { postularse, cambiarEstadoPostulacion } from '../../api/postulaciones'
 import { estadoDocumentos, obtenerPerfil } from '../../api/postulacionesDocumentos'
-import { listaParametros } from '../../api/convocatorias'
 import { mensajeError } from '../../api/mensajeError'
 import { estadoVentana } from '../../lib/ventanaPostulacion'
 import { CODIGO_LIBRETA_MILITAR, motivoNoEditable } from '../../lib/postulacionDocumentos'
+import { CLASE_CAJA_SUAVE } from '../../lib/estilos'
 import IndicadorCompletitud from './IndicadorCompletitud'
 import SeccionSexo from './SeccionSexo'
 import SeccionDocumentosRequeridos from './SeccionDocumentosRequeridos'
@@ -42,7 +42,6 @@ export default function PanelDocumentosPostulacion({
   const [estado, setEstado] = useState(null)
   const [error, setError] = useState('')
   const [perfil, setPerfil] = useState(null)
-  const [catalogo, setCatalogo] = useState([])
   const [reabriendo, setReabriendo] = useState(false)
   // Promesa de creación en vuelo: una sola creación de borrador a la vez.
   const creandoRef = useRef(null)
@@ -87,40 +86,6 @@ export default function PanelDocumentosPostulacion({
       activo = false
     }
   }, [])
-
-  // Catálogo general de skills (grupo B). El aspirante tiene 'convocatorias:ver'.
-  useEffect(() => {
-    let activo = true
-    listaParametros('skill_catalogo')
-      .then((res) => {
-        if (activo) setCatalogo(res?.data ?? [])
-      })
-      .catch(() => {})
-    return () => {
-      activo = false
-    }
-  }, [])
-
-  // Un solo escuchador para los botones "Ver" de TODAS las secciones (documentos
-  // requeridos, adicionales y certificados de skills): abren el PDF en una pestaña
-  // nueva con ?inline=1, que el backend entrega con Content-Disposition: inline.
-  useEffect(() => {
-    const abrirEnPestana = (evento) => {
-      const { documentoId, skillId } = evento.detail ?? {}
-      if (!idPostulacion) return
-
-      const ruta = documentoId
-        ? `/api/postulaciones/${idPostulacion}/documentos/${documentoId}/archivo`
-        : skillId
-          ? `/api/postulaciones/${idPostulacion}/skills/${skillId}/certificado/archivo`
-          : null
-
-      if (ruta) window.open(`${ruta}?inline=1`, '_blank', 'noopener')
-    }
-
-    window.addEventListener('document:view', abrirEnPestana)
-    return () => window.removeEventListener('document:view', abrirEnPestana)
-  }, [idPostulacion])
 
   const recargar = useCallback(() => {
     if (!idPostulacion) return Promise.resolve()
@@ -199,7 +164,7 @@ export default function PanelDocumentosPostulacion({
     return {
       postulacion: { id: null, estado: { codigo: null, nombre: null } },
       convocatoria: convocatoria
-        ? { id: convocatoria.id, nombre: convocatoria.nombre, codigo: convocatoria.codigo }
+        ? { id: convocatoria.id, nombre: convocatoria.nombre }
         : null,
       ventana,
       editable: ventana === 'abierta',
@@ -263,13 +228,13 @@ export default function PanelDocumentosPostulacion({
       )}
 
       {esRetirada && (
-        <div className="flex flex-wrap items-center gap-2 rounded bg-slate-50 p-3 dark:bg-sena-superficie-alta">
+        <div className={`${CLASE_CAJA_SUAVE} flex flex-wrap items-center gap-2 p-3`}>
           <button
             type="button"
             disabled={reabriendo || ventana !== 'abierta'}
             title={ventana !== 'abierta' ? motivo : undefined}
             onClick={reabrirPostulacion}
-            className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:cursor-not-allowed disabled:opacity-50"
           >
             {reabriendo ? 'Reabriendo...' : 'Reabrir postulación'}
           </button>
@@ -305,7 +270,6 @@ export default function PanelDocumentosPostulacion({
 
       <SeccionSkills
         vista={vista}
-        catalogo={catalogo}
         editable={editable}
         asegurar={asegurar}
         onRecargar={recargar}

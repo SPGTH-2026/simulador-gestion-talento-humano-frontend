@@ -55,20 +55,14 @@ export const subirAdicional = (postulacionId, { titulo, nota, archivo }) => {
     .then((res) => res.data.data)
 }
 
-// POST /api/postulaciones/{id}/skills  (doc 33)  body con EXACTAMENTE UNA forma:
+// POST /api/postulaciones/{id}/skills  (doc 33)
+// SOLO se admite la skill que pide la convocatoria:
 //   { convocatoria_skill_id }  skill pedida por la convocatoria (origen 'convocatoria')
-//   { parametro_id }           skill del catálogo general (origen 'catalogo')
-//   { nombre }                 skill propia (origen 'propia')
-// Las de la convocatoria/catálogo SIEMPRE se envían por id; las propias, por nombre.
+// El backend rechaza (422) las skills del catálogo general y los nombres
+// libres: el aspirante solo marca lo que pide la convocatoria.
 // Idempotente por nombre sin distinguir mayúsculas (200 si ya estaba).
-export const declararSkill = (
-  postulacionId,
-  { nombre, convocatoriaSkillId, parametroId } = {},
-) => {
-  let cuerpo
-  if (convocatoriaSkillId) cuerpo = { convocatoria_skill_id: convocatoriaSkillId }
-  else if (parametroId) cuerpo = { parametro_id: parametroId }
-  else cuerpo = { nombre }
+export const declararSkill = (postulacionId, { convocatoriaSkillId } = {}) => {
+  const cuerpo = { convocatoria_skill_id: convocatoriaSkillId }
   return client
     .post(`/postulaciones/${postulacionId}/skills`, cuerpo)
     .then((res) => res.data.data)
@@ -91,8 +85,10 @@ export const subirCertificado = (postulacionId, skillId, archivo) => {
 export const quitarCertificado = (postulacionId, skillId) =>
   client.delete(`/postulaciones/${postulacionId}/skills/${skillId}/certificado`)
 
-// ── Descargas autorizadas ──────────────────────────────────────────────
+// ── Archivos autorizados ───────────────────────────────────────────────
 
+// Descarga (fuerza la bajada con el nombre original). Se conserva para otras
+// pantallas y para los flujos que sí descargan.
 export function dispararDescarga(blob, nombre) {
   const url = URL.createObjectURL(blob)
   const enlace = document.createElement('a')
@@ -104,6 +100,24 @@ export function dispararDescarga(blob, nombre) {
   URL.revokeObjectURL(url)
 }
 
+// Abre un Blob en una PESTAÑA NUEVA (para "Ver" un PDF sin forzar la descarga).
+// El navegador usa el visor de PDF si el archivo es un PDF. `objetoPestana` es
+// la ventana YA abierta por el evento de clic (evita el bloqueador de
+// emergentes); si no llegó, se abre aquí. Devuelve true si abrió algo.
+//
+// Nota: la URL del Blob se mantiene viva (no se revoca aquí) para que la
+// pestaña alcance a cargar el PDF; el navegador la libera al cerrar la pestaña.
+export function abrirBlobEnPestanaNueva(blob, objetoPestana = null) {
+  const url = URL.createObjectURL(blob)
+  const pestana = objetoPestana ?? window.open('', '_blank', 'noopener')
+  if (!pestana) {
+    URL.revokeObjectURL(url)
+    return false
+  }
+  pestana.location.href = url
+  return true
+}
+
 // GET /api/postulaciones/{id}/documentos/{documento}/archivo
 export async function descargarDocumento(postulacionId, documentoId, nombre) {
   const res = await client.get(
@@ -113,6 +127,16 @@ export async function descargarDocumento(postulacionId, documentoId, nombre) {
   dispararDescarga(res.data, nombre)
 }
 
+// GET del mismo archivo, pero abierto en pestaña nueva (acción "Ver"). Reutiliza
+// la MISMA llamada autenticada; no cambia la autenticación ni el backend.
+export async function verDocumento(postulacionId, documentoId, objetoPestana = null) {
+  const res = await client.get(
+    `/postulaciones/${postulacionId}/documentos/${documentoId}/archivo`,
+    { responseType: 'blob' },
+  )
+  return abrirBlobEnPestanaNueva(res.data, objetoPestana)
+}
+
 // GET /api/postulaciones/{id}/skills/{skill}/certificado/archivo
 export async function descargarCertificado(postulacionId, skillId, nombre) {
   const res = await client.get(
@@ -120,6 +144,15 @@ export async function descargarCertificado(postulacionId, skillId, nombre) {
     { responseType: 'blob' },
   )
   dispararDescarga(res.data, nombre)
+}
+
+// Igual que descargarCertificado pero en pestaña nueva (acción "Ver").
+export async function verCertificado(postulacionId, skillId, objetoPestana = null) {
+  const res = await client.get(
+    `/postulaciones/${postulacionId}/skills/${skillId}/certificado/archivo`,
+    { responseType: 'blob' },
+  )
+  return abrirBlobEnPestanaNueva(res.data, objetoPestana)
 }
 
 // Los errores de una descarga Blob traen el { message } del backend dentro de un

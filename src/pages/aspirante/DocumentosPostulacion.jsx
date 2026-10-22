@@ -46,9 +46,7 @@ function Contenido({ postulacionId }) {
           Documentos de la postulación
         </h1>
         <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
-          {estado
-            ? `${estado.convocatoria?.codigo} · ${estado.convocatoria?.nombre}`
-            : 'Cargando...'}
+          {estado ? estado.convocatoria?.nombre : 'Cargando...'}
         </p>
       </div>
 
