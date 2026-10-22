@@ -8,6 +8,7 @@ import {
   quitarCertificado,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import { IconoOjo } from '../convocatorias/Iconos'
 
 const ESTILO_TARJETA =
   'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
@@ -113,15 +114,15 @@ function FilaSkill({
                     // El padre (PanelDocumentosPostulacion) lo abre en una
                     // pestaña nueva vía el evento document:view.
                     window.dispatchEvent(new CustomEvent('document:view', {
-                      detail: { skillId: declarada.id }
+                      detail: {
+                        skillId: declarada.id,
+                        nombre: certificado.nombre_original,
+                      }
                     }))
                   }}
                   className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 5.943 7.523 0 12 0c4.478 0 8.268 5.943 8.008 10.734C16.732 18.057 11.278 24 12 24c-4.478 0-8.268-5.943-8.008-10.734z" />
-                  </svg>
+                  <IconoOjo className="mr-1.5 h-3.5 w-3.5" />
                   Ver
                 </button>
                 {editable && (
