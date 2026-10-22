@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { validarArchivoPostulacion, TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
+import { TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
 import {
   MAX_DOCUMENTOS_ADICIONALES,
   MAX_TITULO_ADICIONAL,
@@ -9,11 +9,8 @@ import {
 import {
   subirAdicional,
   eliminarDocumento,
-  descargarDocumento,
-  mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
-import DocumentActions from './DocumentActions'
 
 const ESTILO_TARJETA =
   'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
@@ -145,9 +142,10 @@ export default function SeccionAdicionales({
                       type="button"
                       disabled={enProceso}
                       onClick={() => {
-                        // Emitir evento para que el padre maneje el preview
+                        // El padre (PanelDocumentosPostulacion) lo abre en una
+                        // pestaña nueva vía el evento document:view.
                         window.dispatchEvent(new CustomEvent('document:view', {
-                          detail: { archivo: adicional.archivo, codigo: 'adicional' }
+                          detail: { documentoId: adicional.archivo.id }
                         }))
                       }}
                       className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"

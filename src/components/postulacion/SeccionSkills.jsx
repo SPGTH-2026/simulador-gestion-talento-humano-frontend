@@ -6,8 +6,6 @@ import {
   eliminarSkill,
   subirCertificado,
   quitarCertificado,
-  descargarCertificado,
-  mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 
@@ -19,12 +17,6 @@ const ESTILO_TITULO =
 
 const ESTILO_GRUPO =
   'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave'
-
-const CLASE_BOTON =
-  'rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
-
-const CLASE_ELIMINAR =
-  'rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50'
 
 const CLASE_INPUT =
   'rounded border border-sena-azul/20 p-2 text-sm text-slate-700 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto'
@@ -56,7 +48,6 @@ function FilaSkill({
   onDesactivar,
   onQuitarSkill,
   onAdjuntar,
-  onDescargar,
   onQuitarCertificado,
   registrarRef,
   onArchivo,
@@ -119,8 +110,10 @@ function FilaSkill({
                   type="button"
                   disabled={ocupada}
                   onClick={() => {
+                    // El padre (PanelDocumentosPostulacion) lo abre en una
+                    // pestaña nueva vía el evento document:view.
                     window.dispatchEvent(new CustomEvent('document:view', {
-                      detail: { certificado, clave }
+                      detail: { skillId: declarada.id }
                     }))
                   }}
                   className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
@@ -163,7 +156,7 @@ function FilaSkill({
                   {ocupada ? 'Subiendo...' : 'Adjuntar certificado'}
                 </button>
               )
-            )}
+            )
           )}
 
           {esPropia && editable && (
@@ -200,13 +193,6 @@ function FilaSkill({
     </li>
   )
 }
-
-const origenTexto = (origen) =>
-  origen === 'convocatoria'
-    ? 'De la convocatoria'
-    : origen === 'catalogo'
-      ? 'Del catálogo'
-      : 'Propia'
 
 // Skills de la postulación (doc 33). Tres grupos, TODAS opcionales (ninguna
 // bloquea el envío):
@@ -313,19 +299,6 @@ export default function SeccionSkills({
     }
   }
 
-  const descargarCertificadoDe = async (skill) => {
-    setEnVuelo(`cert-${skill.id}`)
-    setError('')
-    try {
-      await descargarCertificado(await pidSeguro(), skill.id, skill.certificado?.nombre_original)
-    } catch (e) {
-      const delBlob = await mensajeErrorBlob(e)
-      setError(delBlob || mensajeError(e))
-    } finally {
-      setEnVuelo(null)
-    }
-  }
-
   const agregarPropia = async (evento) => {
     evento.preventDefault()
     const nombre = borrador.trim()
@@ -349,11 +322,6 @@ export default function SeccionSkills({
       ? {
           registrarRef: registrarRef(skill.id),
           onAdjuntar: () => refsCertificado.current[skill.id]?.click(),
-          onDescargar: () => {
-            window.dispatchEvent(new CustomEvent('document:view', {
-              detail: { certificado: skill.certificado, clave: `skill-${skill.id}` }
-            })
-          },
           onQuitarCertificado: () => quitarCertificadoDe(skill),
           onArchivo: (archivo) => elegirCertificado(skill, archivo),
         }
@@ -399,7 +367,7 @@ export default function SeccionSkills({
                         )?.id
                       return id ? { convocatoriaSkillId: id } : { nombre: requerida.nombre }
                     })
-                  }
+                  }}
                   onDesactivar={() => declarada && quitar(declarada)}
                   onQuitarSkill={() => declarada && quitar(declarada)}
                   {...accionesDeclarada(declarada)}
@@ -464,95 +432,52 @@ export default function SeccionSkills({
               Aún no has agregado skills propias.
             </li>
           )}
+        </ul>
 
-          {editable && !tope && (
-            <form
-              onSubmit={agregarPropia}
-              className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-end dark:border-sena-borde"
-            >
-              <div className="flex flex-1 flex-col gap-1">
-                <label
-                  htmlFor="skill-propia"
-                  className="text-xs font-semibold text-slate-600 dark:text-sena-texto-suave"
-                >
-                  Agregar una skill propia
-                </label>
-                <input
-                  id="skill-propia"
-                  type="text"
-                  value={borrador}
-                  maxLength={MAX_SKILL_NOMBRE}
-                  onChange={(e) => setBorrador(e.target.value)}
-                  className={CLASE_INPUT}
-                  placeholder="Ej.: Manejo de Excel avanzado"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={enVuelo === 'propia'}
-                className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50"
+        {editable && !tope && (
+          <form
+            onSubmit={agregarPropia}
+            className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-end dark:border-sena-borde"
+          >
+            <div className="flex flex-1 flex-col gap-1">
+              <label
+                htmlFor="skill-propia"
+                className="text-xs font-semibold text-slate-600 dark:text-sena-texto-suave"
               >
-                {enVuelo === 'propia' ? 'Agregando...' : 'Agregar'}
-              </button>
-            </form>
-          )}
-
-          {propias.length === 0 && (
-            <li className="py-3 text-sm text-slate-500 dark:text-sena-texto-suave">
-              Aún no has agregado skills propias.
-            </li>
-          )}
-
-          {editable && !tope && (
-            <form
-              onSubmit={agregarPropia}
-              className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-end dark:border-sena-borde"
+                Agregar una skill propia
+              </label>
+              <input
+                id="skill-propia"
+                type="text"
+                value={borrador}
+                maxLength={MAX_SKILL_NOMBRE}
+                onChange={(e) => setBorrador(e.target.value)}
+                className={CLASE_INPUT}
+                placeholder="Ej.: Manejo de Excel avanzado"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={enVuelo === 'propia'}
+              className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <div className="flex flex-1 flex-col gap-1">
-                <label
-                  htmlFor="skill-propia"
-                  className="text-xs font-semibold text-slate-600 dark:text-sena-texto-suave"
-                >
-                  Agregar una skill propia
-                </label>
-                <input
-                  id="skill-propia"
-                  type="text"
-                  value={borrador}
-                  maxLength={MAX_SKILL_NOMBRE}
-                  onChange={(e) => setBorrador(e.target.value)}
-                  className={CLASE_INPUT}
-                  placeholder="Ej.: Manejo de Excel avanzado"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={enVuelo === 'propia'}
-                className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {enVuelo === 'propia' ? 'Agregando...' : 'Agregar'}
-              </button>
-            </form>
-          )}
+              {enVuelo === 'propia' ? 'Agregando...' : 'Agregar'}
+            </button>
+          </form>
+        )}
 
-          {propias.length === 0 && (
-            <li className="py-3 text-sm text-slate-500 dark:text-sena-texto-suave">
-              Aún no has agregado skills propias.
-            </li>
-          )}
+        {error && (
+          <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        )}
 
-          {error && (
-            <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">
-              {error}
-            </p>
-          )}
-
-          {tope && (
-            <p className="mt-3 text-xs text-slate-500 dark:text-sena-texto-suave">
-              Alcanzaste el máximo de {MAX_SKILLS} skills.
-            </p>
-          )}
-        </section>
-      )
-    )
-  }
+        {tope && (
+          <p className="mt-3 text-xs text-slate-500 dark:text-sena-texto-suave">
+            Alcanzaste el máximo de {MAX_SKILLS} skills.
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}

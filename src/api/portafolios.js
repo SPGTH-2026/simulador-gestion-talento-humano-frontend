@@ -1,5 +1,4 @@
 import client from './client'
-import { dispararDescarga, mensajeErrorBlob } from './postulacionesDocumentos'
 
 // API para el módulo de Portafolios (admin: usuarios:gestionar)
 // Usa endpoints de revisión existentes + nuevo /portafolios/{user}
@@ -18,21 +17,5 @@ export const obtenerPortafolio = (userId) =>
 export const estadoRevision = (postulacionId) =>
   client.get(`/revision/postulaciones/${postulacionId}/documentos`).then((res) => res.data.data)
 
-// Descargas en modo revisión (admin)
-export async function descargarDocumentoRevision(postulacionId, documentoId, nombre) {
-  const res = await client.get(
-    `/revision/postulaciones/${postulacionId}/documentos/${documentoId}/archivo`,
-    { responseType: 'blob' },
-  )
-  dispararDescarga(res.data, nombre)
-}
-
-export async function descargarCertificadoRevision(postulacionId, skillId, nombre) {
-  const res = await client.get(
-    `/revision/postulaciones/${postulacionId}/skills/${skillId}/certificado/archivo`,
-    { responseType: 'blob' },
-  )
-  dispararDescarga(res.data, nombre)
-}
-
-export { mensajeErrorBlob }
+// Los PDF se abren en una pestaña nueva con ?inline=1 (Content-Disposition:
+// inline). Las descargas clásicas siguen siendo GET sin ese parámetro.

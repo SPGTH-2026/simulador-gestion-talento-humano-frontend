@@ -5,11 +5,8 @@ import { CODIGO_LIBRETA_MILITAR, formatearTamano } from '../../lib/postulacionDo
 import {
   subirDocumento,
   eliminarDocumento,
-  descargarDocumento,
-  mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
-import DocumentActions from './DocumentActions'
 
 const ESTILO_TARJETA =
   'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
@@ -178,10 +175,10 @@ export default function SeccionDocumentosRequeridos({
                       type="button"
                       disabled={enProceso}
                       onClick={() => {
-                        // Se manejará desde el componente padre via DocumentActions
-                        // Aquí solo emitimos un evento personalizado
+                        // El padre (PanelDocumentosPostulacion) lo abre en una
+                        // pestaña nueva vía el evento document:view.
                         window.dispatchEvent(new CustomEvent('document:view', {
-                          detail: { archivo, codigo }
+                          detail: { documentoId: archivo.id }
                         }))
                       }}
                       className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"

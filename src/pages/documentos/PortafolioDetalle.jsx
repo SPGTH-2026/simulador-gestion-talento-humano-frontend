@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { obtenerPortafolio, estadoRevision, descargarDocumentoRevision, descargarCertificadoRevision, mensajeErrorBlob } from '../../api/portafolios'
-import { Mensaje } from '../../components/ui/Mensaje'
-import { Cargando } from '../../components/ui/Cargando'
-import { IndicadorCompletitud } from '../../components/postulacion/IndicadorCompletitud'
-import { EtiquetaEstado } from '../../components/convocatorias/EtiquetaEstado'
-import { EtiquetaPostulacion } from '../../components/convocatorias/EtiquetaPostulacion'
+import { obtenerPortafolio, estadoRevision } from '../../api/portafolios'
+import { mensajeErrorBlob } from '../../api/postulacionesDocumentos'
+import Mensaje from '../../components/ui/Mensaje'
+import Cargando from '../../components/ui/Cargando'
+import IndicadorCompletitud from '../../components/postulacion/IndicadorCompletitud'
+import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
 import { formatearTamano } from '../../lib/postulacionDocumentos'
-import DocumentActions from '../../components/postulacion/DocumentActions'
-import PdfViewerModal from '../../components/postulacion/PdfViewerModal'
 
 export default function PortafolioDetalle() {
   const { userId } = useParams()
@@ -19,7 +17,6 @@ export default function PortafolioDetalle() {
   const [revision, setRevision] = useState(null)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
-  const [pdfModal, setPdfModal] = useState({ open: false, url: '', title: '' })
 
   const cargarPortafolio = useCallback(async () => {
     setCargando(true)
@@ -62,30 +59,9 @@ export default function PortafolioDetalle() {
     }
   }
 
-  const abrirPdf = (url, title) => {
-    setPdfModal({ open: true, url, title })
-  }
-
-  const cerrarPdf = () => {
-    setPdfModal({ open: false, url: '', title: '' })
-  }
-
-  const descargarDoc = async (postulacionId, documentoId, nombre) => {
-    try {
-      await descargarDocumentoRevision(postulacionId, documentoId, nombre)
-    } catch (e) {
-      const msg = await mensajeErrorBlob(e)
-      alert(msg || 'Error al descargar el documento.')
-    }
-  }
-
-  const descargarCert = async (postulacionId, skillId, nombre) => {
-    try {
-      await descargarCertificadoRevision(postulacionId, skillId, nombre)
-    } catch (e) {
-      const msg = await mensajeErrorBlob(e)
-      alert(msg || 'Error al descargar el certificado.')
-    }
+  const abrirEnPestana = (ruta) => {
+    const separador = ruta.includes('?') ? '&' : '?'
+    window.open(`${ruta}${separador}inline=1`, '_blank', 'noopener')
   }
 
   if (cargando && !portafolio) {
@@ -143,8 +119,7 @@ export default function PortafolioDetalle() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <EtiquetaPostulacion postulacion={p} />
-                      <EtiquetaEstado codigo={p.estado?.codigo} nombre={p.estado?.nombre} />
+                      <EtiquetaPostulacion codigo={p.estado?.codigo} nombre={p.estado?.nombre} />
                       {p.puede_ver_documentos ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                           Documentos disponibles
@@ -245,9 +220,8 @@ export default function PortafolioDetalle() {
                         <>
                           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
                             <button
-                              onClick={() => abrirPdf(
+                              onClick={() => abrirEnPestana(
                                 `/api/revision/postulaciones/${postulacionSel.id}/documentos/${d.archivo.id}/archivo`,
-                                d.archivo.nombre_original
                               )}
                               className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap flex items-center gap-1.5"
                             >
@@ -287,7 +261,7 @@ export default function PortafolioDetalle() {
                     {d.archivo && (
                       <>
                         <button
-                          onClick={() => setPdfModal({ open: true, url: `/api/revision/postulaciones/${postulacionSel.id}/documentos/${d.archivo.id}/archivo`, title: d.archivo.nombre_original })}
+                          onClick={() => abrirEnPestana(`/api/revision/postulaciones/${postulacionSel.id}/documentos/${d.archivo.id}/archivo`)}
                           className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap flex items-center gap-1.5"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -329,7 +303,7 @@ export default function PortafolioDetalle() {
                     </div>
                     {s.certificado && (
                       <button
-                        onClick={() => setPdfModal({ open: true, url: `/api/revision/postulaciones/${postulacionSel.id}/skills/${s.id}/certificado/archivo`, title: s.certificado.nombre_original })}
+                        onClick={() => abrirEnPestana(`/api/revision/postulaciones/${postulacionSel.id}/skills/${s.id}/certificado/archivo`)}
                         className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap flex items-center gap-1.5"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -353,14 +327,6 @@ export default function PortafolioDetalle() {
           )}
         </section>
       )}
-
-      {/* Modal PDF */}
-      <PdfViewerModal
-        isOpen={pdfModal.open}
-        onClose={() => setPdfModal({ open: false, url: '', title: '' })}
-        url={pdfModal.url}
-        title={pdfModal.title}
-      />
     </>
   )
 }
