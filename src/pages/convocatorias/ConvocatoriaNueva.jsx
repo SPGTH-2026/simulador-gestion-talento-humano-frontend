@@ -36,7 +36,6 @@ export default function ConvocatoriaNueva() {
         mensaje: 'Tienes cambios sin guardar. ¿Estás seguro de salir? Se perderán.',
         textoConfirmar: 'Salir',
         textoCancelar: 'Seguir editando',
-        peligro: true,
       })
       if (!ok) return
     }

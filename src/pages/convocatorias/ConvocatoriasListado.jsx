@@ -158,13 +158,11 @@ export default function ConvocatoriasListado() {
   const confirmar = useConfirmacion()
 
   const avanzarEstado = async (convocatoria, { etiqueta, destino }) => {
-    const destructiva = /cerr|elimin|cancel/i.test(etiqueta)
     const ok = await confirmar({
       titulo: etiqueta,
       mensaje: `¿Estás seguro de ${etiqueta.toLowerCase()} "${convocatoria.nombre}"?`,
       textoConfirmar: etiqueta,
       textoCancelar: 'Cancelar',
-      peligro: destructiva,
     })
     if (!ok) return
 
