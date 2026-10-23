@@ -102,9 +102,9 @@ export default function PanelDocumentosPostulacion({
       if (!idPostulacion) return
 
       const ruta = documentoId
-        ? /postulaciones//documentos//archivo
+        ? `/postulaciones/${idPostulacion}/documentos/${documentoId}/archivo?inline=1`
         : skillId
-          ? /postulaciones//skills//certificado/archivo
+          ? `/postulaciones/${idPostulacion}/skills/${skillId}/certificado/archivo?inline=1`
           : null
 
       if (!ruta) return
