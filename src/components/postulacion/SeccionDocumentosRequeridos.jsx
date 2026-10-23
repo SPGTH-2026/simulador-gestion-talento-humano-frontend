@@ -206,7 +206,7 @@ export default function SeccionDocumentosRequeridos({
                   {mostrarSubir && (
                     <button
                       type="button"
-                      disabled={bloqueoLibreta}
+                      disabled={bloqueoLibreta || enProceso}
                       title={bloqueoLibreta ? motivoLibreta : undefined}
                       onClick={() => refsInput.current[codigo]?.click()}
                       className={CLASE_BOTON}
@@ -224,10 +224,11 @@ export default function SeccionDocumentosRequeridos({
                   {puedeEditar && estadoDoc === 'subido' && (
                     <button
                       type="button"
+                      disabled={enProceso}
                       onClick={() => eliminar(archivo, codigo)}
                       className={CLASE_ELIMINAR}
                     >
-                      Eliminar
+                      {enProceso ? 'Eliminando...' : 'Eliminar'}
                     </button>
                   )}
                 </div>

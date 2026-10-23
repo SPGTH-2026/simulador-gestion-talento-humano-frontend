@@ -208,11 +208,6 @@ export default function SeccionAdicionales({
           )
         })}
 
-        {adicionales.length === 0 && (
-          <li className="py-3 text-sm text-slate-500 dark:text-sena-texto-suave">
-            Aún no has agregado documentos adicionales.
-          </li>
-        )}
       </ul>
 
       {puedeAgregar && (
