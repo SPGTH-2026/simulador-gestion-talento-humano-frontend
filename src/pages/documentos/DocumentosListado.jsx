@@ -133,7 +133,7 @@ export default function DocumentosListado() {
                         {a.ficha.codigo}
                       </span>
                     ) : (
-                      <span className="text-xs text-slate-400">Sin ficha</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">Sin ficha</span>
                     )}
                   </td>
                   <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">

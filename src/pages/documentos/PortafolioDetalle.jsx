@@ -363,7 +363,7 @@ export default function PortafolioDetalle() {
                       {d.archivo ? (
                         <span>{d.archivo.nombre_original} · {formatearTamano(d.archivo.tamano_bytes)}</span>
                       ) : (
-                        <span className="text-slate-400">Sin archivo</span>
+                        <span className="text-slate-500 dark:text-slate-400">Sin archivo</span>
                       )}
                     </div>
 
