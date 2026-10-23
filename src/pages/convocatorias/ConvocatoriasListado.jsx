@@ -49,8 +49,9 @@ function formatearFecha(iso) {
 const CLASE_ESQUELETO =
   'animate-pulse rounded-md bg-sena-hundido motion-reduce:animate-none dark:bg-sena-superficie-alta'
 
-// Botones de acción de la tarjeta. La fila es de UNA SOLA línea (nunca se
-// parte en dos). La tarjeta es el contenedor de consultas (@container): cuando
+// Botones de acción de la tarjeta. Si no caben en la tarjeta, el botón que sobra
+// baja a otra línea (flex-wrap): nunca se sale del borde. La tarjeta es el
+// contenedor de consultas (@container): cuando
 // es angosta (menos de 420 px) se ocultan los iconos y se reduce el relleno
 // horizontal, ANTES que tocar el texto. El texto nunca se achica ni se
 // recorta: se queda en 12 px.
@@ -599,7 +600,7 @@ export default function ConvocatoriasListado() {
                     </div>
                   )}
 
-                  <div className="flex flex-nowrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {renderAcciones(c)}
                   </div>
                 </div>
