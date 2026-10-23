@@ -31,18 +31,34 @@ const CLASE_ENLACE_TITULO =
 // Convocatoria: título (enlace al detalle) y debajo "Cargo · Área".
 // El título reserva SIEMPRE dos líneas (aunque el texto ocupe una): así las
 // filas de la tabla quedan a la misma altura.
+//
+// Si la convocatoria está CERRADA el título NO es un enlace: su detalle ya no
+// está disponible para quien no gestiona (el backend responde 404), así que el
+// enlace llevaría a un error. Se muestra como texto plano con el mismo tamaño.
 function BloqueConvocatoria({ convocatoria }) {
   const secundaria = [convocatoria?.cargo, convocatoria?.area].filter(Boolean).join(' · ')
 
+  const cerrada =
+    convocatoria?.estado?.codigo === 'cerrada' || estadoVentana(convocatoria) === 'cerrada'
+
   return (
     <div className="min-w-0">
-      <Link
-        to={`/convocatorias/${convocatoria?.id}`}
-        title={convocatoria?.nombre ?? undefined}
-        className={`line-clamp-2 min-h-[2.75rem] ${CLASE_ENLACE_TITULO}`}
-      >
-        {convocatoria?.nombre ?? '—'}
-      </Link>
+      {cerrada ? (
+        <span
+          title={convocatoria?.nombre ?? undefined}
+          className="line-clamp-2 block min-h-[2.75rem] font-semibold text-slate-700 dark:text-sena-texto"
+        >
+          {convocatoria?.nombre ?? '—'}
+        </span>
+      ) : (
+        <Link
+          to={`/convocatorias/${convocatoria?.id}`}
+          title={convocatoria?.nombre ?? undefined}
+          className={`line-clamp-2 min-h-[2.75rem] ${CLASE_ENLACE_TITULO}`}
+        >
+          {convocatoria?.nombre ?? '—'}
+        </Link>
+      )}
       {secundaria && (
         <p
           title={secundaria}

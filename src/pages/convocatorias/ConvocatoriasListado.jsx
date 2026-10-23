@@ -80,9 +80,12 @@ export default function ConvocatoriasListado() {
   // El aspirante ve una sola acción por tarjeta: "Ver información" (navega al
   // detalle siempre; el 404 de las no publicadas lo absorbe la vista).
   const esAspirante = user?.role === 'aspirante'
-  // El identificador (CONV-AAAA-NNN) es un dato de gestión: solo lo ve la
-  // lista blanca (instructor, super admin y el subrol gestor_convocatorias).
-  const muestraCodigo = veIdentificador(user, can)
+  // Gestión REAL: permiso + lista blanca (instructor, super admin y el subrol
+  // gestor_convocatorias). El aprendiz con subrol 'general' tiene el permiso
+  // 'convocatorias:gestionar' pero NO es gestión. Decide dos cosas:
+  //  - el identificador (CONV-AAAA-NNN), dato de gestión;
+  //  - qué estados ve la lista: las cerradas solo las ve la gestión.
+  const gestionaEstricto = veIdentificador(user, can)
 
   const [convocatorias, setConvocatorias] = useState([])
   const [fichas, setFichas] = useState([])
@@ -307,14 +310,14 @@ export default function ConvocatoriasListado() {
               <input
                 type="search"
                 placeholder={
-                  muestraCodigo
+                  gestionaEstricto
                     ? 'Buscar por nombre, código o cargo...'
                     : 'Buscar por nombre o cargo...'
                 }
                 value={termino}
                 onChange={(e) => setTermino(e.target.value)}
                 aria-label={
-                  muestraCodigo
+                  gestionaEstricto
                     ? 'Buscar convocatorias por nombre, código o cargo'
                     : 'Buscar convocatorias por nombre o cargo'
                 }
@@ -323,7 +326,7 @@ export default function ConvocatoriasListado() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
-              {gestiona && (
+              {gestionaEstricto && (
                 <select
                   value={filtroEstado}
                   onChange={(e) => {
@@ -463,9 +466,11 @@ export default function ConvocatoriasListado() {
                     identificador: es un dato de gestión. */}
                 <div className="flex items-start justify-between gap-3">
                   <span className="min-w-0 truncate pt-0.5 font-mono text-xs font-medium tracking-wide text-slate-500 dark:text-sena-texto-suave">
-                    {muestraCodigo ? c.codigo : null}
+                    {gestionaEstricto ? c.codigo : null}
                   </span>
-                  <EtiquetaEstado codigo={c.estado?.codigo} nombre={c.estado?.nombre} />
+                  {(gestionaEstricto || c.estado?.codigo !== 'cerrada') && (
+                    <EtiquetaEstado codigo={c.estado?.codigo} nombre={c.estado?.nombre} />
+                  )}
                 </div>
 
                 {/* 2) Identidad: título a dos líneas como máximo (para que las
