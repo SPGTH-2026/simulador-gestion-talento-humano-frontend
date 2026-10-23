@@ -13,6 +13,7 @@ import { abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulaciones
 import { useAuth } from '../../auth/useAuth'
 import Mensaje from '../../components/ui/Mensaje'
 import Cargando from '../../components/ui/Cargando'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 import IndicadorCompletitud from '../../components/postulacion/IndicadorCompletitud'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
 import { IconoOjo, IconoBasura, IconoDescarga, BotonIcono } from '../../components/convocatorias/Iconos'
@@ -131,28 +132,50 @@ export default function PortafolioDetalle() {
     }
   }
 
-  const confirmarEliminar = (clave, mensaje, accion, textoOk) => {
-    if (!window.confirm(mensaje)) return
+  const confirmar = useConfirmacion()
+
+  // Pide confirmación con el diálogo del sistema y, si acepta, ejecuta la acción.
+  const confirmarEliminar = async (clave, { titulo, mensaje, textoConfirmar }, accion, textoOk) => {
+    const ok = await confirmar({
+      titulo,
+      mensaje,
+      textoConfirmar,
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return
     ejecutar(clave, accion, textoOk)
   }
 
   const eliminarRequerido = (d) => confirmarEliminar(
     `eliminar-${d.archivo.id}`,
-    `¿Eliminar "${d.archivo.nombre_original}" de ${postulacionSel.convocatoria?.nombre ?? 'esta postulación'}? Esta acción no se puede deshacer.`,
+    {
+      titulo: 'Eliminar documento',
+      mensaje: `¿Estás seguro de eliminar "${d.archivo.nombre_original}"? Esta acción no se puede deshacer.`,
+      textoConfirmar: 'Eliminar',
+    },
     () => eliminarDocumentoGestion(postulacionSel.id, d.archivo.id),
     'Documento eliminado.',
   )
 
   const eliminarAdicional = (d) => confirmarEliminar(
     `eliminar-${d.archivo?.id}`,
-    `¿Eliminar el adicional "${d.titulo}"? Esta acción no se puede deshacer.`,
+    {
+      titulo: 'Eliminar documento adicional',
+      mensaje: `¿Estás seguro de eliminar el adicional "${d.titulo}"? Esta acción no se puede deshacer.`,
+      textoConfirmar: 'Eliminar',
+    },
     () => eliminarDocumentoGestion(postulacionSel.id, d.id),
     'Documento adicional eliminado.',
   )
 
   const quitarCert = (s) => confirmarEliminar(
     `quitar-${s.id}`,
-    `¿Quitar el certificado de "${s.nombre}"? La skill se conserva.`,
+    {
+      titulo: 'Quitar certificado',
+      mensaje: `¿Estás seguro de quitar el certificado de "${s.nombre}"? La skill se conserva.`,
+      textoConfirmar: 'Quitar',
+    },
     () => quitarCertificadoGestion(postulacionSel.id, s.id),
     'Certificado quitado.',
   )

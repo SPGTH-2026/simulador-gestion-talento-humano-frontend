@@ -7,6 +7,7 @@ import {
 } from '../../api/convocatorias'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import ConvocatoriaWizard from '../../components/convocatorias/ConvocatoriaWizard'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 
 // Borrador y publicada se editan completos; en_proceso y cerrada son de solo
 // lectura. Al publicar desde aquí se guarda (PATCH) y, si todo va bien, se
@@ -57,8 +58,19 @@ export default function ConvocatoriaEditar() {
     return () => window.removeEventListener('beforeunload', avisar)
   }, [sucio])
 
-  const volver = () => {
-    if (sucio && !window.confirm('Tienes cambios sin guardar. ¿Salir de todos modos?')) return
+  const confirmar = useConfirmacion()
+
+  const volver = async () => {
+    if (sucio) {
+      const ok = await confirmar({
+        titulo: 'Cambios sin guardar',
+        mensaje: 'Tienes cambios sin guardar. ¿Estás seguro de salir? Se perderán.',
+        textoConfirmar: 'Salir',
+        textoCancelar: 'Seguir editando',
+        peligro: true,
+      })
+      if (!ok) return
+    }
     navigate('/convocatorias')
   }
 
