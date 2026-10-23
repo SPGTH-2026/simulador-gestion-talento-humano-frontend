@@ -10,6 +10,7 @@ import {
   eliminarDocumento,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
@@ -88,8 +89,20 @@ export default function SeccionDocumentosRequeridos({
     }
   }
 
+  const confirmar = useConfirmacion()
+
   const eliminar = async (documento, codigo) => {
-    if (!window.confirm('¿Eliminar este documento? Podrás volver a subirlo.')) return
+    const nombre = documento.archivo?.nombre_original
+    const ok = await confirmar({
+      titulo: 'Eliminar documento',
+      mensaje: nombre
+        ? `¿Estás seguro de eliminar "${nombre}"? Podrás volver a subirlo.`
+        : '¿Estás seguro de eliminar este documento? Podrás volver a subirlo.',
+      textoConfirmar: 'Eliminar',
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return
 
     marcarEnVuelo(codigo, true)
     limpiarError(codigo)

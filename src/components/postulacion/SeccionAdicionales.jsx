@@ -13,6 +13,7 @@ import {
   eliminarDocumento,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
@@ -111,8 +112,17 @@ export default function SeccionAdicionales({
     }
   }
 
+  const confirmar = useConfirmacion()
+
   const eliminar = async (adicional) => {
-    if (!window.confirm('¿Eliminar este documento adicional?')) return
+    const ok = await confirmar({
+      titulo: 'Eliminar documento adicional',
+      mensaje: `¿Estás seguro de eliminar "${adicional.titulo}"?`,
+      textoConfirmar: 'Eliminar',
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return
     marcarEnVuelo(adicional.id, true)
     try {
       await eliminarDocumento(await pidSeguro(), adicional.id)

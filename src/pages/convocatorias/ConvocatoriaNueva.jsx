@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { crearConvocatoria, cambiarEstadoConvocatoria } from '../../api/convocatorias'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import ConvocatoriaWizard from '../../components/convocatorias/ConvocatoriaWizard'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 
 // Crear es el único caso donde el borrador nace sin id: el primer guardado
 // exige el nombre y, al crearse, se continúa en /convocatorias/:id/editar
@@ -26,8 +27,18 @@ export default function ConvocatoriaNueva() {
     return () => window.removeEventListener('beforeunload', avisar)
   }, [sucio])
 
-  const volver = () => {
-    if (sucio && !window.confirm('Tienes cambios sin guardar. ¿Salir de todos modos?')) return
+  const confirmar = useConfirmacion()
+
+  const volver = async () => {
+    if (sucio) {
+      const ok = await confirmar({
+        titulo: 'Cambios sin guardar',
+        mensaje: 'Tienes cambios sin guardar. ¿Estás seguro de salir? Se perderán.',
+        textoConfirmar: 'Salir',
+        textoCancelar: 'Seguir editando',
+      })
+      if (!ok) return
+    }
     navigate('/convocatorias')
   }
 

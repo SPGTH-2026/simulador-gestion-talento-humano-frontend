@@ -23,6 +23,7 @@ import {
 import Boton from '../../components/ui/Boton'
 import { MensajeError } from '../../components/ui/Mensaje'
 import Tarjeta from '../../components/ui/Tarjeta'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 import { pasoDeEstado, veIdentificador } from '../../lib/convocatorias'
 import { textoCierraPronto } from '../../lib/ventanaPostulacion'
 import {
@@ -171,8 +172,16 @@ export default function ConvocatoriasListado() {
     return () => control.abort()
   }, [pagina, busqueda, filtroEstado, filtroFicha, recarga])
 
+  const confirmar = useConfirmacion()
+
   const avanzarEstado = async (convocatoria, { etiqueta, destino }) => {
-    if (!window.confirm(`¿${etiqueta} de "${convocatoria.nombre}"?`)) return
+    const ok = await confirmar({
+      titulo: etiqueta,
+      mensaje: `¿Estás seguro de ${etiqueta.toLowerCase()} "${convocatoria.nombre}"?`,
+      textoConfirmar: etiqueta,
+      textoCancelar: 'Cancelar',
+    })
+    if (!ok) return
 
     setAccionandoId(convocatoria.id)
     setError('')

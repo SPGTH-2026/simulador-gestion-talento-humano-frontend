@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { enviarPostulacion } from '../../api/postulaciones'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
@@ -31,15 +32,18 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
   const avisoSexo = Boolean(estado.requiere_sexo)
   const hayPendientes = pendientes.length > 0 || avisoSexo
 
+  const confirmar = useConfirmacion()
+
   const enviar = async () => {
     if (enviando) return
-    if (
-      !window.confirm(
-        '¿Enviar tu postulación? Después de enviarla quedará marcada como "Postulada".',
-      )
-    ) {
-      return
-    }
+    const ok = await confirmar({
+      titulo: 'Enviar postulación',
+      mensaje:
+        '¿Estás seguro de enviar tu postulación? Después de enviarla quedará marcada como "Postulada".',
+      textoConfirmar: 'Enviar',
+      textoCancelar: 'Cancelar',
+    })
+    if (!ok) return
 
     setEnviando(true)
     setFaltantes(null)
