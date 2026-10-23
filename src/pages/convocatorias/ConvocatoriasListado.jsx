@@ -24,6 +24,7 @@ import Cargando from '../../components/ui/Cargando'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import { MensajeError } from '../../components/ui/Mensaje'
 import Tarjeta from '../../components/ui/Tarjeta'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 import { CLASE_INPUT } from '../../lib/estilos'
 
 // El candado avanza un paso del ciclo de vida. La etiqueta depende del estado
@@ -154,8 +155,18 @@ export default function ConvocatoriasListado() {
     return () => control.abort()
   }, [pagina, busqueda, filtroEstado, filtroFicha, recarga])
 
+  const confirmar = useConfirmacion()
+
   const avanzarEstado = async (convocatoria, { etiqueta, destino }) => {
-    if (!window.confirm(`¿${etiqueta} de "${convocatoria.nombre}"?`)) return
+    const destructiva = /cerr|elimin|cancel/i.test(etiqueta)
+    const ok = await confirmar({
+      titulo: etiqueta,
+      mensaje: `¿Estás seguro de ${etiqueta.toLowerCase()} "${convocatoria.nombre}"?`,
+      textoConfirmar: etiqueta,
+      textoCancelar: 'Cancelar',
+      peligro: destructiva,
+    })
+    if (!ok) return
 
     setAccionandoId(convocatoria.id)
     setError('')

@@ -17,6 +17,7 @@ import EstadoVacio from '../../components/ui/EstadoVacio'
 import Etiqueta from '../../components/ui/Etiqueta'
 import { MensajeError, MensajeExito } from '../../components/ui/Mensaje'
 import Tarjeta from '../../components/ui/Tarjeta'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 import {
   CLASE_FILA,
   CLASE_INPUT,
@@ -132,8 +133,17 @@ export default function FichasListado() {
     }
   }
 
+  const confirmar = useConfirmacion()
+
   const eliminar = async (ficha) => {
-    if (!window.confirm(`¿Eliminar la ficha "${ficha.codigo}"?`)) return
+    const ok = await confirmar({
+      titulo: 'Eliminar ficha',
+      mensaje: `¿Estás seguro de eliminar la ficha "${ficha.codigo}"?`,
+      textoConfirmar: 'Eliminar',
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return
 
     try {
       await eliminarFicha(ficha.id)
@@ -164,7 +174,14 @@ export default function FichasListado() {
   }
 
   const quitar = async (ficha, instructor) => {
-    if (!window.confirm(`¿Quitar a ${instructor.name} de la ficha "${ficha.codigo}"?`)) return
+    const ok = await confirmar({
+      titulo: 'Quitar instructor',
+      mensaje: `¿Estás seguro de quitar a ${instructor.name} de la ficha "${ficha.codigo}"?`,
+      textoConfirmar: 'Quitar',
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return
 
     try {
       await quitarInstructor(ficha.id, instructor.id)

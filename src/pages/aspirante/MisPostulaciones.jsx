@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { listaMisPostulaciones, cambiarEstadoPostulacion } from '../../api/postulaciones'
 import { mensajeError } from '../../api/mensajeError'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
 import { BotonIcono, IconoOjo } from '../../components/convocatorias/Iconos'
@@ -58,15 +59,31 @@ export default function MisPostulaciones() {
   // Descarta un borrador o retira una postulada (mismo destino 'retirada') o
   // reabre una retirada (destino 'borrador'). Devuelve la postulación actualizada
   // o null si falló o el usuario canceló.
+  const confirmar = useConfirmacion()
+
   const cambiarEstado = async (postulacion, destino, accion) => {
     const nombre = postulacion.convocatoria?.nombre ?? 'la convocatoria'
-    const pregunta =
-      accion === 'descartar'
-        ? `¿Descartar tu borrador de postulación a "${nombre}"? Podrás reabrirlo.`
-        : accion === 'retirar'
-          ? `¿Retirar tu postulación a "${nombre}"?`
-          : `¿Reabrir tu postulación a "${nombre}"?`
-    if (!window.confirm(pregunta)) return null
+    const opciones = {
+      descartar: {
+        titulo: 'Descartar borrador',
+        mensaje: `¿Estás seguro de descartar tu borrador de postulación a "${nombre}"? Podrás reabrirlo.`,
+        textoConfirmar: 'Descartar',
+        peligro: true,
+      },
+      retirar: {
+        titulo: 'Retirar postulación',
+        mensaje: `¿Estás seguro de retirar tu postulación a "${nombre}"?`,
+        textoConfirmar: 'Retirar',
+        peligro: true,
+      },
+      reabrir: {
+        titulo: 'Reabrir postulación',
+        mensaje: `¿Estás seguro de reabrir tu postulación a "${nombre}"?`,
+        textoConfirmar: 'Reabrir',
+      },
+    }[accion]
+    const ok = await confirmar({ textoCancelar: 'Cancelar', ...opciones })
+    if (!ok) return null
 
     setAccionandoId(postulacion.id)
     setError('')

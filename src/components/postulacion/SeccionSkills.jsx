@@ -8,6 +8,7 @@ import {
   quitarCertificado,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 import { IconoOjo } from '../convocatorias/Iconos'
 
 const ESTILO_TARJETA =
@@ -251,9 +252,18 @@ export default function SeccionSkills({
     }
   }
 
+  const confirmar = useConfirmacion()
+
   const quitar = async (skill) => {
     if (!editable || enVuelo) return
-    if (!window.confirm(`¿Quitar la skill "${skill.nombre}"?`)) return
+    const ok = await confirmar({
+      titulo: 'Quitar skill',
+      mensaje: `¿Estás seguro de quitar la skill "${skill.nombre}"?`,
+      textoConfirmar: 'Quitar',
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return
     setEnVuelo(`skill-${skill.id}`)
     setError('')
     try {
@@ -287,7 +297,14 @@ export default function SeccionSkills({
 
   const quitarCertificadoDe = async (skill) => {
     if (!editable || enVuelo) return
-    if (!window.confirm('¿Quitar el certificado de esta skill? La skill se conserva.')) return
+    const ok = await confirmar({
+      titulo: 'Quitar certificado',
+      mensaje: `¿Estás seguro de quitar el certificado de "${skill.nombre}"? La skill se conserva.`,
+      textoConfirmar: 'Quitar',
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return
     setEnVuelo(`cert-${skill.id}`)
     setError('')
     try {
