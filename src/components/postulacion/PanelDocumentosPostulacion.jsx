@@ -6,10 +6,10 @@ import {
   abrirArchivoEnPestana,
   mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
-import { listaParametros } from '../../api/convocatorias'
 import { mensajeError } from '../../api/mensajeError'
 import { estadoVentana } from '../../lib/ventanaPostulacion'
 import { CODIGO_LIBRETA_MILITAR, motivoNoEditable } from '../../lib/postulacionDocumentos'
+import { CLASE_CAJA_SUAVE } from '../../lib/estilos'
 import IndicadorCompletitud from './IndicadorCompletitud'
 import SeccionSexo from './SeccionSexo'
 import SeccionDocumentosRequeridos from './SeccionDocumentosRequeridos'
@@ -22,9 +22,8 @@ import SeccionEnviarPostulacion from './SeccionEnviarPostulacion'
 // Funciona en dos escenarios:
 //   1) SIN postulación (detalle de la convocatoria): dibuja las secciones desde
 //      detalle.documentos / detalle.skills con todo en pendiente / No. La primera
-//      acción de guardado dispara el BORRADOR SILENCIOSO (POST postularse; si la
-//      postulación estuviera retirada, PATCH estado 'borrador'), relee el estado
-//      y continúa la acción. Solo mirar o elegir el sexo NO crea nada.
+//      acción de guardado dispara el BORRADOR SILENCIOSO (POST postularse), relee
+//      el estado y continúa la acción. Solo mirar o elegir el sexo NO crea nada.
 //   2) CON postulación (paso /postulaciones/:id/documentos): usa el GET de estado
 //      como fuente de verdad.
 //
@@ -47,8 +46,8 @@ export default function PanelDocumentosPostulacion({
   const [estado, setEstado] = useState(null)
   const [error, setError] = useState('')
   const [perfil, setPerfil] = useState(null)
-  const [catalogo, setCatalogo] = useState([])
-  const [reabriendo, setReabriendo] = useState(false)
+  const [reactivando, setReactivando] = useState(false)
+  const [aviso, setAviso] = useState('')
   // Promesa de creación en vuelo: una sola creación de borrador a la vez.
   const creandoRef = useRef(null)
 
@@ -93,19 +92,6 @@ export default function PanelDocumentosPostulacion({
     }
   }, [])
 
-  // Catálogo general de skills (grupo B). El aspirante tiene 'convocatorias:ver'.
-  useEffect(() => {
-    let activo = true
-    listaParametros('skill_catalogo')
-      .then((res) => {
-        if (activo) setCatalogo(res?.data ?? [])
-      })
-      .catch(() => {})
-    return () => {
-      activo = false
-    }
-  }, [])
-
   // Un solo escuchador para los botones "Ver" de TODAS las secciones (documentos
   // requeridos, adicionales y certificados de skills): el archivo se pide con la
   // sesión y se abre en una pestaña nueva desde el blob. Si falla (archivo
@@ -116,9 +102,9 @@ export default function PanelDocumentosPostulacion({
       if (!idPostulacion) return
 
       const ruta = documentoId
-        ? `/postulaciones/${idPostulacion}/documentos/${documentoId}/archivo`
+        ? `/postulaciones/${idPostulacion}/documentos/${documentoId}/archivo?inline=1`
         : skillId
-          ? `/postulaciones/${idPostulacion}/skills/${skillId}/certificado/archivo`
+          ? `/postulaciones/${idPostulacion}/skills/${skillId}/certificado/archivo?inline=1`
           : null
 
       if (!ruta) return
@@ -136,7 +122,6 @@ export default function PanelDocumentosPostulacion({
     window.addEventListener('document:view', abrirEnPestana)
     return () => window.removeEventListener('document:view', abrirEnPestana)
   }, [idPostulacion])
-
   const recargar = useCallback(() => {
     if (!idPostulacion) return Promise.resolve()
     return estadoDocumentos(idPostulacion)
@@ -148,20 +133,17 @@ export default function PanelDocumentosPostulacion({
   }, [idPostulacion, aplicarEstado])
 
   // Borrador silencioso: garantiza una postulación y devuelve su id + el estado
-  // fresco. Si ya existe (y no está retirada) no hace nada. Una sola creación en
-  // vuelo (promesa compartida): si falla, la acción que la pidió muestra el error
-  // y NO sube nada.
+  // fresco. Si ya existe (también si está retirada: editar no cambia el estado)
+  // no hace nada. Una sola creación en vuelo: si falla, la acción que la pidió
+  // muestra el error y NO sube nada.
   const asegurar = useCallback(() => {
-    const reabrir = Boolean(idPostulacion) && estado?.postulacion?.estado?.codigo === 'retirada'
-    if (idPostulacion && !reabrir) {
+    if (idPostulacion) {
       return Promise.resolve({ postulacionId: idPostulacion, estado })
     }
     if (creandoRef.current) return creandoRef.current
 
     const promesa = (async () => {
-      const postulacion = idPostulacion
-        ? await cambiarEstadoPostulacion(idPostulacion, 'borrador')
-        : await postularse(convocatoria?.id)
+      const postulacion = await postularse(convocatoria?.id)
       onPostulacionCreada?.(postulacion)
       setIdPostulacion(postulacion.id)
       const fresco = await estadoDocumentos(postulacion.id)
@@ -176,17 +158,21 @@ export default function PanelDocumentosPostulacion({
     return promesa
   }, [idPostulacion, estado, convocatoria, onPostulacionCreada, aplicarEstado])
 
-  const reabrirPostulacion = async () => {
-    if (reabriendo) return
-    setReabriendo(true)
+  // "Volver a postularme": PATCH estado 'postulada' (retirada -> postulada). El
+  // backend valida ventana y obligatorios; si faltan, la postulación queda retirada.
+  const volverAPostularme = async () => {
+    if (reactivando) return
+    setReactivando(true)
     setError('')
+    setAviso('')
     try {
-      await cambiarEstadoPostulacion(idPostulacion, 'borrador')
+      await cambiarEstadoPostulacion(idPostulacion, 'postulada')
       await recargar()
+      setAviso('Tu postulación quedó postulada de nuevo.')
     } catch (e) {
       setError(mensajeError(e))
     } finally {
-      setReabriendo(false)
+      setReactivando(false)
     }
   }
 
@@ -214,7 +200,7 @@ export default function PanelDocumentosPostulacion({
     return {
       postulacion: { id: null, estado: { codigo: null, nombre: null } },
       convocatoria: convocatoria
-        ? { id: convocatoria.id, nombre: convocatoria.nombre, codigo: convocatoria.codigo }
+        ? { id: convocatoria.id, nombre: convocatoria.nombre }
         : null,
       ventana,
       editable: ventana === 'abierta',
@@ -254,6 +240,15 @@ export default function PanelDocumentosPostulacion({
   const esBorrador = codigo === 'borrador'
   const esRetirada = codigo === 'retirada'
   const editableSexo = ventana === 'abierta'
+  const faltan = (vista.documentos ?? [])
+    .filter((d) => d.obligatorio && d.estado !== 'subido' && d.estado !== 'no_aplica')
+    .map((d) => d.parametro.nombre)
+  const puedeVolver = editable && faltan.length === 0
+  const motivoVolver = !editable
+    ? motivo
+    : faltan.length > 0
+      ? `Falta subir: ${faltan.join(', ')}.`
+      : ''
 
   const alGuardarSexo = (sexoNuevo) => {
     setPerfil((prev) => ({ ...(prev ?? {}), sexo: sexoNuevo }))
@@ -271,33 +266,24 @@ export default function PanelDocumentosPostulacion({
         </p>
       )}
 
-      {motivo && (
+      {esRetirada && (
+        <p className="rounded bg-sena-cielo/20 p-3 text-sm text-slate-700 dark:bg-sena-superficie-alta dark:text-sena-texto-suave">
+          {editable
+            ? 'Tu postulación está retirada. Puedes seguir editando tus documentos y, cuando quieras, vuelve a postularte al final de esta página.'
+            : motivo}
+        </p>
+      )}
+
+      {!esRetirada && motivo && (
         <p className="rounded bg-sena-cielo/20 p-3 text-sm text-slate-700 dark:bg-sena-superficie-alta dark:text-sena-texto-suave">
           {motivo}
         </p>
       )}
 
-      {esRetirada && (
-        <div className="flex flex-wrap items-center gap-2 rounded bg-slate-50 p-3 dark:bg-sena-superficie-alta">
-          <button
-            type="button"
-            disabled={reabriendo || ventana !== 'abierta'}
-            title={ventana !== 'abierta' ? motivo : undefined}
-            onClick={reabrirPostulacion}
-            className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {reabriendo ? 'Reabriendo...' : 'Reabrir postulación'}
-          </button>
-          {onVerDocumentos && (
-            <button
-              type="button"
-              onClick={() => onVerDocumentos(vista.postulacion.id)}
-              className="rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie"
-            >
-              Ver documentos
-            </button>
-          )}
-        </div>
+      {aviso && (
+        <p role="status" className="rounded bg-sena-cielo/30 p-3 text-sm text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
+          {aviso}
+        </p>
       )}
 
       <IndicadorCompletitud estado={vista} />
@@ -320,7 +306,6 @@ export default function PanelDocumentosPostulacion({
 
       <SeccionSkills
         vista={vista}
-        catalogo={catalogo}
         editable={editable}
         asegurar={asegurar}
         onRecargar={recargar}
@@ -342,6 +327,36 @@ export default function PanelDocumentosPostulacion({
           onError={setError}
           onRecargar={recargar}
         />
+      )}
+
+      {esRetirada && (
+        <div className={`${CLASE_CAJA_SUAVE} flex flex-wrap items-center justify-between gap-3 p-3`}>
+          <p className="text-xs text-slate-600 dark:text-sena-texto-suave">
+            {puedeVolver
+              ? 'Tus documentos obligatorios están completos.'
+              : motivoVolver}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {onVerDocumentos && (
+              <button
+                type="button"
+                onClick={() => onVerDocumentos(vista.postulacion.id)}
+                className="rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie"
+              >
+                Ver documentos
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={!puedeVolver || reactivando}
+              title={puedeVolver ? undefined : motivoVolver}
+              onClick={volverAPostularme}
+              className="rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {reactivando ? 'Postulando...' : 'Volver a postularme'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

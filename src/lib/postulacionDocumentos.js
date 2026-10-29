@@ -40,7 +40,7 @@ export function motivoNoEditable(estado) {
   if (estado.motivo_edicion) return estado.motivo_edicion
 
   if (estado.postulacion?.estado?.codigo === 'retirada') {
-    return 'Tu postulación está retirada. Reábrela para editar tus documentos.'
+    return 'Tu postulación está retirada. Puedes consultar tus documentos.'
   }
 
   switch (estado.ventana) {

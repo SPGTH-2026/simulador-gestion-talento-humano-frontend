@@ -26,7 +26,6 @@ export default function ConvocatoriaEditar() {
   const [publicando, setPublicando] = useState(false)
   const [error, setError] = useState(location.state?.error ?? '')
   const [errores, setErrores] = useState(location.state?.errores ?? {})
-  const [info, setInfo] = useState('')
   const [sucio, setSucio] = useState(false)
 
   useEffect(() => {
@@ -76,14 +75,15 @@ export default function ConvocatoriaEditar() {
   const guardar = async (datos) => {
     setGuardando(true)
     setError('')
-    setInfo('')
     setErrores({})
 
     try {
-      const res = await actualizarConvocatoria(id, datos)
-      setDetalle(res.data)
+      await actualizarConvocatoria(id, datos)
       setSucio(false)
-      setInfo('Se guardaron los cambios.')
+      // Los cambios ya están guardados: se vuelve al listado, que es donde
+      // el gestor sigue trabajando (estado, cierre, edición de otra
+      // convocatoria).
+      navigate('/convocatorias', { replace: true })
     } catch (e) {
       setErrores(erroresDeCampo(e))
       setError(mensajeError(e))
@@ -95,7 +95,6 @@ export default function ConvocatoriaEditar() {
   const publicar = async (datos) => {
     setPublicando(true)
     setError('')
-    setInfo('')
     setErrores({})
 
     try {
@@ -148,12 +147,6 @@ export default function ConvocatoriaEditar() {
 
   return (
     <div className="flex flex-col gap-4">
-      {info && (
-        <p className="rounded bg-green-100 p-3 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
-          {info}
-        </p>
-      )}
-
       <ConvocatoriaWizard
         titulo="Editar convocatoria"
         valoresIniciales={detalle}

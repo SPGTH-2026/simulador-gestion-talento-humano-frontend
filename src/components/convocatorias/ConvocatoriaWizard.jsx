@@ -6,7 +6,6 @@ import {
   esObligatorioFijo,
   etiquetasDocumento,
 } from '../../lib/documentosConvocatoria'
-import Chip from './Chip'
 import EtiquetaEstado from './EtiquetaEstado'
 import Boton from '../ui/Boton'
 import Campo from '../ui/Campo'
@@ -19,8 +18,9 @@ const ETAPAS = [
   { numero: 1, nombre: 'Información general' },
   { numero: 2, nombre: 'Descripción' },
   { numero: 3, nombre: 'Requisitos' },
-  { numero: 4, nombre: 'Fechas' },
-  { numero: 5, nombre: 'Documentos' },
+  { numero: 4, nombre: 'Skills' },
+  { numero: 5, nombre: 'Fechas' },
+  { numero: 6, nombre: 'Documentos' },
 ]
 
 // A qué etapa pertenece cada campo, para saltar al primer error del servidor.
@@ -49,22 +49,37 @@ const ETAPA_DE_CAMPO = {
   experiencia: 3,
   competencias: 3,
   conocimientos_especificos: 3,
-  skills: 3,
-  fecha_apertura: 4,
-  fecha_cierre: 4,
-  fecha_evaluacion: 4,
-  documentos: 5,
+  skills: 4,
+  fecha_apertura: 5,
+  fecha_cierre: 5,
+  fecha_evaluacion: 5,
+  documentos: 6,
 }
 
 // Campos que se marcan en rojo al pulsar "Siguiente" (no bloquean el avance);
-// el servidor los exige de verdad al publicar.
+// el servidor los exige de verdad al publicar. La etapa de Skills (4) es
+// opcional: no marca ningún campo.
 const OBLIGATORIOS_ETAPA = {
   1: ['nombre', 'cargo', 'area'],
   2: ['descripcion'],
-  4: ['fecha_apertura', 'fecha_cierre'],
+  5: ['fecha_apertura', 'fecha_cierre'],
 }
 
 const TEMAS_CLASIFICACION = ['tipo_convocatoria', 'tipo_empleo', 'tipo_contrato', 'modalidad']
+
+// Última etapa del asistente (Documentos).
+const ULTIMA_ETAPA = 6
+
+// Tope de skills de una convocatoria: el mismo que impone el backend
+// (config/convocatorias.php: skills_max).
+const MAX_SKILLS = 20
+
+// Longitud máxima del nombre de una skill (skills_max del backend).
+const MAX_SKILL_LONGITUD = 100
+
+// Botón de "Quitar" de una skill de texto libre.
+const CLASE_QUITAR =
+  'rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50'
 
 function soloDigitos(valor) {
   return String(valor).replace(/\D/g, '')
@@ -100,7 +115,11 @@ function formInicial(valores) {
     fecha_apertura: valores?.fecha_apertura?.slice(0, 10) ?? '',
     fecha_cierre: valores?.fecha_cierre?.slice(0, 10) ?? '',
     fecha_evaluacion: valores?.fecha_evaluacion?.slice(0, 10) ?? '',
-    skills: Array.isArray(valores?.skills) ? valores.skills : [],
+    // Las skills se guardan como {nombre, parametro_id}: parametro_id apunta
+    // al catálogo (tema skill_catalogo) y es null en el texto libre. Al
+    // editar se lee 'skills_detalle' (con el id del catálogo); si la
+    // convocatoria es vieja y solo trae 'skills' (nombres), se usa esa lista.
+    skills: normalizarSkillsIniciales(valores),
     // En creación se siembran los obligatorios fijos (el backend los agrega
     // igual); en edición mandan los documentos reales del backend. Sembrarlos
     // aquí no cuenta como cambio: es el estado inicial del formulario.
@@ -116,6 +135,37 @@ function indexarCatalogos(grupos) {
     mapa[grupo.tema] = grupo.parametros ?? []
   }
   return mapa
+}
+
+// Skills del formulario: siempre {nombre, parametro_id}. Acepta las tres
+// formas que pueden venir del backend (skills_detalle, skills con objetos o
+// skills con nombres sueltos) para que una convocatoria vieja siga editable.
+function normalizarSkillsIniciales(valores) {
+  const detalle = Array.isArray(valores?.skills_detalle) ? valores.skills_detalle : null
+
+  if (detalle) {
+    return detalle
+      .filter((s) => s && s.nombre)
+      .map((s) => ({
+        nombre: String(s.nombre).trim(),
+        parametro_id: s.parametro_id ?? null,
+      }))
+  }
+
+  const simples = Array.isArray(valores?.skills) ? valores.skills : []
+
+  return simples
+    .map((s) => (typeof s === 'string' ? { nombre: s.trim(), parametro_id: null } : s))
+    .filter((s) => s && s.nombre)
+    .map((s) => ({ nombre: String(s.nombre).trim(), parametro_id: s.parametro_id ?? null }))
+}
+
+// Clave de comparación de una skill: sin mayúsculas ni espacios sobrantes.
+function claveSkill(nombre) {
+  return String(nombre ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase()
 }
 
 export default function ConvocatoriaWizard({
@@ -214,15 +264,30 @@ export default function ConvocatoriaWizard({
   }, [form])
 
   // Si el servidor devuelve errores por campo, salta a la etapa del primero.
+  // Los errores de skills llegan con la clave 'skills' (conjunto) o 'skills.N'
+  // (un ítem): se busca la etapa por la clave base.
   useEffect(() => {
     const campos = Object.keys(errores ?? {})
     if (campos.length === 0) return
-    const destino = ETAPA_DE_CAMPO[campos[0]]
+    const base = campos[0].split('.')[0]
+    const destino = ETAPA_DE_CAMPO[campos[0]] ?? ETAPA_DE_CAMPO[base]
     if (destino) setEtapa(destino)
     // Solo cuando cambian los errores entrantes.
   }, [errores])
 
   const errorDe = (campo) => erroresLocales[campo] ?? errores[campo]
+
+  // Los errores de skills se agrupan: pueden venir en 'skills' y en
+  // 'skills.0', 'skills.1'... (el backend los separa por conjunto e ítem).
+  const errorDeSkills = useMemo(() => {
+    const partes = []
+    for (const [campo, mensaje] of Object.entries(errores ?? {})) {
+      if (campo !== 'skills' && !campo.startsWith('skills.')) continue
+      if (Array.isArray(mensaje)) partes.push(...mensaje.filter(Boolean))
+      else if (mensaje) partes.push(String(mensaje))
+    }
+    return partes.join(' ')
+  }, [errores])
 
   const limpiarErrorLocal = (campo) => {
     setErroresLocales((prev) => {
@@ -245,6 +310,8 @@ export default function ConvocatoriaWizard({
     limpiarErrorLocal(campo)
   }
 
+  // Agrega una skill de TEXTO LIBRE (la que el gestor escribe). Las del
+  // catálogo se agregan con alternarSkillCatalogo.
   const agregarSkill = (texto) => {
     const valor = String(texto ?? '').trim()
     if (!valor) return
@@ -252,21 +319,52 @@ export default function ConvocatoriaWizard({
       setErrorSkill('Cada skill debe tener máximo 100 caracteres.')
       return
     }
-    if (form.skills.length >= 20) {
-      setErrorSkill('No puedes registrar más de 20 skills.')
+    if (form.skills.length >= MAX_SKILLS) {
+      setErrorSkill(`No puedes registrar más de ${MAX_SKILLS} skills.`)
       return
     }
-    if (form.skills.some((s) => s.toLowerCase() === valor.toLowerCase())) {
+    if (form.skills.some((s) => claveSkill(s.nombre) === claveSkill(valor))) {
       setErrorSkill('Esa skill ya está agregada.')
       return
     }
     setErrorSkill('')
-    setForm((prev) => ({ ...prev, skills: [...prev.skills, valor] }))
+    setForm((prev) => ({ ...prev, skills: [...prev.skills, { nombre: valor, parametro_id: null }] }))
     setNuevaSkill('')
   }
 
   const quitarSkill = (nombre) => {
-    setForm((prev) => ({ ...prev, skills: prev.skills.filter((s) => s !== nombre) }))
+    const clave = claveSkill(nombre)
+    setForm((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((s) => claveSkill(s.nombre) !== clave),
+    }))
+  }
+
+  // Selecciona o deselecciona una skill del CATÁLOGO. El parametro_id se
+  // guarda en la convocatoria: el backend toma el nombre del catálogo.
+  const alternarSkillCatalogo = (parametro) => {
+    const clave = claveSkill(parametro.nombre)
+    const yaEsta = form.skills.some((s) => claveSkill(s.nombre) === clave)
+
+    if (yaEsta) {
+      setErrorSkill('')
+      setForm((prev) => ({
+        ...prev,
+        skills: prev.skills.filter((s) => claveSkill(s.nombre) !== clave),
+      }))
+      return
+    }
+
+    if (form.skills.length >= MAX_SKILLS) {
+      setErrorSkill(`No puedes registrar más de ${MAX_SKILLS} skills.`)
+      return
+    }
+
+    setErrorSkill('')
+    setForm((prev) => ({
+      ...prev,
+      skills: [...prev.skills, { nombre: parametro.nombre, parametro_id: parametro.id }],
+    }))
   }
 
   const alternarDocumento = (codigo) => {
@@ -280,12 +378,21 @@ export default function ConvocatoriaWizard({
     }))
   }
 
-  const sugerenciasSkills = useMemo(() => {
-    const ya = new Set(form.skills.map((s) => s.toLowerCase()))
-    return (catalogos?.skill_tecnica ?? []).filter(
-      (s) => !ya.has(String(s.nombre).toLowerCase()),
-    )
-  }, [catalogos, form.skills])
+  // Catálogo de skills (tema skill_catalogo): es lo que el gestor puede
+  // seleccionar. Antes se mostraban sugerencias del tema 'skill_tecnica';
+  // ahora el catálogo es la única fuente (no se borra nada de la base de
+  // datos: ese tema sigue existiendo y sirve para otras cosas).
+  const skillsCatalogo = catalogos?.skill_catalogo ?? []
+
+  const skillEstaAgregada = (nombre) => {
+    const clave = claveSkill(nombre)
+    return form.skills.some((s) => claveSkill(s.nombre) === clave)
+  }
+
+  // Skills que NO vienen del catálogo (las escribió el gestor): se listan
+  // aparte para poder quitarlas. Las del catálogo ya se ven marcadas en su
+  // casilla.
+  const skillsLibres = form.skills.filter((s) => !s.parametro_id)
 
   // Etapa 5: obligatorios fijos (siempre marcados y bloqueados) y opcionales
   // que decide el gestor. El catálogo del backend trae nombre e id reales, así
@@ -318,7 +425,7 @@ export default function ConvocatoriaWizard({
 
   const siguiente = () => {
     validarEtapa(etapa)
-    setEtapa((e) => Math.min(5, e + 1))
+    setEtapa((e) => Math.min(ULTIMA_ETAPA, e + 1))
   }
 
   const anterior = () => setEtapa((e) => Math.max(1, e - 1))
@@ -345,7 +452,11 @@ export default function ConvocatoriaWizard({
     fecha_apertura: form.fecha_apertura || null,
     fecha_cierre: form.fecha_cierre || null,
     fecha_evaluacion: form.fecha_evaluacion || null,
-    skills: form.skills,
+    // Cada skill viaja con su parametro_id (catálogo) o sin él (texto libre).
+    skills: form.skills.map((s) => ({
+      nombre: s.nombre,
+      parametro_id: s.parametro_id ?? null,
+    })),
     documentos: form.documentos,
     // La ficha solo se manda al crear y solo si el usuario tiene más de una:
     // con una sola, el backend la hereda de la sesión. Al editar no se envía:
@@ -578,70 +689,120 @@ export default function ConvocatoriaWizard({
             <Campo etiqueta="Conocimientos específicos" error={errorDe('conocimientos_especificos')}>
               <textarea rows={3} {...campo('conocimientos_especificos')} />
             </Campo>
-
-            <div className="flex flex-col gap-2 text-sm font-medium text-sena-azul dark:text-sena-texto">
-              <span>Skills / Habilidades técnicas</span>
-
-              {!soloLectura && (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={nuevaSkill}
-                    maxLength={100}
-                    placeholder="Escribe una habilidad y presiona Enter"
-                    onChange={(e) => setNuevaSkill(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        agregarSkill(nuevaSkill)
-                      }
-                    }}
-                    className={CLASE_INPUT + ' flex-1'}
-                  />
-                  <Boton onClick={() => agregarSkill(nuevaSkill)}>+ Agregar</Boton>
-                </div>
-              )}
-
-              {form.skills.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {form.skills.map((s) => (
-                    <Chip key={s} onQuitar={soloLectura ? undefined : () => quitarSkill(s)}>
-                      {s}
-                    </Chip>
-                  ))}
-                </div>
-              )}
-
-              {!soloLectura && sugerenciasSkills.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs font-normal text-slate-500 dark:text-sena-texto-suave">
-                    Sugerencias:
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {sugerenciasSkills.map((s) => (
-                      <Chip
-                        key={s.id}
-                        tipo="sugerida"
-                        onClick={() => agregarSkill(s.nombre)}
-                      >
-                        {s.nombre}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {errorSkill && (
-                <span className="text-xs text-red-600 dark:text-red-400">{errorSkill}</span>
-              )}
-              {errorDe('skills') && (
-                <span className="text-xs text-red-600 dark:text-red-400">{errorDe('skills')}</span>
-              )}
-            </div>
           </div>
         )}
 
+        {/* Etapa 4: SKILLS. Es opcional. El gestor puede SELECCIONAR las
+            skills del catálogo (tema skill_catalogo) y también AGREGAR las
+            suyas en texto libre. Cada skill guardada lleva su parametro_id
+            cuando viene del catálogo. */}
         {etapa === 4 && (
+          <div className="flex flex-col gap-4">
+            {/* Del catálogo: MISMO patrón que la etapa de Documentos (casillas
+                en una rejilla). La casilla marcada es la skill guardada. */}
+            <div className="flex flex-col gap-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
+                Del catálogo
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
+                Marca las habilidades técnicas que pide la convocatoria.
+              </p>
+
+              {skillsCatalogo.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
+                  No hay skills en el catálogo.
+                </p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {skillsCatalogo.map((opcion) => (
+                    <label
+                      key={opcion.id}
+                      className="flex items-center gap-2 rounded border border-slate-200 p-3 text-sm text-slate-700 dark:border-sena-borde dark:text-sena-texto"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={skillEstaAgregada(opcion.nombre)}
+                        onChange={() => alternarSkillCatalogo(opcion)}
+                        disabled={soloLectura}
+                        className="h-4 w-4 accent-sena"
+                      />
+                      <span>{opcion.nombre}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Texto libre: se escribe y se agrega. Solo se listan las que NO
+                vienen del catálogo (las del catálogo ya se ven marcadas). */}
+            {(!soloLectura || skillsLibres.length > 0) && (
+              <div className="flex flex-col gap-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
+                  Agregar otra habilidad
+                </h3>
+
+                {!soloLectura && (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={nuevaSkill}
+                      maxLength={MAX_SKILL_LONGITUD}
+                      placeholder="Escribe una habilidad y presiona Enter"
+                      onChange={(e) => setNuevaSkill(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          agregarSkill(nuevaSkill)
+                        }
+                      }}
+                      className={CLASE_INPUT + ' flex-1'}
+                    />
+                    <Boton onClick={() => agregarSkill(nuevaSkill)}>+ Agregar</Boton>
+                  </div>
+                )}
+
+                {skillsLibres.length > 0 && (
+                  <ul className="flex flex-col divide-y divide-slate-100 dark:divide-sena-borde">
+                    {skillsLibres.map((s) => (
+                      <li
+                        key={`${s.nombre}-${s.parametro_id ?? 'libre'}`}
+                        className="flex items-center justify-between gap-2 py-2"
+                      >
+                        <span className="min-w-0 break-words text-sm text-slate-700 dark:text-sena-texto">
+                          {s.nombre}
+                        </span>
+                        {!soloLectura && (
+                          <button
+                            type="button"
+                            onClick={() => quitarSkill(s.nombre)}
+                            className={CLASE_QUITAR}
+                          >
+                            Quitar
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {form.skills.length > 0 && (
+              <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
+                {form.skills.length} de {MAX_SKILLS} skills agregadas.
+              </p>
+            )}
+
+            {errorSkill && (
+              <span className="text-xs text-red-600 dark:text-red-400">{errorSkill}</span>
+            )}
+            {errorDeSkills && (
+              <span className="text-xs text-red-600 dark:text-red-400">{errorDeSkills}</span>
+            )}
+          </div>
+        )}
+
+        {etapa === 5 && (
           <div className="grid gap-4 md:grid-cols-3">
             <Campo etiqueta="Fecha de apertura" requerido error={errorDe('fecha_apertura')}>
               <input type="date" {...campo('fecha_apertura')} />
@@ -657,7 +818,7 @@ export default function ConvocatoriaWizard({
           </div>
         )}
 
-        {etapa === 5 && (
+        {etapa === 6 && (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
               Los cuatro primeros son obligatorios y no se pueden quitar. Los
@@ -745,13 +906,16 @@ export default function ConvocatoriaWizard({
 
         {!soloLectura && (
           <div className="flex flex-wrap gap-2">
+            {/* Al CREAR se guarda un borrador (la convocatoria nace en
+                borrador); al EDITAR se guardan cambios sobre una convocatoria
+                que ya existe. */}
             <Boton variante="secundario" onClick={guardar} disabled={guardando || publicando}>
-              {guardando ? 'Guardando...' : 'Guardar borrador'}
+              {guardando ? 'Guardando...' : esNueva ? 'Guardar borrador' : 'Guardar cambios'}
             </Boton>
 
-            {etapa < 5 && <Boton onClick={siguiente}>Siguiente →</Boton>}
+            {etapa < ULTIMA_ETAPA && <Boton onClick={siguiente}>Siguiente →</Boton>}
 
-            {etapa === 5 && puedePublicar && (
+            {etapa === ULTIMA_ETAPA && puedePublicar && (
               <Boton onClick={publicar} disabled={guardando || publicando}>
                 {publicando ? 'Publicando...' : 'Publicar convocatoria'}
               </Boton>

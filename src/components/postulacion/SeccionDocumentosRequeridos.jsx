@@ -1,21 +1,21 @@
 import { useRef, useState } from 'react'
 import { validarArchivoPostulacion, TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
-import { etiquetasDocumento } from '../../lib/documentosConvocatoria'
+import { ETIQUETAS_DOCUMENTO, esObligatorioFijo } from '../../lib/documentosConvocatoria'
 import { CODIGO_LIBRETA_MILITAR, formatearTamano } from '../../lib/postulacionDocumentos'
+import { formatearFechaHora } from '../../lib/ventanaPostulacion'
+import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
+import EtiquetaDocumento from '../ui/EtiquetaDocumento'
 import {
   subirDocumento,
   eliminarDocumento,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
-import { IconoOjo } from '../convocatorias/Iconos'
-import BarraProgreso from '../ui/BarraProgreso'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import BarraProgreso from '../ui/BarraProgreso'
 
-const ESTILO_TARJETA =
-  'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
+const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
-const ESTILO_TITULO =
-  'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
+const ESTILO_TITULO = CLASE_TITULO_SECCION
 
 const CLASE_BOTON =
   'rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
@@ -24,7 +24,7 @@ const CLASE_ELIMINAR =
   'rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50'
 
 const CLASE_ETIQUETA =
-  'rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
+  'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
 
 // Documentos que pide la convocatoria: uno por tipo, con subir/reemplazar.
 // La primera acción de guardado dispara el borrador silencioso (asegurar), así
@@ -122,6 +122,12 @@ export default function SeccionDocumentosRequeridos({
     }
   }
 
+  // "Ver": el PDF lo abre PanelDocumentosPostulacion (evento document:view).
+  const ver = (documento) =>
+    window.dispatchEvent(new CustomEvent('document:view', {
+      detail: { documentoId: documento.id, nombre: documento.nombre_original },
+    }))
+
   return (
     <section className={ESTILO_TARJETA}>
       <h2 className={ESTILO_TITULO}>Documentos requeridos</h2>
@@ -159,16 +165,18 @@ export default function SeccionDocumentosRequeridos({
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-sena-texto">
                     {parametro.nombre}
-                    {etiquetasDocumento(codigo, obligatorio).map((etiqueta) => (
-                      <span key={etiqueta} className={CLASE_ETIQUETA}>
-                        {etiqueta}
-                      </span>
-                    ))}
+                    <EtiquetaDocumento
+                      obligatorio={Boolean(obligatorio) || esObligatorioFijo(codigo)}
+                    />
+                    {ETIQUETAS_DOCUMENTO[codigo] && (
+                      <span className={CLASE_ETIQUETA}>{ETIQUETAS_DOCUMENTO[codigo]}</span>
+                    )}
                   </p>
 
                   {estadoDoc === 'subido' && archivo && (
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
                       {archivo.nombre_original} · {formatearTamano(archivo.tamano_bytes)}
+                      {archivo.subido_en && <> · Subido el {formatearFechaHora(archivo.subido_en)}</>}
                     </p>
                   )}
                   {estadoDoc === 'pendiente' && !bloqueoLibreta && (
@@ -195,19 +203,9 @@ export default function SeccionDocumentosRequeridos({
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => {
-                        // El padre (PanelDocumentosPostulacion) lo abre en una
-                        // pestaña nueva vía el evento document:view.
-                        window.dispatchEvent(new CustomEvent('document:view', {
-                          detail: {
-                            documentoId: archivo.id,
-                            nombre: archivo.nombre_original,
-                          }
-                        }))
-                      }}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
+                      onClick={() => ver(archivo)}
+                      className={CLASE_BOTON}
                     >
-                      <IconoOjo className="mr-1.5 h-3.5 w-3.5" />
                       Ver
                     </button>
                   )}
@@ -215,7 +213,7 @@ export default function SeccionDocumentosRequeridos({
                   {mostrarSubir && (
                     <button
                       type="button"
-                      disabled={bloqueoLibreta}
+                      disabled={bloqueoLibreta || enProceso}
                       title={bloqueoLibreta ? motivoLibreta : undefined}
                       onClick={() => refsInput.current[codigo]?.click()}
                       className={CLASE_BOTON}
@@ -224,17 +222,20 @@ export default function SeccionDocumentosRequeridos({
                         ? 'Subiendo...'
                         : estadoDoc === 'subido'
                           ? 'Reemplazar'
-                          : 'Subir'}
+                          : error
+                            ? 'Reintentar'
+                            : 'Subir'}
                     </button>
                   )}
 
                   {puedeEditar && estadoDoc === 'subido' && (
                     <button
                       type="button"
+                      disabled={enProceso}
                       onClick={() => eliminar(archivo, codigo)}
                       className={CLASE_ELIMINAR}
                     >
-                      Eliminar
+                      {enProceso ? 'Eliminando...' : 'Eliminar'}
                     </button>
                   )}
                 </div>

@@ -1,11 +1,11 @@
 import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 
 // Superficie base para agrupar contenido.
-export function Tarjeta({ className = '', children, ...props }) {
+export function Tarjeta({ as: Componente = 'div', className = '', children, ...props }) {
   return (
-    <div className={`${CLASE_TARJETA} ${className}`.trim()} {...props}>
+    <Componente className={`${CLASE_TARJETA} ${className}`.trim()} {...props}>
       {children}
-    </div>
+    </Componente>
   )
 }
 

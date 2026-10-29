@@ -1,37 +1,27 @@
 import { useRef, useState } from 'react'
-import { TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
+import { validarArchivoPostulacion, TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
 import {
   MAX_DOCUMENTOS_ADICIONALES,
   MAX_TITULO_ADICIONAL,
   MAX_NOTA_ADICIONAL,
   formatearTamano,
 } from '../../lib/postulacionDocumentos'
+import { formatearFechaHora } from '../../lib/ventanaPostulacion'
+import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 import {
   subirAdicional,
   eliminarDocumento,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
-import { IconoOjo } from '../convocatorias/Iconos'
 import BarraProgreso from '../ui/BarraProgreso'
 
-const ESTILO_TARJETA =
-  'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
+const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
-const ESTILO_TITULO =
-  'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
-
-const CLASE_INPUT =
-  'rounded border border-sena-azul/20 p-2 text-sm text-slate-700 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto'
+const ESTILO_TITULO = CLASE_TITULO_SECCION
 
 const CLASE_BOTON =
   'rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
-
-const CLASE_ENVIAR =
-  'rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50'
-
-const CLASE_ELIMINAR =
-  'rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50'
 
 // Documentos adicionales ("tipo otro"): título obligatorio, nota opcional y
 // archivo. Máximo 5; no bloquean la completitud del paso. La primera acción de
@@ -59,6 +49,39 @@ export default function SeccionAdicionales({
 
   const tope = adicionales.length >= MAX_DOCUMENTOS_ADICIONALES
   const puedeAgregar = editable && !tope
+
+  const pidSeguro = async () => vista.postulacion?.id ?? (await asegurar()).postulacionId
+
+  const marcarEnVuelo = (id, activo) =>
+    setEnVueloIds((prev) => {
+      const siguiente = new Set(prev)
+      if (activo) siguiente.add(id)
+      else siguiente.delete(id)
+      return siguiente
+    })
+
+  const limpiar = () => {
+    setTitulo('')
+    setNota('')
+    setArchivo(null)
+    setErrores({})
+    if (refArchivo.current) refArchivo.current.value = ''
+  }
+
+  const elegirArchivo = (elegido) => {
+    const validacion = validarArchivoPostulacion(elegido)
+    if (!validacion.ok) {
+      setArchivo(null)
+      setErrores((prev) => ({ ...prev, archivo: validacion.mensaje }))
+      return
+    }
+    setArchivo(elegido)
+    setErrores((prev) => {
+      const siguiente = { ...prev }
+      delete siguiente.archivo
+      return siguiente
+    })
+  }
 
   const enviar = async (evento) => {
     evento.preventDefault()
@@ -120,6 +143,12 @@ export default function SeccionAdicionales({
     }
   }
 
+  // "Ver": el PDF lo abre PanelDocumentosPostulacion (evento document:view).
+  const ver = (adicional) =>
+    window.dispatchEvent(new CustomEvent('document:view', {
+      detail: { documentoId: adicional.archivo.id, nombre: adicional.archivo.nombre_original },
+    }))
+
   return (
     <section className={ESTILO_TARJETA}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -151,7 +180,11 @@ export default function SeccionAdicionales({
                   )}
                   {adicional.archivo && (
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
-                      {adicional.archivo.nombre_original} · {formatearTamano(adicional.archivo.tamano_bytes)}
+                      {adicional.archivo.nombre_original} ·{' '}
+                      {formatearTamano(adicional.archivo.tamano_bytes)}
+                      {adicional.archivo.subido_en && (
+                        <> · Subido el {formatearFechaHora(adicional.archivo.subido_en)}</>
+                      )}
                     </p>
                   )}
                 </div>
@@ -161,19 +194,9 @@ export default function SeccionAdicionales({
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => {
-                        // El padre (PanelDocumentosPostulacion) lo abre en una
-                        // pestaña nueva vía el evento document:view.
-                        window.dispatchEvent(new CustomEvent('document:view', {
-                          detail: {
-                            documentoId: adicional.archivo.id,
-                            nombre: adicional.archivo.nombre_original,
-                          }
-                        }))
-                      }}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
+                      onClick={() => ver(adicional)}
+                      className={CLASE_BOTON}
                     >
-                      <IconoOjo className="mr-1.5 h-3.5 w-3.5" />
                       Ver
                     </button>
                   )}
@@ -194,11 +217,6 @@ export default function SeccionAdicionales({
           )
         })}
 
-        {adicionales.length === 0 && (
-          <li className="py-3 text-sm text-slate-500 dark:text-sena-texto-suave">
-            Aún no has agregado documentos adicionales.
-          </li>
-        )}
       </ul>
 
       {puedeAgregar && (
@@ -256,7 +274,7 @@ export default function SeccionAdicionales({
                 const elegido = e.target.files?.[0]
                 if (elegido) elegirArchivo(elegido)
               }}
-              className="text-sm text-slate-600 file:mr-3 file:rounded file:border file:border-sena-azul/25 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-sena-azul dark:text-sena-texto-suave dark:file:bg-sena-noche"
+              className="text-sm text-slate-600 file:mr-3 file:cursor-pointer file:rounded file:border file:border-sena-azul/25 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-sena-azul dark:text-sena-texto-suave dark:file:border-sena-borde dark:file:bg-sena-superficie-alta dark:file:text-white"
             />
             {errores.archivo && (
               <p role="alert" className="text-xs text-red-600 dark:text-red-400">

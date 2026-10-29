@@ -3,25 +3,195 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { listaMisPostulaciones, cambiarEstadoPostulacion } from '../../api/postulaciones'
 import { mensajeError } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
-import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
-import { BotonIcono, IconoOjo } from '../../components/convocatorias/Iconos'
+import EtiquetaVentana from '../../components/convocatorias/EtiquetaVentana'
+import Boton from '../../components/ui/Boton'
 import { estadoVentana, formatearFechaHora, textoVentana } from '../../lib/ventanaPostulacion'
+import { CLASE_META_DT, CLASE_TARJETA } from '../../lib/estilos'
 
-const CLASE_ACCION =
-  'rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
+// Botones de acción de una fila: 40 px de alto, 12 px de texto y separacion de
+// 8 px. El principal es el verde del sistema; el secundario, de contorno; el
+// destructivo, de contorno rojo.
+const CLASE_ACCION = 'min-h-10'
 
-const CLASE_NAV =
-  'rounded border border-sena-azul/25 px-3 py-1.5 font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
-
-const COLUMNAS = 7
+const CLASE_ENLACE_TITULO =
+  'font-semibold text-sena-azul underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 dark:text-sena-texto'
 
 // "Mis postulaciones": solo las del autenticado (el backend filtra por user_id,
-// sea cual sea el rol). Con el flujo de borrador (doc 31): un borrador se
-// "continuar" o se "descarta" (retirada); una postulada se consulta o se
-// "retira"; una retirada se "reabre" (vuelve a borrador) o se consulta en solo
-// lectura ("Ver documentos"). El conteo de postulantes no vive aquí y, además,
-// el backend ya excluye los borradores.
+// sea cual sea el rol). LLEGAN TODAS, también los borradores: el listado no
+// filtra por estado.
+//
+// La fila muestra: la convocatoria (el título es un enlace a su detalle), la
+// fecha de postulación, el estado de la postulación, el estado DERIVADO de la
+// convocatoria (si la ventana está abierta, si aún no abre o si ya cerró) y las
+// acciones según el estado.
+//
+// En escritorio es una tabla; por debajo de 768 px la misma información se
+// apila en tarjetas (una por postulación), sin scroll horizontal.
+
+// Convocatoria: título (enlace al detalle) y debajo "Cargo · Área".
+// El título reserva SIEMPRE dos líneas (aunque el texto ocupe una): así las
+// filas de la tabla quedan a la misma altura.
+//
+// Si la convocatoria está CERRADA el título NO es un enlace: su detalle ya no
+// está disponible para quien no gestiona (el backend responde 404), así que el
+// enlace llevaría a un error. Se muestra como texto plano con el mismo tamaño.
+function BloqueConvocatoria({ convocatoria }) {
+  const secundaria = [convocatoria?.cargo, convocatoria?.area].filter(Boolean).join(' · ')
+
+  const cerrada =
+    convocatoria?.estado?.codigo === 'cerrada' || estadoVentana(convocatoria) === 'cerrada'
+
+  return (
+    <div className="min-w-0">
+      {cerrada ? (
+        <span
+          title={convocatoria?.nombre ?? undefined}
+          className="line-clamp-2 block min-h-[2.75rem] font-semibold text-slate-700 dark:text-sena-texto"
+        >
+          {convocatoria?.nombre ?? '—'}
+        </span>
+      ) : (
+        <Link
+          to={`/convocatorias/${convocatoria?.id}`}
+          title={convocatoria?.nombre ?? undefined}
+          className={`line-clamp-2 min-h-[2.75rem] ${CLASE_ENLACE_TITULO}`}
+        >
+          {convocatoria?.nombre ?? '—'}
+        </Link>
+      )}
+      {secundaria && (
+        <p
+          title={secundaria}
+          className="mt-0.5 line-clamp-1 text-sm text-slate-600 dark:text-sena-texto-suave"
+        >
+          {secundaria}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// Estado de la postulación ("Estado") y, si está retirada, la fecha en una
+// sola línea debajo del badge. El bloque va centrado: son datos cortos y así la
+// columna queda equilibrada con las de al lado.
+function BloqueEstadoPostulacion({ postulacion }) {
+  const codigo = postulacion.estado?.codigo
+
+  return (
+    <div className="flex flex-col items-center gap-1 text-center">
+      <EtiquetaPostulacion codigo={codigo} nombre={postulacion.estado?.nombre} />
+      {codigo === 'retirada' && postulacion.fecha_retiro && (
+        <span className="whitespace-nowrap text-xs text-slate-500 dark:text-sena-texto-suave">
+          Retirada el {formatearFechaHora(postulacion.fecha_retiro)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// Acciones de la fila: una sola línea, alineada a la derecha. Cada estado
+// tiene su propia combinación (no se inventan acciones).
+function BloqueAcciones({
+  postulacion,
+  publicada,
+  ventanaAbierta,
+  enVuelo,
+  irADocumentos,
+  cambiarEstado,
+  reabrir,
+}) {
+  const codigo = postulacion.estado?.codigo
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
+        {codigo === 'borrador' && (
+          <>
+            <Boton
+              variante="primario"
+              tamano="sm"
+              className={CLASE_ACCION}
+              disabled={enVuelo}
+              onClick={() => irADocumentos(postulacion)}
+            >
+              Continuar postulación
+            </Boton>
+            <Boton
+              variante="peligroSuave"
+              tamano="sm"
+              className={CLASE_ACCION}
+              disabled={!publicada || enVuelo}
+              onClick={() => cambiarEstado(postulacion, 'retirada', 'descartar')}
+            >
+              {enVuelo ? 'Descartando...' : 'Descartar'}
+            </Boton>
+          </>
+        )}
+
+        {codigo === 'postulada' && (
+          <>
+            <Boton
+              variante="primario"
+              tamano="sm"
+              className={CLASE_ACCION}
+              disabled={enVuelo}
+              onClick={() => irADocumentos(postulacion)}
+            >
+              Ver documentos
+            </Boton>
+            <Boton
+              variante="peligroSuave"
+              tamano="sm"
+              className={CLASE_ACCION}
+              disabled={!publicada || enVuelo}
+              onClick={() => cambiarEstado(postulacion, 'retirada', 'retirar')}
+            >
+              {enVuelo ? 'Retirando...' : 'Retirarse'}
+            </Boton>
+          </>
+        )}
+
+        {codigo === 'retirada' && (
+          <>
+            <Boton
+              variante="secundario"
+              tamano="sm"
+              className={CLASE_ACCION}
+              disabled={enVuelo}
+              onClick={() => irADocumentos(postulacion)}
+            >
+              Ver documentos
+            </Boton>
+            <Boton
+              variante="primario"
+              tamano="sm"
+              className={CLASE_ACCION}
+              disabled={!ventanaAbierta || enVuelo}
+              onClick={() => reabrir(postulacion)}
+            >
+              {enVuelo ? 'Reabriendo...' : 'Reabrir'}
+            </Boton>
+          </>
+        )}
+      </div>
+
+      {/* Los avisos NO son botones: van debajo de la fila de acciones. */}
+      {(codigo === 'borrador' || codigo === 'postulada') && !publicada && (
+        <span className="text-xs text-slate-500 dark:text-sena-texto-suave">
+          La convocatoria ya no está publicada
+        </span>
+      )}
+
+      {codigo === 'retirada' && !ventanaAbierta && (
+        <span className="text-xs text-slate-500 dark:text-sena-texto-suave">
+          {textoVentana(postulacion.convocatoria)}
+        </span>
+      )}
+    </div>
+  )
+}
+
 export default function MisPostulaciones() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -116,6 +286,24 @@ export default function MisPostulaciones() {
   const irADocumentos = (postulacion) =>
     navigate(`/postulaciones/${postulacion.id}/documentos`)
 
+  // Datos de una postulación que usan los bloques de arriba.
+  const contexto = (postulacion) => {
+    const convocatoria = postulacion.convocatoria
+
+    return {
+      postulacion,
+      publicada: convocatoria?.estado?.codigo === 'publicada',
+      ventanaAbierta: estadoVentana(convocatoria) === 'abierta',
+      enVuelo: accionandoId === postulacion.id,
+      irADocumentos,
+      cambiarEstado,
+      reabrir,
+    }
+  }
+
+  const totalPaginas = Math.max(meta.last_page ?? 1, 1)
+  const total = meta.total ?? 0
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -141,195 +329,132 @@ export default function MisPostulaciones() {
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-sena-borde dark:bg-sena-superficie">
-        <table className="w-full min-w-200 text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-sena-borde dark:text-sena-texto-suave">
-              <th className="p-3">Convocatoria</th>
-              <th className="p-3">Cargo</th>
-              <th className="p-3">Área</th>
-              <th className="p-3">Fecha de postulación</th>
-              <th className="p-3">Estado</th>
-              <th className="p-3">Estado convocatoria</th>
-              <th className="p-3 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cargando && (
-              <tr>
-                <td colSpan={COLUMNAS} className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
-                  Cargando postulaciones...
-                </td>
-              </tr>
-            )}
-
-            {!cargando && postulaciones.length === 0 && (
-              <tr>
-                <td colSpan={COLUMNAS} className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
-                  Aún no te has postulado a ninguna convocatoria.{' '}
-                  <Link to="/convocatorias" className="font-semibold text-sena-azul underline dark:text-sena-texto">
-                    Ver convocatorias
-                  </Link>
-                </td>
-              </tr>
-            )}
-
-            {!cargando &&
-              postulaciones.map((p) => {
-                const convocatoria = p.convocatoria
-                const estadoCodigo = p.estado?.codigo
-                const publicada = convocatoria?.estado?.codigo === 'publicada'
-                const ventanaAbierta = estadoVentana(convocatoria) === 'abierta'
-                const enVuelo = accionandoId === p.id
-
-                return (
-                  <tr key={p.id} className="hover:bg-sena-cielo/20 dark:hover:bg-sena-superficie-alta/20">
-                    <td className="p-3">
-                      <span className="block font-mono text-xs text-slate-500 dark:text-sena-texto-suave">
-                        {convocatoria?.codigo}
-                      </span>
-                      <span className="font-semibold text-slate-800 dark:text-sena-texto">
-                        {convocatoria?.nombre ?? '—'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-slate-700 dark:text-sena-texto">{convocatoria?.cargo ?? '—'}</td>
-                    <td className="p-3 text-slate-700 dark:text-sena-texto">{convocatoria?.area ?? '—'}</td>
-                    <td className="p-3 text-slate-700 dark:text-sena-texto">
-                      {formatearFechaHora(p.fecha_postulacion)}
-                    </td>
-                    <td className="p-3">
-                      <EtiquetaPostulacion codigo={estadoCodigo} nombre={p.estado?.nombre} />
-                      {estadoCodigo === 'retirada' && p.fecha_retiro && (
-                        <span className="mt-1 block text-xs text-slate-500 dark:text-sena-texto-suave">
-                          Retirada el {formatearFechaHora(p.fecha_retiro)}
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <EtiquetaEstado
-                        codigo={convocatoria?.estado?.codigo}
-                        nombre={convocatoria?.estado?.nombre}
-                      />
-                    </td>
-                    <td className="p-3">
-                      <div className="flex flex-col items-end gap-1">
-                        {/* Al detalle de la convocatoria. Si ya no está
-                            publicada, el detalle muestra el resumen embebido
-                            (fallback 404) en vez de un callejón. */}
-                        <BotonIcono
-                          etiqueta="Ver información"
-                          onClick={() => navigate(`/convocatorias/${convocatoria?.id}`)}
-                        >
-                          <IconoOjo />
-                        </BotonIcono>
-
-                        {estadoCodigo === 'borrador' && (
-                          <>
-                            <button
-                              type="button"
-                              disabled={enVuelo}
-                              onClick={() => irADocumentos(p)}
-                              className={CLASE_ACCION}
-                            >
-                              Continuar postulación
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!publicada || enVuelo}
-                              onClick={() => cambiarEstado(p, 'retirada', 'descartar')}
-                              className={CLASE_ACCION}
-                            >
-                              {enVuelo ? 'Descartando...' : 'Descartar'}
-                            </button>
-                            {!publicada && (
-                              <span className="text-xs text-slate-500 dark:text-sena-texto-suave">
-                                La convocatoria ya no está publicada
-                              </span>
-                            )}
-                          </>
-                        )}
-
-                        {estadoCodigo === 'postulada' && (
-                          <>
-                            <button
-                              type="button"
-                              disabled={enVuelo}
-                              onClick={() => irADocumentos(p)}
-                              className={CLASE_ACCION}
-                            >
-                              Ver documentos
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!publicada || enVuelo}
-                              onClick={() => cambiarEstado(p, 'retirada', 'retirar')}
-                              className={CLASE_ACCION}
-                            >
-                              {enVuelo ? 'Retirando...' : 'Retirarse'}
-                            </button>
-                            {!publicada && (
-                              <span className="text-xs text-slate-500 dark:text-sena-texto-suave">
-                                La convocatoria ya no está publicada
-                              </span>
-                            )}
-                          </>
-                        )}
-
-                        {estadoCodigo === 'retirada' && (
-                          <>
-                            <button
-                              type="button"
-                              disabled={enVuelo}
-                              onClick={() => irADocumentos(p)}
-                              className={CLASE_ACCION}
-                            >
-                              Ver documentos
-                            </button>
-                            <button
-                              type="button"
-                              disabled={!ventanaAbierta || enVuelo}
-                              onClick={() => reabrir(p)}
-                              className={CLASE_ACCION}
-                            >
-                              {enVuelo ? 'Reabriendo...' : 'Reabrir'}
-                            </button>
-                            {!ventanaAbierta && (
-                              <span className="text-xs text-slate-500 dark:text-sena-texto-suave">
-                                {textoVentana(convocatoria)}
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex items-center justify-between text-sm text-slate-600 dark:text-sena-texto-suave">
-        <span>
-          Página {meta.current_page ?? 1} de {Math.max(meta.last_page ?? 1, 1)} ·{' '}
-          {meta.total ?? 0} postulación(es)
-        </span>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPagina((p) => Math.max(1, p - 1))}
-            disabled={(meta.current_page ?? 1) <= 1}
-            className={CLASE_NAV}
+      {cargando ? (
+        <p className="text-slate-500 dark:text-sena-texto-suave">Cargando postulaciones...</p>
+      ) : postulaciones.length === 0 ? (
+        // Sin postulaciones: mensaje claro con enlace al listado.
+        <div className={`${CLASE_TARJETA} flex flex-col items-center gap-3 p-8 text-center`}>
+          <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
+            Aún no te has postulado a ninguna convocatoria.
+          </p>
+          <Link
+            to="/convocatorias"
+            className="text-sm font-semibold text-sena-azul underline underline-offset-2 hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 dark:text-sena-texto"
           >
-            Anterior
-          </button>
-          <button
-            onClick={() => setPagina((p) => Math.min(meta.last_page ?? 1, p + 1))}
-            disabled={(meta.current_page ?? 1) >= (meta.last_page ?? 1)}
-            className={CLASE_NAV}
-          >
-            Siguiente
-          </button>
+            Ver convocatorias
+          </Link>
         </div>
+      ) : (
+        <>
+          {/* Escritorio: tabla de 5 columnas. */}
+          <div className={`${CLASE_TARJETA} hidden overflow-x-auto md:block`}>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-sena-borde dark:text-sena-texto-suave">
+                  <th className="p-3">Convocatoria</th>
+                  <th className="p-3 text-center">Postulación</th>
+                  <th className="p-3 text-center">Estado</th>
+                  <th className="p-3 text-center">Estado de la convocatoria</th>
+                  <th className="p-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {postulaciones.map((p) => {
+                  const ctx = contexto(p)
+
+                  return (
+                    <tr
+                      key={p.id}
+                      className="border-b border-slate-100 align-middle last:border-0 hover:bg-sena-cielo/20 dark:border-sena-borde/60 dark:hover:bg-sena-superficie-alta/20"
+                    >
+                      <td className="p-3">
+                        <BloqueConvocatoria convocatoria={p.convocatoria} />
+                      </td>
+                      <td className="whitespace-nowrap p-3 text-center text-slate-700 dark:text-sena-texto">
+                        {formatearFechaHora(p.fecha_postulacion)}
+                      </td>
+                      <td className="p-3">
+                        <BloqueEstadoPostulacion postulacion={p} />
+                      </td>
+                      <td className="p-3 text-center">
+                        <EtiquetaVentana convocatoria={p.convocatoria} />
+                      </td>
+                      <td className="p-3">
+                        <BloqueAcciones {...ctx} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Móvil: una tarjeta por postulación, con el mismo orden. */}
+          <ul className="flex flex-col gap-3 md:hidden">
+            {postulaciones.map((p) => {
+              const ctx = contexto(p)
+
+              return (
+                <li key={p.id} className={`${CLASE_TARJETA} flex flex-col gap-3 p-4`}>
+                  <BloqueConvocatoria convocatoria={p.convocatoria} />
+
+                  <dl className="grid grid-cols-2 gap-3 text-center">
+                    <div>
+                      <dt className={CLASE_META_DT}>Postulación</dt>
+                      <dd className="mt-0.5 whitespace-nowrap text-sm text-slate-700 dark:text-sena-texto">
+                        {formatearFechaHora(p.fecha_postulacion)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className={CLASE_META_DT}>Estado</dt>
+                      <dd className="mt-0.5">
+                        <BloqueEstadoPostulacion postulacion={p} />
+                      </dd>
+                    </div>
+                    <div className="col-span-2">
+                      <dt className={CLASE_META_DT}>Estado de la convocatoria</dt>
+                      <dd className="mt-0.5">
+                        <EtiquetaVentana convocatoria={p.convocatoria} />
+                      </dd>
+                    </div>
+                  </dl>
+
+                  <BloqueAcciones {...ctx} />
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 dark:text-sena-texto-suave">
+        <span>
+          Página {meta.current_page ?? 1} de {totalPaginas} · {total} postulación(es)
+        </span>
+
+        {/* Anterior/Siguiente solo cuando hay más de una página. */}
+        {totalPaginas > 1 && (
+          <div className="flex gap-2">
+            <Boton
+              variante="secundario"
+              tamano="sm"
+              className="min-h-10"
+              disabled={(meta.current_page ?? 1) <= 1}
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+            >
+              Anterior
+            </Boton>
+            <Boton
+              variante="secundario"
+              tamano="sm"
+              className="min-h-10"
+              disabled={(meta.current_page ?? 1) >= totalPaginas}
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+            >
+              Siguiente
+            </Boton>
+          </div>
+        )}
       </div>
     </div>
   )

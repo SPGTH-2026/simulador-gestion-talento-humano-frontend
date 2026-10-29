@@ -9,31 +9,32 @@ import {
 import { listaFichas } from '../../api/fichas'
 import { mensajeError } from '../../api/mensajeError'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
+import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
 import {
-  BotonIcono,
-  IconoCalendario,
   IconoCandado,
+  IconoFlechaDerecha,
+  IconoFlechaIzquierda,
   IconoLapiz,
   IconoLupa,
-  IconoMaletin,
+  IconoMas,
   IconoOjo,
-  IconoUsuarios,
+  IconoX,
 } from '../../components/convocatorias/Iconos'
 import Boton from '../../components/ui/Boton'
-import Cargando from '../../components/ui/Cargando'
-import EstadoVacio from '../../components/ui/EstadoVacio'
 import { MensajeError } from '../../components/ui/Mensaje'
 import Tarjeta from '../../components/ui/Tarjeta'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
-import { CLASE_INPUT } from '../../lib/estilos'
-
-// El candado avanza un paso del ciclo de vida. La etiqueta depende del estado
-// actual: desde 'publicada' se cierra la recepción; desde 'en_proceso', la
-// convocatoria completa.
-const PASOS_CANDADO = {
-  publicada: { etiqueta: 'Cerrar recepción', destino: 'en_proceso' },
-  en_proceso: { etiqueta: 'Cerrar convocatoria', destino: 'cerrada' },
-}
+import { pasoDeEstado, veIdentificador } from '../../lib/convocatorias'
+import { textoCierraPronto } from '../../lib/ventanaPostulacion'
+import {
+  CLASE_CHIP,
+  CLASE_INPUT,
+  CLASE_META_DD,
+  CLASE_META_DT,
+  CLASE_SUBTITULO_PAGINA,
+  CLASE_TARJETA_PLANA,
+  CLASE_TITULO_PAGINA,
+} from '../../lib/estilos'
 
 // dd/mm/aaaa. Se corta la cadena ISO 'aaaa-mm-dd' a mano en vez de pasar por
 // new Date(): así no hay desfase de zona horaria (un día menos en Colombia).
@@ -43,21 +44,32 @@ function formatearFecha(iso) {
   return anio && mes && dia ? `${dia}/${mes}/${anio}` : iso
 }
 
-// Franja lateral de cada tarjeta, por estado. Reutiliza los mismos tonos que la
-// etiqueta de estado: el verde institucional no entra aquí (queda para la
-// acción principal); 'publicada' usa el azul institucional.
-const FRANJA_ESTADO = {
-  borrador: 'bg-slate-400 dark:bg-slate-500',
-  publicada: 'bg-sena-azul dark:bg-sena-cielo',
-  en_proceso: 'bg-amber-500',
-  cerrada: 'bg-red-500',
-}
+// Bloques del esqueleto de carga. La animación se apaga si el usuario pidió
+// reducir el movimiento.
+const CLASE_ESQUELETO =
+  'animate-pulse rounded-md bg-sena-hundido motion-reduce:animate-none dark:bg-sena-superficie-alta'
 
-// Cada dato va como etiqueta pequeña con su icono y el valor debajo: sin cajas
-// ni relleno extra, la tarjeta queda más baja y rectangular.
-const CLASE_META_DT =
-  'flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-sena-texto-suave'
-const CLASE_META_DD = 'text-xs font-semibold text-slate-700 dark:text-sena-texto'
+// Botones de acción de la tarjeta. Si no caben en la tarjeta, el botón que sobra
+// baja a otra línea (flex-wrap): nunca se sale del borde. La tarjeta es el
+// contenedor de consultas (@container): cuando
+// es angosta (menos de 420 px) se ocultan los iconos y se reduce el relleno
+// horizontal, ANTES que tocar el texto. El texto nunca se achica ni se
+// recorta: se queda en 12 px.
+//
+// 'flex-[1_0_auto]': cada botón toma su ancho natural y reparte el sobrante
+// (crece), pero NUNCA encoge por debajo de su texto. Con 'flex-1' (que reparte
+// a partes iguales) el texto de "Cerrar convocatoria" se salía de su botón.
+//
+// Medido en el navegador (ancho mínimo de la fila con los tres botones):
+//   - con iconos y relleno de 12 px: 356,40 px;
+//   - sin iconos y relleno de 8 px: 260,40 px.
+// Con la tarjeta más angosta que existe (360 px de pantalla -> 288 px de
+// contenido) la fila sin iconos entra; con iconos no cabría.
+const CLASE_BOTON_ACCION =
+  'min-h-10 flex-[1_0_auto] justify-center px-[8px] @min-[420px]:px-[12px]'
+
+// Icono de la acción: oculto en tarjetas angostas (menos de 420 px).
+const CLASE_ICONO_ACCION = 'hidden h-4 w-4 shrink-0 @min-[420px]:block'
 
 export default function ConvocatoriasListado() {
   const navigate = useNavigate()
@@ -70,6 +82,12 @@ export default function ConvocatoriasListado() {
   // El aspirante ve una sola acción por tarjeta: "Ver información" (navega al
   // detalle siempre; el 404 de las no publicadas lo absorbe la vista).
   const esAspirante = user?.role === 'aspirante'
+  // Gestión REAL: permiso + lista blanca (instructor, super admin y el subrol
+  // gestor_convocatorias). El aprendiz con subrol 'general' tiene el permiso
+  // 'convocatorias:gestionar' pero NO es gestión. Decide dos cosas:
+  //  - el identificador (CONV-AAAA-NNN), dato de gestión;
+  //  - qué estados ve la lista: las cerradas solo las ve la gestión.
+  const gestionaEstricto = veIdentificador(user, can)
 
   const [convocatorias, setConvocatorias] = useState([])
   const [fichas, setFichas] = useState([])
@@ -182,245 +200,445 @@ export default function ConvocatoriasListado() {
     }
   }
 
+  const limpiarFiltros = () => {
+    setTermino('')
+    setFiltroFicha('')
+    setFiltroEstado('')
+    setPagina(1)
+  }
+
+  const hayFiltros = Boolean(termino || filtroFicha || filtroEstado)
+
   // Las mismas acciones se usan en todas las tarjetas, para no duplicar la
   // lógica de permisos.
+  //
+  // Las acciones van SIEMPRE en una sola fila (nunca se parten en dos
+  // líneas). Cuando la tarjeta es angosta (< 420 px) se ocultan los iconos
+  // y se reduce el relleno horizontal ANTES que tocar el texto: el texto se
+  // mantiene siempre en 12 px y completo.
   const renderAcciones = (c) => {
-    const paso = PASOS_CANDADO[c.estado?.codigo]
+    const paso = pasoDeEstado(c.estado?.codigo)
     const editable = c.estado?.codigo === 'borrador' || c.estado?.codigo === 'publicada'
 
     // El aspirante ve UNA sola acción: "Ver información". Siempre disponible,
     // incluso si la convocatoria ya no está publicada: el detalle absorbe el 404.
     if (esAspirante) {
       return (
-        <BotonIcono etiqueta="Ver información" onClick={() => navigate(`/convocatorias/${c.id}`)}>
-          <IconoOjo />
-        </BotonIcono>
+        <Boton
+          variante="primario"
+          tamano="sm"
+          className={CLASE_BOTON_ACCION}
+          onClick={() => navigate(`/convocatorias/${c.id}`)}
+          aria-label={`Ver información de ${c.nombre}`}
+        >
+          <IconoOjo className={CLASE_ICONO_ACCION} />
+          <span className="whitespace-nowrap">Ver información</span>
+        </Boton>
       )
     }
 
+    // Quien gestiona ve, en este orden: VER el detalle (acción principal,
+    // verde del sistema), EDITAR (contorno) y CERRAR (contorno rojo, para
+    // distinguirlo de los otros dos). Cerrar SIEMPRE pide confirmación.
     return (
       <>
-        <BotonIcono etiqueta="Ver detalle" onClick={() => navigate(`/convocatorias/${c.id}`)}>
-          <IconoOjo />
-        </BotonIcono>
+        <Boton
+          variante="primario"
+          tamano="sm"
+          className={CLASE_BOTON_ACCION}
+          onClick={() => navigate(`/convocatorias/${c.id}`)}
+          aria-label={`Ver detalle de ${c.nombre}`}
+        >
+          <IconoOjo className={CLASE_ICONO_ACCION} />
+          <span className="whitespace-nowrap">Ver detalle</span>
+        </Boton>
 
         {gestiona && editable && (
-          <BotonIcono etiqueta="Editar" onClick={() => navigate(`/convocatorias/${c.id}/editar`)}>
-            <IconoLapiz />
-          </BotonIcono>
+          <Boton
+            variante="secundario"
+            tamano="sm"
+            className={CLASE_BOTON_ACCION}
+            onClick={() => navigate(`/convocatorias/${c.id}/editar`)}
+            aria-label={`Editar ${c.nombre}`}
+          >
+            <IconoLapiz className={CLASE_ICONO_ACCION} />
+            <span className="whitespace-nowrap">Editar</span>
+          </Boton>
         )}
 
         {gestiona && paso && (
-          <BotonIcono
-            etiqueta={paso.etiqueta}
-            tono="rojo"
+          <Boton
+            variante="peligroSuave"
+            tamano="sm"
+            className={CLASE_BOTON_ACCION}
             disabled={accionandoId === c.id}
             onClick={() => avanzarEstado(c, paso)}
+            aria-label={`${paso.etiqueta} ${c.nombre}`}
           >
-            <IconoCandado />
-          </BotonIcono>
+            <IconoCandado className={CLASE_ICONO_ACCION} />
+            <span className="whitespace-nowrap">{paso.etiqueta}</span>
+          </Boton>
         )}
       </>
     )
   }
 
+  const totalTexto = `${meta.total} ${meta.total === 1 ? 'convocatoria' : 'convocatorias'}`
+
   return (
-    <div className="flex flex-col gap-3">
-      <div>
-        <h1 className="text-lg font-bold text-slate-800 dark:text-sena-texto">Convocatorias</h1>
-        <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
-          Gestiona y consulta las convocatorias disponibles para los procesos de selección.
-        </p>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className={CLASE_TITULO_PAGINA}>Convocatorias</h1>
+          <p className={CLASE_SUBTITULO_PAGINA}>
+            {gestiona
+              ? 'Gestiona y consulta las convocatorias de los procesos de selección.'
+              : 'Consulta las convocatorias publicadas y revisa sus condiciones.'}
+          </p>
+        </div>
+
+        {gestiona && (
+          <Boton
+            onClick={() => navigate('/convocatorias/nueva')}
+            className="self-start sm:self-auto"
+          >
+            <IconoMas className="h-4 w-4" />
+            Nueva convocatoria
+          </Boton>
+        )}
       </div>
 
-      {/* Barra de herramientas en dos filas: arriba el buscador y la acción
-          principal; abajo los selectores agrupados bajo una etiqueta. Así el
-          buscador y los filtros nunca se amontonan aunque haya varios. */}
-      <Tarjeta className="p-3">
-        <div className="flex flex-col gap-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative w-full sm:max-w-sm">
+      {/* Buscador y filtros. El estado solo lo ve quien gestiona; la ficha,
+          solo quien puede listar fichas. El contador vive en la misma barra. */}
+      <Tarjeta className="p-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative w-full lg:max-w-md">
               <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400 dark:text-sena-texto-suave">
                 <IconoLupa />
               </span>
               <input
                 type="search"
-                placeholder="Buscar por nombre, código o cargo..."
+                placeholder={
+                  gestionaEstricto
+                    ? 'Buscar por nombre, código o cargo...'
+                    : 'Buscar por nombre o cargo...'
+                }
                 value={termino}
                 onChange={(e) => setTermino(e.target.value)}
+                aria-label={
+                  gestionaEstricto
+                    ? 'Buscar convocatorias por nombre, código o cargo'
+                    : 'Buscar convocatorias por nombre o cargo'
+                }
                 className={`${CLASE_INPUT} w-full pl-10`}
               />
             </div>
 
-            {gestiona && (
-              <Boton className="sm:ml-auto" onClick={() => navigate('/convocatorias/nueva')}>
-                + Nueva convocatoria
-              </Boton>
-            )}
+            <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+              {gestionaEstricto && (
+                <select
+                  value={filtroEstado}
+                  onChange={(e) => {
+                    setFiltroEstado(e.target.value)
+                    setPagina(1)
+                  }}
+                  aria-label="Filtrar por estado"
+                  className={`${CLASE_INPUT} min-w-[10rem]`}
+                >
+                  <option value="">Todos los estados</option>
+                  {opcionesEstado.map((o) => (
+                    <option key={o.codigo} value={o.codigo}>
+                      {o.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {puedeFiltrarFicha && (
+                <select
+                  value={filtroFicha}
+                  onChange={(e) => {
+                    setFiltroFicha(e.target.value)
+                    setPagina(1)
+                  }}
+                  aria-label="Filtrar por ficha"
+                  className={`${CLASE_INPUT} max-w-full sm:max-w-xs`}
+                >
+                  <option value="">Todas las fichas</option>
+                  {fichas.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.codigo} · {f.nombre_programa}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {hayFiltros && (
+                <Boton variante="fantasma" tamano="sm" onClick={limpiarFiltros}>
+                  <IconoX className="h-4 w-4" />
+                  Limpiar filtros
+                </Boton>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-sena-linea/60 pt-2.5 dark:border-sena-borde/50">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-sena-texto-suave">
-              Filtrar
-            </span>
-
-            {puedeFiltrarFicha && (
-              <select
-                value={filtroFicha}
-                onChange={(e) => {
-                  setFiltroFicha(e.target.value)
-                  setPagina(1)
-                }}
-                className={CLASE_INPUT}
-              >
-                <option value="">Todas las fichas</option>
-                {fichas.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.codigo} · {f.nombre_programa}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <select
-              value={filtroEstado}
-              onChange={(e) => {
-                setFiltroEstado(e.target.value)
-                setPagina(1)
-              }}
-              className={CLASE_INPUT}
-            >
-              <option value="">Todos los estados</option>
-              {opcionesEstado.map((o) => (
-                <option key={o.codigo} value={o.codigo}>
-                  {o.nombre}
-                </option>
-              ))}
-            </select>
-
-            {(termino || filtroFicha || filtroEstado) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setTermino('')
-                  setFiltroFicha('')
-                  setFiltroEstado('')
-                  setPagina(1)
-                }}
-                className="ml-1 text-xs font-medium text-sena-azul underline-offset-2 hover:underline dark:text-sena-texto"
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
+          <p className="text-sm text-slate-600 dark:text-sena-texto-suave" aria-live="polite">
+            {cargando ? 'Cargando convocatorias…' : totalTexto}
+          </p>
         </div>
       </Tarjeta>
 
       {error && <MensajeError>{error}</MensajeError>}
 
       {cargando && (
-        <Tarjeta className="p-4">
-          <Cargando>Cargando convocatorias...</Cargando>
-        </Tarjeta>
-      )}
-
-      {!cargando && convocatorias.length === 0 && (
-        <Tarjeta className="p-4">
-          <EstadoVacio>No hay convocatorias que coincidan con los filtros.</EstadoVacio>
-        </Tarjeta>
-      )}
-
-      {/* Rejilla de tarjetas: una convocatoria por tarjeta, en todos los anchos. */}
-      {!cargando && convocatorias.length > 0 && (
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-          {convocatorias.map((c) => (
-            <Tarjeta key={c.id} className="relative flex flex-col p-2.5 pl-3">
-              {/* Franja de color por estado: refuerza la lectura sin depender
-                  solo de la etiqueta. Se redondea a la izquierda para seguir la
-                  curva de la tarjeta. */}
-              <span
-                aria-hidden="true"
-                className={`absolute inset-y-0 left-0 w-1.5 rounded-l-2xl ${
-                  FRANJA_ESTADO[c.estado?.codigo] ?? 'bg-sena-linea'
-                }`}
-              />
-
-              <div className="flex items-start justify-between gap-2">
-                <span className="inline-flex items-center rounded-md bg-sena-fondo px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-sena-azul dark:bg-sena-noche/50 dark:text-sena-texto-suave">
-                  {c.codigo}
-                </span>
-                <EtiquetaEstado codigo={c.estado?.codigo} nombre={c.estado?.nombre} />
+        <div
+          className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"
+          aria-busy="true"
+        >
+          {[0, 1, 2].map((i) => (
+            <Tarjeta key={i} className="p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className={`${CLASE_ESQUELETO} h-4 w-24`} />
+                <div className={`${CLASE_ESQUELETO} h-5 w-16 rounded-full`} />
               </div>
-
-              <h3 className="mt-1 text-sm font-semibold leading-snug text-slate-800 dark:text-sena-texto">
-                {c.nombre}
-              </h3>
-              <p className="mt-0.5 text-[11px] text-slate-600 dark:text-sena-texto-suave">{c.cargo}</p>
-
-              <dl className="my-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
-                {/* PUBLICACIÓN = fecha de apertura (suposición anotada en el documento 05). */}
-                <div>
-                  <dt className={CLASE_META_DT}>
-                    <IconoCalendario className="h-3 w-3" /> Publicación
-                  </dt>
-                  <dd className={CLASE_META_DD}>{formatearFecha(c.fecha_apertura)}</dd>
-                </div>
-                <div>
-                  <dt className={CLASE_META_DT}>
-                    <IconoCalendario className="h-3 w-3" /> Cierre
-                  </dt>
-                  <dd className={CLASE_META_DD}>{formatearFecha(c.fecha_cierre)}</dd>
-                </div>
-                <div>
-                  <dt className={CLASE_META_DT}>
-                    <IconoMaletin className="h-3 w-3" /> Vacantes
-                  </dt>
-                  <dd className={CLASE_META_DD}>{c.vacantes}</dd>
-                </div>
-                {gestiona && (
-                  <div>
-                    <dt className={CLASE_META_DT}>
-                      <IconoUsuarios className="h-3 w-3" /> Aspirantes
-                    </dt>
-                    {/* El backend no envía postulantes al aspirante. */}
-                    <dd className="text-xs font-semibold text-sena-azul dark:text-sena-texto">
-                      {c.postulantes ?? 0}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-
-              <div className="mt-auto flex justify-end gap-1 border-t border-sena-linea/70 pt-1.5 dark:border-sena-borde/60">
-                {renderAcciones(c)}
+              <div className={`${CLASE_ESQUELETO} mt-4 h-5 w-4/5`} />
+              <div className={`${CLASE_ESQUELETO} mt-2 h-4 w-3/5`} />
+              <div className="mt-4 flex gap-2">
+                <div className={`${CLASE_ESQUELETO} h-6 w-20 rounded-full`} />
+                <div className={`${CLASE_ESQUELETO} h-6 w-24 rounded-full`} />
               </div>
+              <div className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4">
+                <div className={`${CLASE_ESQUELETO} h-9 w-full`} />
+                <div className={`${CLASE_ESQUELETO} h-9 w-full`} />
+                <div className={`${CLASE_ESQUELETO} h-9 w-full`} />
+                <div className={`${CLASE_ESQUELETO} h-9 w-full`} />
+              </div>
+              <div className={`${CLASE_ESQUELETO} mt-5 h-9 w-full`} />
             </Tarjeta>
           ))}
+          <span className="sr-only">Cargando convocatorias…</span>
         </div>
       )}
 
-      <Tarjeta className="flex flex-wrap items-center justify-between gap-3 px-3 py-2 text-sm text-slate-600 dark:text-sena-texto-suave">
-        <span>
-          Página {meta.current_page} de {Math.max(meta.last_page, 1)} · {meta.total} convocatoria(s)
-        </span>
-        <div className="flex gap-2">
-          <Boton
-            variante="secundario"
-            tamano="sm"
-            onClick={() => setPagina((p) => Math.max(1, p - 1))}
-            disabled={meta.current_page <= 1}
-          >
-            Anterior
-          </Boton>
-          <Boton
-            variante="secundario"
-            tamano="sm"
-            onClick={() => setPagina((p) => Math.min(meta.last_page, p + 1))}
-            disabled={meta.current_page >= meta.last_page}
-          >
-            Siguiente
-          </Boton>
+      {!cargando && !error && convocatorias.length === 0 && (
+        <Tarjeta className="p-10 text-center" role="status">
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-sena-fondo text-sena-azul dark:bg-sena-noche/50 dark:text-sena-texto-suave">
+            <IconoLupa className="h-6 w-6" />
+          </div>
+          <h2 className="mt-4 text-base font-semibold text-sena-azul dark:text-sena-texto">
+            {hayFiltros ? 'No hay convocatorias con esos filtros' : 'Todavía no hay convocatorias'}
+          </h2>
+          <p className="mx-auto mt-1 max-w-md text-sm text-slate-600 dark:text-sena-texto-suave">
+            {hayFiltros
+              ? 'Prueba con otro término de búsqueda o quita los filtros para ver todas.'
+              : gestiona
+                ? 'Crea la primera convocatoria para empezar a recibir postulaciones.'
+                : 'Cuando se publique una convocatoria, aparecerá aquí.'}
+          </p>
+          {hayFiltros ? (
+            <Boton
+              variante="secundario"
+              tamano="sm"
+              className="mt-4"
+              onClick={limpiarFiltros}
+            >
+              <IconoX className="h-4 w-4" />
+              Limpiar filtros
+            </Boton>
+          ) : gestiona ? (
+            <Boton tamano="sm" className="mt-4" onClick={() => navigate('/convocatorias/nueva')}>
+              <IconoMas className="h-4 w-4" />
+              Nueva convocatoria
+            </Boton>
+          ) : null}
+        </Tarjeta>
+      )}
+
+      {/* Rejilla 3/2/1. Cada tarjeta usa solo campos del resumen: nada de
+          llamadas al detalle por tarjeta. */}
+      {!cargando && convocatorias.length > 0 && (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {convocatorias.map((c) => {
+            const documentos = c.documentos ?? []
+            const obligatorios = documentos.filter((d) => d.obligatorio).length
+            // "Cierra en N días" solo cuando faltan 3 días o menos (se calcula
+            // con las fechas de la convocatoria, sin zona horaria ambigua).
+            const cierraPronto = textoCierraPronto(c.fecha_cierre)
+
+            return (
+              <article
+                key={c.id}
+                className={`${CLASE_TARJETA_PLANA} @container flex h-full flex-col p-5 transition-colors hover:border-sena-azul/40 dark:hover:border-sena-borde`}
+              >
+                {/* 1) Fila superior: identificador (solo gestión) a la
+                    izquierda y estado a la derecha. El Aspirante no ve el
+                    identificador: es un dato de gestión. */}
+                <div className="flex items-start justify-between gap-3">
+                  <span className="min-w-0 truncate pt-0.5 font-mono text-xs font-medium tracking-wide text-slate-500 dark:text-sena-texto-suave">
+                    {gestionaEstricto ? c.codigo : null}
+                  </span>
+                  {(gestionaEstricto || c.estado?.codigo !== 'cerrada') && (
+                    <EtiquetaEstado codigo={c.estado?.codigo} nombre={c.estado?.nombre} />
+                  )}
+                </div>
+
+                {/* 2) Identidad: título a dos líneas como máximo (para que las
+                    tarjetas de la fila conserven la misma altura) con el
+                    nombre completo en el tooltip, y debajo la línea
+                    secundaria "cargo · área". */}
+                <div className="mt-4">
+                  <h3
+                    title={c.nombre}
+                    className="line-clamp-2 text-base font-semibold leading-snug text-sena-azul dark:text-sena-texto"
+                  >
+                    {c.nombre}
+                  </h3>
+                  <p
+                    title={[c.cargo, c.area].filter(Boolean).join(' · ')}
+                    className="mt-1.5 line-clamp-1 text-sm text-slate-600 dark:text-sena-texto-suave"
+                  >
+                    {c.cargo}
+                    {c.area && <span> · {c.area}</span>}
+                  </p>
+                </div>
+
+                {/* 3) Chips en orden fijo: modalidad, tipo de contrato y tipo
+                    de convocatoria. Cada uno dice qué es (title y aria-label),
+                    porque el chip solo lleva el valor. */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {c.modalidad?.nombre && (
+                    <span
+                      title={`Modalidad: ${c.modalidad.nombre}`}
+                      aria-label={`Modalidad: ${c.modalidad.nombre}`}
+                      className={CLASE_CHIP}
+                    >
+                      {c.modalidad.nombre}
+                    </span>
+                  )}
+                  {c.tipo_contrato?.nombre && (
+                    <span
+                      title={`Tipo de contrato: ${c.tipo_contrato.nombre}`}
+                      aria-label={`Tipo de contrato: ${c.tipo_contrato.nombre}`}
+                      className={CLASE_CHIP}
+                    >
+                      {c.tipo_contrato.nombre}
+                    </span>
+                  )}
+                  {c.tipo_convocatoria?.nombre && (
+                    <span
+                      title={`Tipo de convocatoria: ${c.tipo_convocatoria.nombre}`}
+                      aria-label={`Tipo de convocatoria: ${c.tipo_convocatoria.nombre}`}
+                      className={CLASE_CHIP}
+                    >
+                      {c.tipo_convocatoria.nombre}
+                    </span>
+                  )}
+                </div>
+
+                {/* 4) Cuadrícula de datos con la etiqueta arriba y el valor
+                    abajo. «Aspirantes» es el quinto dato y solo lo ve quien
+                    puede gestionar: el Aspirante nunca lo ve. */}
+                <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3.5">
+                  <div>
+                    <dt className={CLASE_META_DT}>Publicación</dt>
+                    <dd className={CLASE_META_DD}>{formatearFecha(c.fecha_apertura)}</dd>
+                  </div>
+                  <div>
+                    <dt className={CLASE_META_DT}>Cierre</dt>
+                    <dd className={CLASE_META_DD}>{formatearFecha(c.fecha_cierre)}</dd>
+                    {cierraPronto && (
+                      <dd className="mt-0.5 text-xs font-medium text-sena-azul dark:text-sena-texto">
+                        {cierraPronto}
+                      </dd>
+                    )}
+                  </div>
+                  <div>
+                    <dt className={CLASE_META_DT}>Vacantes</dt>
+                    <dd className={CLASE_META_DD}>{c.vacantes}</dd>
+                  </div>
+                  <div>
+                    <dt className={CLASE_META_DT}>Documentos</dt>
+                    <dd className={CLASE_META_DD}>
+                      {documentos.length === 0 ? (
+                        'Sin documentos'
+                      ) : (
+                        <>
+                          {documentos.length}
+                          <span className="ml-1 text-xs font-normal text-slate-500 dark:text-sena-texto-suave">
+                            ·{' '}
+                            {obligatorios === documentos.length
+                              ? 'todos obligatorios'
+                              : obligatorios === 0
+                                ? 'opcionales'
+                                : `${obligatorios} obligatorio${obligatorios === 1 ? '' : 's'}`}
+                          </span>
+                        </>
+                      )}
+                    </dd>
+                  </div>
+                  {gestiona && (
+                    <div>
+                      <dt className={CLASE_META_DT}>Aspirantes</dt>
+                      <dd className={CLASE_META_DD}>{c.postulantes ?? 0}</dd>
+                    </div>
+                  )}
+                </dl>
+
+                {/* 5) Pie: las acciones en UNA sola fila, ocupando todo el
+                    ancho de la tarjeta. «N aspirantes» ya no está aquí: es el
+                    quinto dato de la cuadrícula. Al Aspirante le queda el
+                    estado de su postulación, a la izquierda de la fila. */}
+                <div className="mt-auto pt-5">
+                  {esAspirante && c.mi_postulacion && (
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-sena-texto-suave">
+                      <span>Tu postulación</span>
+                      <EtiquetaPostulacion
+                        codigo={c.mi_postulacion.estado?.codigo}
+                        nombre={c.mi_postulacion.estado?.nombre}
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {renderAcciones(c)}
+                  </div>
+                </div>
+              </article>
+            )
+          })}
         </div>
-      </Tarjeta>
+      )}
+
+      {!cargando && meta.total > 0 && meta.last_page > 1 && (
+        <Tarjeta className="flex flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-slate-600 dark:text-sena-texto-suave">
+            Página {meta.current_page} de {Math.max(meta.last_page, 1)}
+          </span>
+          <div className="flex gap-2">
+            <Boton
+              variante="secundario"
+              tamano="sm"
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+              disabled={meta.current_page <= 1}
+              aria-label="Página anterior"
+            >
+              <IconoFlechaIzquierda className="h-4 w-4" />
+              Anterior
+            </Boton>
+            <Boton
+              variante="secundario"
+              tamano="sm"
+              onClick={() => setPagina((p) => Math.min(meta.last_page, p + 1))}
+              disabled={meta.current_page >= meta.last_page}
+              aria-label="Página siguiente"
+            >
+              Siguiente
+              <IconoFlechaDerecha className="h-4 w-4" />
+            </Boton>
+          </div>
+        </Tarjeta>
+      )}
     </div>
   )
 }
