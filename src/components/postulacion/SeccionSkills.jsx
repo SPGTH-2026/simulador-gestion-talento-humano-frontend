@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { validarArchivoPostulacion } from '../../lib/archivosPostulacion'
 import { MAX_SKILLS, normalizarSkill } from '../../lib/postulacionDocumentos'
 import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
@@ -48,6 +48,7 @@ function FilaSkill({
   editable,
   enVuelo,
   progresoCert,
+  certificadosSubidos,
   clave,
   tope,
   sinSiNo = false,
@@ -60,7 +61,7 @@ function FilaSkill({
   onArchivo,
 }) {
   const activa = Boolean(declarada)
-  const certificado = declarada?.certificado
+  const certificado = declarada?.certificado || (declarada?.id ? certificadosSubidos?.[declarada.id] : null)
   const ocupada =
     enVuelo === clave ||
     (activa && (enVuelo === `cert-${declarada.id}` || enVuelo === `skill-${declarada.id}`))
@@ -162,6 +163,10 @@ function FilaSkill({
         </p>
       )}
 
+      {activa && enVuelo === `cert-${declarada.id}` && (
+        <BarraProgreso valor={progresoCert ?? 0} etiqueta="Subiendo certificado" />
+      )}
+
       <input
         ref={registrarRef}
         type="file"
@@ -204,7 +209,15 @@ export default function SeccionSkills({
   const [enVuelo, setEnVuelo] = useState(null)
   // Porcentaje (0-100) de la subida del certificado en curso.
   const [progresoCert, setProgresoCert] = useState(0)
+  // certificadosSubidos[skillId] = certificado recién subido, para mostrarlo de
+  // inmediato sin esperar a que onRecargar() vuelva a traer todo el estado.
+  const [certificadosSubidos, setCertificadosSubidos] = useState({})
   const refsCertificado = useRef({})
+
+  // Cuando la vista se actualiza (onRecargar terminó), limpiamos los locales.
+  useEffect(() => {
+    setCertificadosSubidos({})
+  }, [vista])
 
   const buscarDeclarada = (nombre) =>
     declaradas.find((s) => normalizarSkill(s.nombre) === normalizarSkill(nombre))
@@ -283,8 +296,12 @@ export default function SeccionSkills({
     setProgresoCert(0)
     setError('')
     try {
-      await subirCertificado(await pidSeguro(), skill.id, archivo, setProgresoCert)
-      onRecargar()
+      const resultado = await subirCertificado(await pidSeguro(), skill.id, archivo, setProgresoCert)
+      // Mostrar el certificado de inmediato, sin esperar a onRecargar().
+      if (resultado?.certificado) {
+        setCertificadosSubidos((prev) => ({ ...prev, [skill.id]: resultado.certificado }))
+      }
+      onRecargar() // sincroniza en segundo plano
     } catch (e) {
       const deCampo = erroresDeCampo(e)
       setError(deCampo.archivo || mensajeError(e))
@@ -377,7 +394,7 @@ export default function SeccionSkills({
                   nombre={requerida.nombre}
                   declarada={declarada}
                   editable={editable}
-                  enVuelo={enVuelo} progresoCert={progresoCert}
+                  enVuelo={enVuelo} progresoCert={progresoCert} certificadosSubidos={certificadosSubidos}
                   clave={clave}
                   tope={tope}
                   sinSiNo={soloLectura}
@@ -424,7 +441,7 @@ export default function SeccionSkills({
                 nombre={skill.nombre}
                 declarada={skill}
                 editable={editable}
-                enVuelo={enVuelo} progresoCert={progresoCert}
+                enVuelo={enVuelo} progresoCert={progresoCert} certificadosSubidos={certificadosSubidos}
                 clave={`skill-${skill.id}`}
                 tope={tope}
                 sinSiNo

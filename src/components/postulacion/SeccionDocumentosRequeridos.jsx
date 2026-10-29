@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { validarArchivoPostulacion, TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
 import { ETIQUETAS_DOCUMENTO, esObligatorioFijo } from '../../lib/documentosConvocatoria'
 import { CODIGO_LIBRETA_MILITAR, formatearTamano } from '../../lib/postulacionDocumentos'
@@ -46,9 +46,18 @@ export default function SeccionDocumentosRequeridos({
   const [enVuelo, setEnVuelo] = useState(() => new Set())
   // progreso[codigo] = porcentaje (0-100) de la subida en curso de ese documento.
   const [progreso, setProgreso] = useState({})
+  // archivosSubidos[codigo] = documento recién subido, para mostrarlo de inmediato
+  // sin esperar a que onRecargar() vuelva a traer todo el estado.
+  const [archivosSubidos, setArchivosSubidos] = useState({})
   // errores[codigo] = mensaje de validación o del backend.
   const [errores, setErrores] = useState({})
   const refsInput = useRef({})
+
+  // Cuando la vista se actualiza (onRecargar terminó), limpiamos los archivos
+  // locales: el estado del servidor ya los incluye.
+  useEffect(() => {
+    if (vista?.documentos) setArchivosSubidos({})
+  }, [vista])
 
   const marcarEnVuelo = (codigo, activo) =>
     setEnVuelo((prev) => {
@@ -81,10 +90,12 @@ export default function SeccionDocumentosRequeridos({
     limpiarError(codigo)
     try {
       const { postulacionId } = await asegurar()
-      await subirDocumento(postulacionId, codigo, archivo, (porcentaje) =>
+      const resultado = await subirDocumento(postulacionId, codigo, archivo, (porcentaje) =>
         setProgreso((prev) => ({ ...prev, [codigo]: porcentaje })),
       )
-      onRecargar()
+      // Mostrar el archivo de inmediato, sin esperar a onRecargar().
+      setArchivosSubidos((prev) => ({ ...prev, [codigo]: resultado }))
+      onRecargar() // sincroniza en segundo plano, sin bloquear
     } catch (e) {
       // 422 por archivo, tipo de documento o libreta militar: se pinta en la fila.
       const deCampo = erroresDeCampo(e)
@@ -98,7 +109,7 @@ export default function SeccionDocumentosRequeridos({
   const confirmar = useConfirmacion()
 
   const eliminar = async (documento, codigo) => {
-    const nombre = documento.archivo?.nombre_original
+    const nombre = documento?.archivo?.nombre_original ?? documento?.nombre_original
     const ok = await confirmar({
       titulo: 'Eliminar documento',
       mensaje: nombre
@@ -139,6 +150,9 @@ export default function SeccionDocumentosRequeridos({
         {documentos.map((documento) => {
           const { parametro, obligatorio, estado: estadoDoc, archivo } = documento
           const codigo = parametro.codigo
+          // Si acaba de subir, usamos el archivo local para mostrar las opciones
+          // de inmediato, sin esperar a que onRecargar() vuelva.
+          const archivoMostrar = archivosSubidos[codigo] ?? archivo
           const enProceso = enVuelo.has(codigo)
           const error = errores[codigo]
           const esLibreta = codigo === CODIGO_LIBRETA_MILITAR
@@ -173,10 +187,10 @@ export default function SeccionDocumentosRequeridos({
                     )}
                   </p>
 
-                  {estadoDoc === 'subido' && archivo && (
+                  {(estadoDoc === 'subido' || archivosSubidos[codigo]) && archivoMostrar && (
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
-                      {archivo.nombre_original} · {formatearTamano(archivo.tamano_bytes)}
-                      {archivo.subido_en && <> · Subido el {formatearFechaHora(archivo.subido_en)}</>}
+                      {archivoMostrar.nombre_original} �� {formatearTamano(archivoMostrar.tamano_bytes)}
+                      {archivoMostrar.subido_en && <> �� Subido el {formatearFechaHora(archivoMostrar.subido_en)}</>}
                     </p>
                   )}
                   {estadoDoc === 'pendiente' && !bloqueoLibreta && (
@@ -199,11 +213,11 @@ export default function SeccionDocumentosRequeridos({
 
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Botón Ver (preview) - solo si hay archivo */}
-                  {archivo && (
+                  {archivoMostrar && (
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => ver(archivo)}
+                      onClick={() => ver(archivoMostrar)}
                       className={CLASE_BOTON}
                     >
                       Ver
@@ -220,7 +234,7 @@ export default function SeccionDocumentosRequeridos({
                     >
                       {enProceso
                         ? 'Subiendo...'
-                        : estadoDoc === 'subido'
+                        : estadoDoc === 'subido' || archivosSubidos[codigo]
                           ? 'Reemplazar'
                           : error
                             ? 'Reintentar'
@@ -232,7 +246,7 @@ export default function SeccionDocumentosRequeridos({
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => eliminar(archivo, codigo)}
+                      onClick={() => eliminar(archivoMostrar, codigo)}
                       className={CLASE_ELIMINAR}
                     >
                       {enProceso ? 'Eliminando...' : 'Eliminar'}
