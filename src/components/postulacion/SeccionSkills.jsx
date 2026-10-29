@@ -10,6 +10,7 @@ import {
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import { IconoOjo } from '../convocatorias/Iconos'
+import BarraProgreso from '../ui/BarraProgreso'
 
 const ESTILO_TARJETA =
   'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
@@ -43,6 +44,7 @@ function FilaSkill({
   declarada,
   editable,
   enVuelo,
+  progresoCert,
   clave,
   tope,
   esPropia,
@@ -192,6 +194,9 @@ function FilaSkill({
           e.target.value = ''
         }}
       />
+      {activa && enVuelo === `cert-${declarada.id}` && (
+        <BarraProgreso valor={progresoCert ?? 0} etiqueta="Subiendo certificado" />
+      )}
     </li>
   )
 }
@@ -218,6 +223,8 @@ export default function SeccionSkills({
   // clave de la operación en vuelo: 'propia' | `req-...` | `cat-<id>` |
   // `skill-<id>` | `cert-<id>`
   const [enVuelo, setEnVuelo] = useState(null)
+  // Porcentaje (0-100) de la subida del certificado en curso.
+  const [progresoCert, setProgresoCert] = useState(0)
   const refsCertificado = useRef({})
 
   const buscarDeclarada = (nombre) =>
@@ -283,9 +290,10 @@ export default function SeccionSkills({
       return
     }
     setEnVuelo(`cert-${skill.id}`)
+    setProgresoCert(0)
     setError('')
     try {
-      await subirCertificado(await pidSeguro(), skill.id, archivo)
+      await subirCertificado(await pidSeguro(), skill.id, archivo, setProgresoCert)
       onRecargar()
     } catch (e) {
       const deCampo = erroresDeCampo(e)
@@ -372,7 +380,7 @@ export default function SeccionSkills({
                   nombre={requerida.nombre}
                   declarada={declarada}
                   editable={editable}
-                  enVuelo={enVuelo}
+                  enVuelo={enVuelo} progresoCert={progresoCert}
                   clave={clave}
                   tope={tope}
                   onActivar={() => {
@@ -409,7 +417,7 @@ export default function SeccionSkills({
                   nombre={opcion.nombre}
                   declarada={declarada}
                   editable={editable}
-                  enVuelo={enVuelo}
+                  enVuelo={enVuelo} progresoCert={progresoCert}
                   clave={clave}
                   tope={tope}
                   onActivar={() => {
@@ -436,7 +444,7 @@ export default function SeccionSkills({
               nombre={skill.nombre}
               declarada={skill}
               editable={editable}
-              enVuelo={enVuelo}
+              enVuelo={enVuelo} progresoCert={progresoCert}
               clave={`skill-${skill.id}`}
               tope={tope}
               esPropia

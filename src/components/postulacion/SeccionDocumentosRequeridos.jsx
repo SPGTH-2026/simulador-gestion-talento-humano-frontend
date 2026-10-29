@@ -8,6 +8,7 @@ import {
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { IconoOjo } from '../convocatorias/Iconos'
+import BarraProgreso from '../ui/BarraProgreso'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 
 const ESTILO_TARJETA =
@@ -43,6 +44,8 @@ export default function SeccionDocumentosRequeridos({
   // códigos de los documentos con una petición EN VUELO. Un Set permite que
   // varias filas trabajen a la vez sin pisarse (una operación por documento).
   const [enVuelo, setEnVuelo] = useState(() => new Set())
+  // progreso[codigo] = porcentaje (0-100) de la subida en curso de ese documento.
+  const [progreso, setProgreso] = useState({})
   // errores[codigo] = mensaje de validación o del backend.
   const [errores, setErrores] = useState({})
   const refsInput = useRef({})
@@ -74,10 +77,13 @@ export default function SeccionDocumentosRequeridos({
     }
 
     marcarEnVuelo(codigo, true)
+    setProgreso((prev) => ({ ...prev, [codigo]: 0 }))
     limpiarError(codigo)
     try {
       const { postulacionId } = await asegurar()
-      await subirDocumento(postulacionId, codigo, archivo)
+      await subirDocumento(postulacionId, codigo, archivo, (porcentaje) =>
+        setProgreso((prev) => ({ ...prev, [codigo]: porcentaje })),
+      )
       onRecargar()
     } catch (e) {
       // 422 por archivo, tipo de documento o libreta militar: se pinta en la fila.
@@ -180,6 +186,7 @@ export default function SeccionDocumentosRequeridos({
                       {motivoLibreta}
                     </p>
                   )}
+                  {enProceso && <BarraProgreso valor={progreso[codigo] ?? 0} />}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">

@@ -13,6 +13,7 @@ import {
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import { IconoOjo } from '../convocatorias/Iconos'
+import BarraProgreso from '../ui/BarraProgreso'
 
 const ESTILO_TARJETA =
   'rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie'
@@ -50,6 +51,8 @@ export default function SeccionAdicionales({
   const [archivo, setArchivo] = useState(null)
   const [errores, setErrores] = useState({})
   const [enviando, setEnviando] = useState(false)
+  // Porcentaje (0-100) de la subida del adicional que se está enviando.
+  const [progresoEnvio, setProgresoEnvio] = useState(0)
   // ids de los adicionales con una petición en vuelo (una por fila).
   const [enVueloIds, setEnVueloIds] = useState(() => new Set())
   const refArchivo = useRef(null)
@@ -74,10 +77,16 @@ export default function SeccionAdicionales({
     }
 
     setEnviando(true)
+    setProgresoEnvio(0)
     setErrores({})
     try {
       const { postulacionId } = await asegurar()
-      await subirAdicional(postulacionId, { titulo: titulo.trim(), nota: nota.trim(), archivo })
+      await subirAdicional(postulacionId, {
+        titulo: titulo.trim(),
+        nota: nota.trim(),
+        archivo,
+        alProgresar: setProgresoEnvio,
+      })
       limpiar()
       onRecargar()
     } catch (e) {
@@ -255,6 +264,8 @@ export default function SeccionAdicionales({
               </p>
             )}
           </div>
+
+          {enviando && <BarraProgreso valor={progresoEnvio} etiqueta="Subiendo documento adicional" />}
 
           <div>
             <button type="submit" disabled={enviando} className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50">
