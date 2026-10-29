@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/useAuth'
 import { listaUsuarios, asignarRol } from '../../api/usuarios'
 import { listaFichas } from '../../api/fichas'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 import Boton from '../../components/ui/Boton'
 import Cargando from '../../components/ui/Cargando'
 import EstadoVacio from '../../components/ui/EstadoVacio'
@@ -126,6 +127,15 @@ export default function Usuarios() {
     setErrores({})
   }
 
+  // Reemplaza solo esa fila con la respuesta del servidor: así la etiqueta de
+  // estado cambia al confirmar, sin recargar la lista ni mover la paginación.
+  // Se conserva postulaciones_count, que el PATCH no devuelve.
+  const actualizarFila = (usuarioNuevo) => {
+    setUsuarios((prev) =>
+      prev.map((u) => (u.id === usuarioNuevo.id ? { ...u, ...usuarioNuevo } : u)),
+    )
+  }
+
   const guardar = async (e) => {
     e.preventDefault()
     setGuardando(true)
@@ -136,20 +146,54 @@ export default function Usuarios() {
     const admiteFicha = form.role === 'aprendiz' || form.role === 'aspirante'
 
     try {
-      await asignarRol(editandoId, {
+      const respuesta = await asignarRol(editandoId, {
         role: form.role,
         subrole: esAprendiz ? form.subrole : null,
         active: form.active,
         ficha_id: admiteFicha ? (form.ficha_id || null) : null,
       })
+      actualizarFila(respuesta.data)
       setEditandoId(null)
-      setExito('Rol actualizado correctamente.')
+      setExito('Usuario actualizado correctamente.')
       setError('')
     } catch (err) {
       setErrores(erroresDeCampo(err))
       setError(mensajeError(err))
     } finally {
       setGuardando(false)
+    }
+  }
+
+  // Inhabilitar (active = false) o reactivar, sin cambiar rol ni ficha. Usa la
+  // misma forma de envío que el formulario para que el backend valide igual.
+  const confirmar = useConfirmacion()
+
+  const alternarActivo = async (u) => {
+    const inhabilitar = u.active
+    const ok = await confirmar({
+      titulo: inhabilitar ? 'Inhabilitar usuario' : 'Reactivar usuario',
+      mensaje: inhabilitar
+        ? `¿Estás seguro de inhabilitar a ${u.name}? No podrá iniciar sesión y sus postulaciones se ocultarán hasta que lo reactives.`
+        : `¿Estás seguro de reactivar a ${u.name}? Volverá a poder iniciar sesión.`,
+      textoConfirmar: inhabilitar ? 'Inhabilitar' : 'Reactivar',
+      textoCancelar: 'Cancelar',
+      peligro: inhabilitar,
+    })
+    if (!ok) return
+
+    setError('')
+    setExito('')
+    try {
+      const respuesta = await asignarRol(u.id, {
+        role: u.role,
+        subrole: u.role === 'aprendiz' ? u.subrole : null,
+        active: !u.active,
+        ficha_id: u.role === 'aprendiz' || u.role === 'aspirante' ? (u.ficha?.id ?? null) : null,
+      })
+      actualizarFila(respuesta.data)
+      setExito(inhabilitar ? 'Usuario inhabilitado.' : 'Usuario reactivado.')
+    } catch (err) {
+      setError(mensajeError(err))
     }
   }
 
@@ -329,9 +373,20 @@ export default function Usuarios() {
                         </Etiqueta>
                       </td>
                       <td className={`${CLASE_TD} text-right`}>
-                        <Boton variante="secundario" tamano="sm" onClick={() => empezarEdicion(u)}>
-                          Cambiar rol
-                        </Boton>
+                        <div className="flex justify-end gap-2">
+                          <Boton variante="secundario" tamano="sm" onClick={() => empezarEdicion(u)}>
+                            Cambiar rol
+                          </Boton>
+                          {u.id !== user?.id && (
+                            <Boton
+                              variante={u.active ? 'peligro' : 'secundario'}
+                              tamano="sm"
+                              onClick={() => alternarActivo(u)}
+                            >
+                              {u.active ? 'Inhabilitar' : 'Reactivar'}
+                            </Boton>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ),
