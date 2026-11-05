@@ -12,6 +12,17 @@ import client from './client'
 //     descarga con el nombre original; si fallan, el cuerpo del error también
 //     es un Blob y hay que leerlo como texto para mostrar el mensaje.
 
+// Config de axios para medir el avance de una subida. 'loaded/total' es el
+// progreso de los bytes enviados; sin total (algunos navegadores) no se informa.
+function progresoSubida(alProgresar) {
+  if (typeof alProgresar !== 'function') return {}
+  return {
+    onUploadProgress: (evento) => {
+      if (evento.total) alProgresar(Math.round((evento.loaded * 100) / evento.total))
+    },
+  }
+}
+
 // GET /api/postulaciones/{id}/documentos  ->  { data: {...} }  estado completo.
 export const estadoDocumentos = (postulacionId) =>
   client.get(`/postulaciones/${postulacionId}/documentos`).then((res) => res.data.data)
@@ -30,12 +41,13 @@ export const guardarSexo = (sexo) =>
 
 // POST /api/postulaciones/{id}/documentos  (multipart: codigo + archivo)
 // 201 si es nuevo, 200 si reemplaza el existente.
-export const subirDocumento = (postulacionId, codigo, archivo) => {
+// 'alProgresar(porcentaje)' es opcional: informa el avance real de la subida.
+export const subirDocumento = (postulacionId, codigo, archivo, alProgresar) => {
   const datos = new FormData()
   datos.append('codigo', codigo)
   datos.append('archivo', archivo)
   return client
-    .post(`/postulaciones/${postulacionId}/documentos`, datos)
+    .post(`/postulaciones/${postulacionId}/documentos`, datos, progresoSubida(alProgresar))
     .then((res) => res.data.data)
 }
 
@@ -45,13 +57,13 @@ export const eliminarDocumento = (postulacionId, documentoId) =>
 
 // POST /api/postulaciones/{id}/documentos/adicionales
 //   multipart: titulo (obligatorio), nota (opcional), archivo
-export const subirAdicional = (postulacionId, { titulo, nota, archivo }) => {
+export const subirAdicional = (postulacionId, { titulo, nota, archivo, alProgresar }) => {
   const datos = new FormData()
   datos.append('titulo', titulo)
   if (nota) datos.append('nota', nota)
   datos.append('archivo', archivo)
   return client
-    .post(`/postulaciones/${postulacionId}/documentos/adicionales`, datos)
+    .post(`/postulaciones/${postulacionId}/documentos/adicionales`, datos, progresoSubida(alProgresar))
     .then((res) => res.data.data)
 }
 
@@ -79,11 +91,11 @@ export const eliminarSkill = (postulacionId, skillId) =>
   client.delete(`/postulaciones/${postulacionId}/skills/${skillId}`)
 
 // POST /api/postulaciones/{id}/skills/{skill}/certificado  (multipart: archivo)
-export const subirCertificado = (postulacionId, skillId, archivo) => {
+export const subirCertificado = (postulacionId, skillId, archivo, alProgresar) => {
   const datos = new FormData()
   datos.append('archivo', archivo)
   return client
-    .post(`/postulaciones/${postulacionId}/skills/${skillId}/certificado`, datos)
+    .post(`/postulaciones/${postulacionId}/skills/${skillId}/certificado`, datos, progresoSubida(alProgresar))
     .then((res) => res.data.data)
 }
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { validarArchivoPostulacion, TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
 import {
   MAX_DOCUMENTOS_ADICIONALES,
@@ -14,6 +14,7 @@ import {
 } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import BarraProgreso from '../ui/BarraProgreso'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
@@ -34,17 +35,27 @@ export default function SeccionAdicionales({
   onError,
 }) {
   const adicionales = vista.adicionales ?? []
+  // Adicionales recién subidos, para mostrarlos de inmediato sin esperar a onRecargar().
+  const [adicionalesLocales, setAdicionalesLocales] = useState([])
+  const adicionalesMostrar = [...adicionales, ...adicionalesLocales]
 
   const [titulo, setTitulo] = useState('')
   const [nota, setNota] = useState('')
   const [archivo, setArchivo] = useState(null)
   const [errores, setErrores] = useState({})
   const [enviando, setEnviando] = useState(false)
+  // Porcentaje (0-100) de la subida del adicional que se está enviando.
+  const [progresoEnvio, setProgresoEnvio] = useState(0)
   // ids de los adicionales con una petición en vuelo (una por fila).
   const [enVueloIds, setEnVueloIds] = useState(() => new Set())
   const refArchivo = useRef(null)
 
-  const tope = adicionales.length >= MAX_DOCUMENTOS_ADICIONALES
+  // Cuando la vista se actualiza (onRecargar terminó), limpiamos los locales.
+  useEffect(() => {
+    setAdicionalesLocales([])
+  }, [vista])
+
+  const tope = adicionalesMostrar.length >= MAX_DOCUMENTOS_ADICIONALES
   const puedeAgregar = editable && !tope
 
   const pidSeguro = async () => vista.postulacion?.id ?? (await asegurar()).postulacionId
@@ -97,12 +108,20 @@ export default function SeccionAdicionales({
     }
 
     setEnviando(true)
+    setProgresoEnvio(0)
     setErrores({})
     try {
       const { postulacionId } = await asegurar()
-      await subirAdicional(postulacionId, { titulo: titulo.trim(), nota: nota.trim(), archivo })
+      const resultado = await subirAdicional(postulacionId, {
+        titulo: titulo.trim(),
+        nota: nota.trim(),
+        archivo,
+        alProgresar: setProgresoEnvio,
+      })
+      // Mostrar el nuevo adicional de inmediato, sin esperar a onRecargar().
+      setAdicionalesLocales((prev) => [...prev, resultado])
       limpiar()
-      onRecargar()
+      onRecargar() // sincroniza en segundo plano
     } catch (e) {
       const deCampo = erroresDeCampo(e)
       if (Object.keys(deCampo).length > 0) setErrores(deCampo)
@@ -145,7 +164,7 @@ export default function SeccionAdicionales({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className={ESTILO_TITULO}>Documentos adicionales</h2>
         <span className="text-xs text-slate-500 dark:text-sena-texto-suave">
-          {adicionales.length} de {MAX_DOCUMENTOS_ADICIONALES}
+          {adicionalesMostrar.length} de {MAX_DOCUMENTOS_ADICIONALES}
         </span>
       </div>
 
@@ -155,7 +174,7 @@ export default function SeccionAdicionales({
       </p>
 
       <ul className="mt-3 flex flex-col divide-y divide-slate-100 dark:divide-sena-borde">
-        {adicionales.map((adicional) => {
+        {adicionalesMostrar.map((adicional) => {
           const enProceso = enVueloIds.has(adicional.id)
           return (
             <li key={adicional.id} className="flex flex-col gap-2 py-3">
@@ -273,6 +292,8 @@ export default function SeccionAdicionales({
               </p>
             )}
           </div>
+
+          {enviando && <BarraProgreso valor={progresoEnvio} etiqueta="Subiendo documento adicional" />}
 
           <div>
             <button type="submit" disabled={enviando} className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50">
