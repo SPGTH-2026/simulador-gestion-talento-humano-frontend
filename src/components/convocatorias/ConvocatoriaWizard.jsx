@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { listaParametros } from '../../api/convocatorias'
+import { crearDocumentoCatalogo, listaParametros } from '../../api/convocatorias'
+import { mensajeError } from '../../api/mensajeError'
 import { listaFichas } from '../../api/fichas'
 import {
   DOCUMENTOS_OBLIGATORIOS,
@@ -124,8 +125,16 @@ function formInicial(valores) {
     // igual); en edición mandan los documentos reales del backend. Sembrarlos
     // aquí no cuenta como cambio: es el estado inicial del formulario.
     documentos: Array.isArray(valores?.documentos)
-      ? valores.documentos.map((d) => d.codigo)
+      ? valores.documentos.map((d) => d.codigo ?? d.id)
       : [...DOCUMENTOS_OBLIGATORIOS],
+    // Porcentaje (%) de cada documento en la evaluación de ESTA convocatoria,
+    // indexado por su identificador (código de catálogo o id si es un documento
+    // nuevo). Vacío = no configurado (reparto equitativo).
+    ponderaciones: Object.fromEntries(
+      (Array.isArray(valores?.documentos) ? valores.documentos : [])
+        .filter((d) => d && (d.codigo != null || d.id != null) && d.ponderacion != null)
+        .map((d) => [d.codigo ?? d.id, String(d.ponderacion)]),
+    ),
   }
 }
 
@@ -192,6 +201,12 @@ export default function ConvocatoriaWizard({
   const [erroresLocales, setErroresLocales] = useState({})
   const [nuevaSkill, setNuevaSkill] = useState('')
   const [errorSkill, setErrorSkill] = useState('')
+
+  // Documento NUEVO del catálogo (especialización, maestría, diplomado...).
+  const [nuevoDocumento, setNuevoDocumento] = useState('')
+  const [errorDocumento, setErrorDocumento] = useState('')
+  const [guardandoDocumento, setGuardandoDocumento] = useState(false)
+  const [mostrarNuevoDocumento, setMostrarNuevoDocumento] = useState(false)
 
   // Evita marcar "cambios sin guardar" por la carga inicial del catálogo.
   const primerRender = useRef(true)
@@ -367,15 +382,53 @@ export default function ConvocatoriaWizard({
     }))
   }
 
-  const alternarDocumento = (codigo) => {
+  const alternarDocumento = (identificador) => {
     // Los obligatorios fijos no se pueden quitar.
-    if (esObligatorioFijo(codigo)) return
+    if (esObligatorioFijo(identificador)) return
     setForm((prev) => ({
       ...prev,
-      documentos: prev.documentos.includes(codigo)
-        ? prev.documentos.filter((c) => c !== codigo)
-        : [...prev.documentos, codigo],
+      documentos: prev.documentos.includes(identificador)
+        ? prev.documentos.filter((c) => c !== identificador)
+        : [...prev.documentos, identificador],
     }))
+    limpiarErrorLocal('documentos')
+  }
+
+  // Crea un documento NUEVO en el catálogo y lo suma (marcado) a esta
+  // convocatoria. El gestor luego le pone su porcentaje como a cualquier otro.
+  const agregarDocumentoCatalogo = async () => {
+    const nombre = nuevoDocumento.trim()
+
+    if (nombre.length < 3) {
+      setErrorDocumento('Escribe un nombre de al menos 3 caracteres.')
+      return
+    }
+
+    setGuardandoDocumento(true)
+    setErrorDocumento('')
+
+    try {
+      const creado = await crearDocumentoCatalogo(nombre)
+      const identificador = creado.codigo ?? creado.id
+
+      setCatalogos((prev) => ({
+        ...(prev ?? {}),
+        tipo_documento: [...(prev?.tipo_documento ?? []), creado],
+      }))
+
+      setForm((prev) => ({
+        ...prev,
+        documentos: prev.documentos.includes(identificador)
+          ? prev.documentos
+          : [...prev.documentos, identificador],
+      }))
+
+      setNuevoDocumento('')
+    } catch (e) {
+      setErrorDocumento(mensajeError(e))
+    } finally {
+      setGuardandoDocumento(false)
+    }
   }
 
   // Catálogo de skills (tema skill_catalogo): es lo que el gestor puede
@@ -399,6 +452,9 @@ export default function ConvocatoriaWizard({
   // que los fijos se ven siempre, incluso en convocatorias viejas que no los
   // traen guardados.
   const catalogoDocumentos = catalogos?.tipo_documento ?? []
+  // Identificador estable de un documento: su código de catálogo o, si es un
+  // documento NUEVO (sin código), su id.
+  const identificadorDocumento = (documento) => documento.codigo ?? documento.id
   const documentosObligatorios = DOCUMENTOS_OBLIGATORIOS
     .map((codigo) => catalogoDocumentos.find((d) => d.codigo === codigo))
     .filter(Boolean)
@@ -410,6 +466,66 @@ export default function ConvocatoriaWizard({
   // del bloqueo global por estado de solo lectura).
   const documentosBloqueados = soloLectura || bloquearDocumentos
 
+  // ── Ponderación (%) de los documentos en la evaluación ──────────────
+  // El porcentaje lo define el gestor para CADA convocatoria; no es un valor
+  // global. Vacío = no configurado y la evaluación reparte el 100 % en partes
+  // iguales (comportamiento histórico).
+  const ponderacionDe = (codigo) => form.ponderaciones[codigo] ?? ''
+
+  const cambiarPonderacion = (codigo, valor) => {
+    // Solo números (con hasta dos decimales) y máximo 100.
+    const limpio = String(valor).replace(/[^\d.]/g, '').slice(0, 6)
+    setForm((prev) => ({
+      ...prev,
+      ponderaciones: { ...prev.ponderaciones, [codigo]: limpio },
+    }))
+    limpiarErrorLocal('documentos')
+  }
+
+  // Reparte el 100 % en partes iguales entre los documentos elegidos. El
+  // último absorbe el redondeo para que la suma sea exactamente 100.
+  const repartirPonderaciones = () => {
+    const total = form.documentos.length
+    if (total === 0) return
+
+    const base = Math.floor((100 / total) * 100) / 100
+    const mapa = {}
+    let acumulado = 0
+
+    form.documentos.forEach((codigo, indice) => {
+      const valor =
+        indice === total - 1 ? Math.round((100 - acumulado) * 100) / 100 : base
+      acumulado += valor
+      mapa[codigo] = String(valor)
+    })
+
+    setForm((prev) => ({ ...prev, ponderaciones: mapa }))
+    limpiarErrorLocal('documentos')
+  }
+
+  const sumaPonderaciones = () =>
+    form.documentos.reduce((acc, codigo) => acc + (Number(ponderacionDe(codigo)) || 0), 0)
+
+  // Devuelve el mensaje de error o null. Sin porcentajes configurados es válido.
+  const validarPonderaciones = () => {
+    const configurados = form.documentos.filter(
+      (codigo) => String(ponderacionDe(codigo)).trim() !== '',
+    )
+
+    if (configurados.length === 0) return null
+
+    if (configurados.length !== form.documentos.length) {
+      return 'Define el porcentaje de todos los documentos: deben sumar 100%.'
+    }
+
+    const suma = sumaPonderaciones()
+    if (Math.abs(suma - 100) > 0.01) {
+      return `Los porcentajes de los documentos deben sumar 100% (suman ${Math.round(suma * 100) / 100}%).`
+    }
+
+    return null
+  }
+
   const validarEtapa = (numero) => {
     const campos = OBLIGATORIOS_ETAPA[numero] ?? []
     const faltantes = {}
@@ -420,7 +536,18 @@ export default function ConvocatoriaWizard({
     if (numero === 1 && esNueva && fichas.length > 1 && !form.ficha_id) {
       faltantes.ficha_id = 'Elige la ficha de la convocatoria.'
     }
-    setErroresLocales((prev) => ({ ...prev, ...faltantes }))
+
+    setErroresLocales((prev) => {
+      const siguiente = { ...prev, ...faltantes }
+      // En la etapa de documentos el error se recalcula: si ya se corrigió, se
+      // limpia en vez de quedarse pegado.
+      if (numero === ULTIMA_ETAPA) {
+        const errorPonderaciones = validarPonderaciones()
+        if (errorPonderaciones) siguiente.documentos = errorPonderaciones
+        else delete siguiente.documentos
+      }
+      return siguiente
+    })
   }
 
   const siguiente = () => {
@@ -457,7 +584,18 @@ export default function ConvocatoriaWizard({
       nombre: s.nombre,
       parametro_id: s.parametro_id ?? null,
     })),
-    documentos: form.documentos,
+    documentos: form.documentos.map((identificador) => {
+      const peso = String(form.ponderaciones[identificador] ?? '').trim()
+
+      return {
+        // Los documentos del catálogo viajan por código; los nuevos, por id.
+        ...(typeof identificador === 'number'
+          ? { id: identificador }
+          : { codigo: identificador }),
+        // null = sin configurar en esta convocatoria (reparto equitativo).
+        ponderacion: peso === '' ? null : Number(peso),
+      }
+    }),
     // La ficha solo se manda al crear y solo si el usuario tiene más de una:
     // con una sola, el backend la hereda de la sesión. Al editar no se envía:
     // la convocatoria ya tiene ficha y no se puede mover.
@@ -473,6 +611,57 @@ export default function ConvocatoriaWizard({
     disabled: soloLectura,
     className: CLASE_INPUT,
   })
+
+  // Una fila del paso de documentos: casilla, nombre, etiquetas y su porcentaje.
+  // El % solo se habilita cuando el documento está incluido en la convocatoria.
+  const filaDocumento = (documento, fijo = false) => {
+    const identificador = identificadorDocumento(documento)
+    const incluido = fijo || form.documentos.includes(identificador)
+    const deshabilitado = !incluido || documentosBloqueados
+
+    return (
+      <div
+        key={documento.id}
+        className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 p-3 dark:border-sena-borde"
+      >
+        <label className="flex flex-1 items-center gap-2 text-sm text-slate-700 dark:text-sena-texto">
+          <input
+            type="checkbox"
+            checked={incluido}
+            onChange={() => alternarDocumento(identificador)}
+            readOnly={fijo}
+            disabled={fijo || documentosBloqueados}
+            className="h-4 w-4 accent-sena"
+          />
+          <span>{documento.nombre}</span>
+          {etiquetasDocumento(documento.codigo).map((etiqueta) => (
+            <Etiqueta key={etiqueta} tono="neutral">
+              {etiqueta}
+            </Etiqueta>
+          ))}
+        </label>
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            value={ponderacionDe(identificador)}
+            onChange={(e) => cambiarPonderacion(identificador, e.target.value)}
+            disabled={deshabilitado}
+            aria-label={`Porcentaje de ${documento.nombre}`}
+            placeholder="—"
+            className={`w-24 rounded border p-1.5 text-right text-sm focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 ${
+              deshabilitado
+                ? 'border-slate-200 bg-slate-200 text-slate-500 dark:border-sena-borde dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
+                : 'border-slate-300 bg-white text-slate-800 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto'
+            }`}
+          />
+          <span className="text-sm text-slate-500 dark:text-sena-texto-suave">%</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -820,13 +1009,108 @@ export default function ConvocatoriaWizard({
 
         {etapa === 6 && (
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
-              Los cuatro primeros son obligatorios y no se pueden quitar. Los
-              demás los eliges tú.
-            </p>
-            <p className="text-xs text-slate-400 dark:text-sena-texto-suave">
-              Solo se aceptan archivos PDF.
-            </p>
+            {/* Encabezado del paso con la acción de cargar un documento nuevo. */}
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
+                  Los cuatro primeros son obligatorios y no se pueden quitar. Los
+                  demás los eliges tú.
+                </p>
+                <p className="text-xs text-slate-400 dark:text-sena-texto-suave">
+                  Solo se aceptan archivos PDF.
+                </p>
+              </div>
+              {!documentosBloqueados && (
+                <Boton
+                  variante="secundario"
+                  tamano="sm"
+                  onClick={() => {
+                    setMostrarNuevoDocumento((v) => !v)
+                    setErrorDocumento('')
+                  }}
+                >
+                  + Agregar nuevo documento
+                </Boton>
+              )}
+            </div>
+
+            {/* Alta de un documento que no está en el catálogo (especialización,
+                maestría, diplomado...). Queda disponible para esta y otras
+                convocatorias. */}
+            {mostrarNuevoDocumento && !documentosBloqueados && (
+              <div className="flex flex-col gap-2 rounded-lg border border-sena-azul/30 bg-white p-3 dark:border-sena-borde dark:bg-sena-superficie">
+                <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
+                  Agrega un requisito que no está en el catálogo (por ejemplo
+                  Especialización o Maestría). Se sumará a esta convocatoria; luego
+                  le asignas su porcentaje.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={nuevoDocumento}
+                    onChange={(e) => setNuevoDocumento(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        agregarDocumentoCatalogo()
+                      }
+                    }}
+                    maxLength={80}
+                    placeholder="Nombre del documento (ej. Especialización en SST)"
+                    className="min-w-56 flex-1 rounded border border-slate-300 bg-white p-2 text-sm text-slate-800 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
+                  />
+                  <Boton tamano="sm" onClick={agregarDocumentoCatalogo} disabled={guardandoDocumento}>
+                    {guardandoDocumento ? 'Guardando…' : 'Agregar'}
+                  </Boton>
+                  <Boton
+                    variante="secundario"
+                    tamano="sm"
+                    onClick={() => {
+                      setMostrarNuevoDocumento(false)
+                      setNuevoDocumento('')
+                      setErrorDocumento('')
+                    }}
+                  >
+                    Cancelar
+                  </Boton>
+                </div>
+                {errorDocumento && (
+                  <span className="text-xs text-red-600 dark:text-red-400">{errorDocumento}</span>
+                )}
+              </div>
+            )}
+
+            {/* Porcentajes de la evaluación: propios de esta convocatoria. */}
+            <div className="rounded-lg border border-sena-azul/20 bg-sena-cielo/20 p-3 dark:border-sena-borde dark:bg-sena-superficie-alta/30">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-sena-texto">
+                    Porcentaje de cada documento en la evaluación
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-sena-texto-suave">
+                    Define el peso de cada documento para calificar esta
+                    convocatoria. Si los dejas vacíos, todos valen lo mismo.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`text-sm font-semibold ${
+                      Math.abs(sumaPonderaciones() - 100) <= 0.01 && sumaPonderaciones() > 0
+                        ? 'text-green-700 dark:text-green-300'
+                        : 'text-amber-700 dark:text-amber-300'
+                    }`}
+                  >
+                    Suma: {Math.round(sumaPonderaciones() * 100) / 100}%
+                  </span>
+                  {!documentosBloqueados && (
+                    <Boton variante="secundario" tamano="sm" onClick={repartirPonderaciones}>
+                      Repartir en partes iguales
+                    </Boton>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {errorDe('documentos') && (
               <span className="text-xs text-red-600 dark:text-red-400">{errorDe('documentos')}</span>
             )}
@@ -841,27 +1125,8 @@ export default function ConvocatoriaWizard({
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
                   Obligatorios (no se pueden quitar)
                 </h3>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {documentosObligatorios.map((d) => (
-                    <label
-                      key={d.id}
-                      className="flex items-center gap-2 rounded border border-slate-200 p-3 text-sm text-slate-700 dark:border-sena-borde dark:text-sena-texto"
-                    >
-                      <input
-                        type="checkbox"
-                        checked
-                        readOnly
-                        disabled
-                        className="h-4 w-4 accent-sena"
-                      />
-                      <span>{d.nombre}</span>
-                      {etiquetasDocumento(d.codigo).map((etiqueta) => (
-                        <Etiqueta key={etiqueta} tono="neutral">
-                          {etiqueta}
-                        </Etiqueta>
-                      ))}
-                    </label>
-                  ))}
+                <div className="flex flex-col gap-2">
+                  {documentosObligatorios.map((d) => filaDocumento(d, true))}
                 </div>
               </div>
             )}
@@ -871,27 +1136,8 @@ export default function ConvocatoriaWizard({
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
                   Opcionales
                 </h3>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {documentosOpcionales.map((d) => (
-                    <label
-                      key={d.id}
-                      className="flex items-center gap-2 rounded border border-slate-200 p-3 text-sm text-slate-700 dark:border-sena-borde dark:text-sena-texto"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={form.documentos.includes(d.codigo)}
-                        onChange={() => alternarDocumento(d.codigo)}
-                        disabled={documentosBloqueados}
-                        className="h-4 w-4 accent-sena"
-                      />
-                      <span>{d.nombre}</span>
-                      {etiquetasDocumento(d.codigo).map((etiqueta) => (
-                        <Etiqueta key={etiqueta} tono="neutral">
-                          {etiqueta}
-                        </Etiqueta>
-                      ))}
-                    </label>
-                  ))}
+                <div className="flex flex-col gap-2">
+                  {documentosOpcionales.map((d) => filaDocumento(d))}
                 </div>
               </div>
             )}

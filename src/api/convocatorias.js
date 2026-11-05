@@ -33,3 +33,8 @@ export const cambiarEstadoConvocatoria = (id, { estado }) =>
 // Solo parámetros activos, en orden.
 export const listaParametros = (tema) =>
   client.get('/parametros', { params: { tema } }).then((res) => res.data)
+
+// POST /api/parametros/documentos  body { nombre }  ->  201 { data: {...} }
+// Crea un documento NUEVO en el catálogo (especialización, maestría, etc.).
+export const crearDocumentoCatalogo = (nombre) =>
+  client.post('/parametros/documentos', { nombre }).then((res) => res.data?.data)

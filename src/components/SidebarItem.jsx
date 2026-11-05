@@ -36,8 +36,9 @@ export default function SidebarItem({ item, onNavegar }) {
   const { pathname } = useLocation()
   const hijos = item.children ?? []
   // Un módulo con un solo hijo visible no necesita acordeón: se muestra como
-  // enlace directo (por ejemplo, el aspirante solo tiene 'Listado').
-  const tieneHijos = hijos.length > 1
+  // enlace directo (por ejemplo, el aspirante solo tiene 'Listado'). La opción
+  // `acordeon: true` del menú fuerza el acordeón aunque haya un solo hijo.
+  const tieneHijos = hijos.length > 1 || item.acordeon === true
   const hijoActivo = tieneHijos && hijos.some((hijo) => hijo.to === pathname)
   const [abierto, setAbierto] = useState(hijoActivo)
 
