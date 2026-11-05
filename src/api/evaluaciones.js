@@ -1,9 +1,10 @@
 import client from './client'
 
-// GET /api/evaluaciones?convocatoria_id=&search=&page=
-//   -> { data: [...], meta: { current_page, last_page, per_page, total, convocatorias } }
-// 'meta.convocatorias' son las opciones del filtro: el subrol 'evaluador' no
-// tiene 'convocatorias:ver', así que no puede pedir el listado completo.
+// GET /api/evaluaciones?convocatoria_id=&ficha_id=&search=&page=
+//   -> { data: [...], meta: { current_page, last_page, per_page, total, convocatorias, fichas } }
+// 'meta.convocatorias' y 'meta.fichas' son las opciones de los filtros: el
+// subrol 'evaluador' no tiene 'convocatorias:ver', así que no puede pedir el
+// listado completo.
 export const listaEvaluaciones = (params) =>
   client.get('/evaluaciones', { params }).then((res) => res.data)
 

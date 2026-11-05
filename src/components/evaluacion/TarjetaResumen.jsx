@@ -1,5 +1,10 @@
-export default function TarjetaResumen({ cumplidos, total }) {
-  const pct = total > 0 ? Math.round((cumplidos / total) * 100) : 0
+export default function TarjetaResumen({ cumplidos, total, porcentaje, ponderado = false }) {
+  const pct =
+    porcentaje != null
+      ? Math.round(porcentaje)
+      : total > 0
+        ? Math.round((cumplidos / total) * 100)
+        : 0
   const pasa = pct >= 60
   return (
     <div
@@ -11,7 +16,8 @@ export default function TarjetaResumen({ cumplidos, total }) {
     >
       <div className="flex items-center justify-between gap-2">
         <span>
-          {pasa ? '✓ Cumple perfil — ' : ''}{cumplidos} de {total} requisitos cumplidos
+          {pasa ? '✓ Cumple perfil — ' : ''}
+          {cumplidos} de {total} requisitos cumplidos
         </span>
         <span className="text-base">{pct}%</span>
       </div>
@@ -24,6 +30,11 @@ export default function TarjetaResumen({ cumplidos, total }) {
       <div className={`mt-2 text-xs font-bold ${pasa ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
         {pasa ? '✓ Pasa a selección (≥ 60%)' : '✕ No pasa a selección (< 60%)'}
       </div>
+      <p className="mt-1 text-[11px] font-normal opacity-80">
+        {ponderado
+          ? 'Puntaje ponderado según los porcentajes de esta convocatoria.'
+          : 'Los documentos valen lo mismo (la convocatoria no configuró porcentajes).'}
+      </p>
     </div>
   )
 }

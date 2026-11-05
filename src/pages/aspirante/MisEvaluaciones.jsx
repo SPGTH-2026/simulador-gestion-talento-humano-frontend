@@ -32,6 +32,8 @@ export default function MisEvaluaciones() {
           .filter((d) => d.parametro?.nombre)
           .map((d) => ({
             nombre: d.parametro.nombre,
+            // Peso del documento en esta convocatoria (null = sin configurar).
+            ponderacion: d.ponderacion != null ? Number(d.ponderacion) : null,
             estado:
               d.estado === 'subido'
                 ? 'Validado'
@@ -218,9 +220,16 @@ export default function MisEvaluaciones() {
                 ) : (
                   <ul className="flex flex-col gap-1">
                     {docsDetalle.map((d, i) => (
-                      <li key={i} className="flex justify-between text-slate-700 dark:text-sena-texto">
-                        <span>{d.nombre}</span>
-                        <span className="font-medium">{d.estado}</span>
+                      <li key={i} className="flex justify-between gap-2 text-slate-700 dark:text-sena-texto">
+                        <span className="min-w-0 truncate">{d.nombre}</span>
+                        <span className="flex shrink-0 items-center gap-2">
+                          {d.ponderacion != null && (
+                            <span className="rounded-full bg-sena-cielo/60 px-2 py-0.5 text-[11px] font-semibold text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
+                              Peso: {Math.round(d.ponderacion * 100) / 100}%
+                            </span>
+                          )}
+                          <span className="font-medium">{d.estado}</span>
+                        </span>
                       </li>
                     ))}
                   </ul>

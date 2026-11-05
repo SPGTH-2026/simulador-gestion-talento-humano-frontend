@@ -1,6 +1,6 @@
 import BotonesToggle from './BotonesToggle'
 
-export default function ItemVerificacion({ icono, titulo, requerido, aspirante, respuesta, onChange, onVerDocumento }) {
+export default function ItemVerificacion({ icono, titulo, requerido, ponderacion, aspirante, respuesta, onChange, onVerDocumento }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 py-3 last:border-0 dark:border-sena-borde">
       <div className="flex items-center gap-3">
@@ -12,7 +12,13 @@ export default function ItemVerificacion({ icono, titulo, requerido, aspirante, 
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
+        {/* Peso del documento: a la izquierda del ojo. */}
+        {ponderacion != null && (
+          <span className="rounded-full bg-sena-cielo/60 px-2 py-0.5 text-[11px] font-semibold text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
+            Peso: {Math.round(Number(ponderacion) * 100) / 100}%
+          </span>
+        )}
         {onVerDocumento && (
           <button
             type="button"

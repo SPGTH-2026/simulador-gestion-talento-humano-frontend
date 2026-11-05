@@ -24,7 +24,6 @@ export default function EvaluacionEvaluar() {
 
   const [dato, setDato] = useState(null)
   const [documentos, setDocumentos] = useState([])
-  const [skills, setSkills] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(null)
@@ -33,21 +32,38 @@ export default function EvaluacionEvaluar() {
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
 
-  // Items de verificación = documentos requeridos + skills/habilidades de la convocatoria.
-  const items = [
-    ...documentos.map((d) => ({
-      id: d.id,
-      titulo: d.nombre,
-      requerido: 'Obligatorio',
-      aspirante: d.estado === 'validado' ? 'Subido' : d.estado === 'cargado' ? 'Pendiente' : 'Sin cargar',
-    })),
-    ...skills.map((s) => ({
-      id: s.id,
-      titulo: `Habilidad: ${s.nombre}`,
-      requerido: 'Declarada',
-      aspirante: s.estado === 'validado' ? 'Con certificado' : 'Sin certificado',
-    })),
-  ]
+  // Peso (%) de cada documento. Si la convocatoria no configuró porcentajes,
+  // todos valen lo mismo (reparto equitativo). Mismo criterio que el backend:
+  // lo que el gestor no configuró se reparte con lo que sobra del 100 %.
+  const ponderado = documentos.some((d) => d.ponderacion != null)
+  const pesos = {}
+  {
+    const sinPeso = []
+    let suma = 0
+    documentos.forEach((d) => {
+      if (d.ponderacion == null) {
+        sinPeso.push(d.id)
+        return
+      }
+      pesos[d.id] = Number(d.ponderacion)
+      suma += Number(d.ponderacion)
+    })
+    if (sinPeso.length > 0) {
+      const cuota = Math.max(0, 100 - suma) / sinPeso.length
+      sinPeso.forEach((id) => {
+        pesos[id] = cuota
+      })
+    }
+  }
+
+  // Items de verificación = documentos requeridos de la convocatoria.
+  const items = documentos.map((d) => ({
+    id: d.id,
+    titulo: d.nombre,
+    requerido: 'Obligatorio',
+    ponderacion: pesos[d.id],
+    aspirante: d.estado === 'validado' ? 'Subido' : d.estado === 'cargado' ? 'Pendiente' : 'Sin cargar',
+  }))
 
   useEffect(() => {
     if (!postulacionId) return
@@ -60,7 +76,6 @@ export default function EvaluacionEvaluar() {
         if (!vivo) return
         setDato(ev.data)
         setDocumentos(docs.data ?? [])
-        setSkills(docs.skills ?? [])
 
         if (ev.data.evaluacion) {
           setObservaciones(ev.data.evaluacion.observaciones ?? '')
@@ -85,7 +100,12 @@ export default function EvaluacionEvaluar() {
 
   const cumplidos = items.filter((it) => respuestas[it.id] === true).length
   const total = items.length
-  const cumplimiento = total > 0 ? Math.round((cumplidos / total) * 100) : 0
+  const pesoTotal = Object.values(pesos).reduce((acc, valor) => acc + valor, 0)
+  const pesoObtenido = items.reduce(
+    (acc, it) => acc + (respuestas[it.id] === true ? (pesos[it.id] ?? 0) : 0),
+    0,
+  )
+  const cumplimiento = pesoTotal > 0 ? Math.round((pesoObtenido / pesoTotal) * 100) : 0
 
   const guardar = async (estadoFinal) => {
     setError('')
@@ -259,6 +279,7 @@ export default function EvaluacionEvaluar() {
                 key={item.id}
                 titulo={item.titulo}
                 requerido={item.requerido}
+                ponderacion={item.ponderacion}
                 aspirante={item.aspirante}
                 respuesta={respuestas[item.id]}
                 onChange={(v) => setRespuestas((prev) => ({ ...prev, [item.id]: v }))}
@@ -267,7 +288,12 @@ export default function EvaluacionEvaluar() {
             ))
           )}
 
-          <TarjetaResumen cumplidos={cumplidos} total={total} />
+          <TarjetaResumen
+            cumplidos={cumplidos}
+            total={total}
+            porcentaje={cumplimiento}
+            ponderado={ponderado}
+          />
 
           <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
             Observaciones del evaluador sobre el perfil del aspirante...

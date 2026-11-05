@@ -12,11 +12,13 @@ const CLASE_INPUT =
 export default function EvaluacionListado() {
   const [filas, setFilas] = useState([])
   const [convocatorias, setConvocatorias] = useState([])
+  const [fichas, setFichas] = useState([])
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 })
 
   const [termino, setTermino] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [filtroConvocatoria, setFiltroConvocatoria] = useState('')
+  const [filtroFicha, setFiltroFicha] = useState('')
   const [pagina, setPagina] = useState(1)
 
   const [cargando, setCargando] = useState(true)
@@ -35,16 +37,18 @@ export default function EvaluacionListado() {
       page: pagina,
       search: busqueda || undefined,
       convocatoria_id: filtroConvocatoria || undefined,
+      ficha_id: filtroFicha || undefined,
     })
       .then((res) => {
         setFilas(res.data)
         setMeta(res.meta)
         if (Array.isArray(res.meta?.convocatorias)) setConvocatorias(res.meta.convocatorias)
+        if (Array.isArray(res.meta?.fichas)) setFichas(res.meta.fichas)
         setError('')
       })
       .catch((e) => setError(mensajeError(e)))
       .finally(() => setCargando(false))
-  }, [pagina, busqueda, filtroConvocatoria])
+  }, [pagina, busqueda, filtroConvocatoria, filtroFicha])
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,6 +63,23 @@ export default function EvaluacionListado() {
             onChange={(e) => setTermino(e.target.value)}
             className={CLASE_INPUT + ' min-w-56'}
           />
+
+          <select
+            value={filtroFicha}
+            onChange={(e) => {
+              setFiltroFicha(e.target.value)
+              setPagina(1)
+            }}
+            className={CLASE_INPUT}
+          >
+            <option value="">Todas las fichas</option>
+            {fichas.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.codigo}
+                {f.nombre_programa ? ` · ${f.nombre_programa}` : ''}
+              </option>
+            ))}
+          </select>
 
           <select
             value={filtroConvocatoria}

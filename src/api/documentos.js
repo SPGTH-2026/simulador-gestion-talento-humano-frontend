@@ -17,6 +17,9 @@ export const listaDocumentos = (postulacionId) =>
           id: `doc-${d.parametro.id}`,
           nombre: d.parametro.nombre,
           tipo: 'documento',
+          // Peso (%) configurado para este documento en la convocatoria.
+          // null = la convocatoria no configuró porcentajes.
+          ponderacion: d.ponderacion != null ? Number(d.ponderacion) : null,
           estado:
             d.estado === 'subido'
               ? 'validado'
