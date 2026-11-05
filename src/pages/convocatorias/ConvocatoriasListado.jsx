@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import useFiltrosUrl from '../../hooks/useFiltrosUrl'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import {
@@ -71,6 +72,9 @@ const CLASE_BOTON_ACCION =
 // Icono de la acción: oculto en tarjetas angostas (menos de 420 px).
 const CLASE_ICONO_ACCION = 'hidden h-4 w-4 shrink-0 @min-[420px]:block'
 
+// Parámetros de la URL que usa este listado (ver useFiltrosUrl).
+const CLAVES_FILTRO = ['q', 'estado', 'ficha']
+
 export default function ConvocatoriasListado() {
   const navigate = useNavigate()
   const { user, can } = useAuth()
@@ -95,11 +99,19 @@ export default function ConvocatoriasListado() {
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 })
   const [pagina, setPagina] = useState(1)
 
-  const [termino, setTermino] = useState('')
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
-  const [filtroFicha, setFiltroFicha] = useState('')
+  // Los filtros viven en la URL (?q=&estado=&ficha=): sobreviven a recargar y se
+  // pueden compartir. 'termino' es solo el texto que se está escribiendo; se
+  // pasa a la URL con un antirrebote.
+  const { valores, setValor, limpiar: limpiarUrl } = useFiltrosUrl(CLAVES_FILTRO)
+  const busqueda = valores.q
+  const filtroEstado = valores.estado
+  const filtroFicha = valores.ficha
+  const [termino, setTermino] = useState(() => valores.q)
   const [recarga, setRecarga] = useState(0)
+  const qUrl = useRef(valores.q)
+  useEffect(() => {
+    qUrl.current = valores.q
+  }, [valores.q])
 
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -108,11 +120,13 @@ export default function ConvocatoriasListado() {
   // El texto se aplaza 300 ms para no martillar el backend letra a letra.
   useEffect(() => {
     const t = setTimeout(() => {
-      setBusqueda(termino)
-      setPagina(1)
+      if (termino !== qUrl.current) {
+        setValor('q', termino)
+        setPagina(1)
+      }
     }, 300)
     return () => clearTimeout(t)
-  }, [termino])
+  }, [termino, setValor])
 
   // Las opciones del filtro salen del catálogo (tema estado_convocatoria), no
   // del código: así un estado nuevo en el backend aparece sin tocar el front.
@@ -202,8 +216,7 @@ export default function ConvocatoriasListado() {
 
   const limpiarFiltros = () => {
     setTermino('')
-    setFiltroFicha('')
-    setFiltroEstado('')
+    limpiarUrl()
     setPagina(1)
   }
 
@@ -340,7 +353,7 @@ export default function ConvocatoriasListado() {
                 <select
                   value={filtroEstado}
                   onChange={(e) => {
-                    setFiltroEstado(e.target.value)
+                    setValor('estado', e.target.value)
                     setPagina(1)
                   }}
                   aria-label="Filtrar por estado"
@@ -359,7 +372,7 @@ export default function ConvocatoriasListado() {
                 <select
                   value={filtroFicha}
                   onChange={(e) => {
-                    setFiltroFicha(e.target.value)
+                    setValor('ficha', e.target.value)
                     setPagina(1)
                   }}
                   aria-label="Filtrar por ficha"

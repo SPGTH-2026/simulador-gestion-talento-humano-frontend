@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 
 import ProtectedRoute from './auth/ProtectedRoute'
@@ -6,35 +7,36 @@ import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 
 import Login from './pages/login/Login'
-import Registro from './pages/login/Registro'
-import RecuperarContrasena from './pages/login/RecuperarContrasena'
-import VerificarCorreo from './pages/login/VerificarCorreo'
-import CompletarFicha from './pages/login/CompletarFicha'
-import NotFound from './pages/errores/NotFound'
+const Registro = lazy(() => import('./pages/login/Registro'))
+const RecuperarContrasena = lazy(() => import('./pages/login/RecuperarContrasena'))
+const VerificarCorreo = lazy(() => import('./pages/login/VerificarCorreo'))
+const CompletarFicha = lazy(() => import('./pages/login/CompletarFicha'))
+const NotFound = lazy(() => import('./pages/errores/NotFound'))
 
 import Dashboard from './pages/dashboard/Dashboard'
-import ConvocatoriasListado from './pages/convocatorias/ConvocatoriasListado'
-import ConvocatoriaNueva from './pages/convocatorias/ConvocatoriaNueva'
-import ConvocatoriaEditar from './pages/convocatorias/ConvocatoriaEditar'
-import ConvocatoriaDetalle from './pages/convocatorias/ConvocatoriaDetalle'
-import DocumentosListado from './pages/documentos/DocumentosListado'
-import PortafolioDetalle from './pages/documentos/PortafolioDetalle'
-import EvaluacionListado from './pages/evaluacion/EvaluacionListado'
-import EvaluacionEvaluar from './pages/evaluacion/EvaluacionEvaluar'
-import SeleccionRanking from './pages/seleccion/SeleccionRanking'
-import SeleccionDecidir from './pages/seleccion/SeleccionDecidir'
-import Usuarios from './pages/usuarios/Usuarios'
-import FichasListado from './pages/fichas/FichasListado'
-import Reportes from './pages/reportes/Reportes'
-import Supervision from './pages/supervision/Supervision'
-import MisPostulaciones from './pages/aspirante/MisPostulaciones'
-import DocumentosPostulacion from './pages/aspirante/DocumentosPostulacion'
-import MisDocumentos from './pages/aspirante/MisDocumentos'
-import MisEvaluaciones from './pages/aspirante/MisEvaluaciones'
-import Notificaciones from './pages/aspirante/Notificaciones'
+const ConvocatoriasListado = lazy(() => import('./pages/convocatorias/ConvocatoriasListado'))
+const ConvocatoriaNueva = lazy(() => import('./pages/convocatorias/ConvocatoriaNueva'))
+const ConvocatoriaEditar = lazy(() => import('./pages/convocatorias/ConvocatoriaEditar'))
+const ConvocatoriaDetalle = lazy(() => import('./pages/convocatorias/ConvocatoriaDetalle'))
+const DocumentosListado = lazy(() => import('./pages/documentos/DocumentosListado'))
+const PortafolioDetalle = lazy(() => import('./pages/documentos/PortafolioDetalle'))
+const EvaluacionListado = lazy(() => import('./pages/evaluacion/EvaluacionListado'))
+const EvaluacionEvaluar = lazy(() => import('./pages/evaluacion/EvaluacionEvaluar'))
+const SeleccionRanking = lazy(() => import('./pages/seleccion/SeleccionRanking'))
+const SeleccionDecidir = lazy(() => import('./pages/seleccion/SeleccionDecidir'))
+const Usuarios = lazy(() => import('./pages/usuarios/Usuarios'))
+const FichasListado = lazy(() => import('./pages/fichas/FichasListado'))
+const Reportes = lazy(() => import('./pages/reportes/Reportes'))
+const Supervision = lazy(() => import('./pages/supervision/Supervision'))
+const MisPostulaciones = lazy(() => import('./pages/aspirante/MisPostulaciones'))
+const DocumentosPostulacion = lazy(() => import('./pages/aspirante/DocumentosPostulacion'))
+const MisDocumentos = lazy(() => import('./pages/aspirante/MisDocumentos'))
+const MisEvaluaciones = lazy(() => import('./pages/aspirante/MisEvaluaciones'))
+const Notificaciones = lazy(() => import('./pages/aspirante/Notificaciones'))
 
 export default function AppRouter() {
   return (
+    <Suspense fallback={<p className="p-6 text-center text-slate-500">Cargando...</p>}>
     <Routes>
       {/* Sin sesión: login, registro y recuperación de contraseña */}
       <Route element={<AuthLayout />}>
@@ -116,5 +118,6 @@ export default function AppRouter() {
         </Route>
       </Route>
     </Routes>
+    </Suspense>
   )
 }
