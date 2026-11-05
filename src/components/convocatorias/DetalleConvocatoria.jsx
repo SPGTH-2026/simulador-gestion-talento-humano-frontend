@@ -238,6 +238,13 @@ export default function DetalleConvocatoria({
             <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-sena-texto">
               {documento.nombre}
             </span>
+            {/* Peso del documento en la evaluación de esta convocatoria. Solo
+                se muestra si el gestor lo configuró. */}
+            {documento.ponderacion != null && (
+              <span className="shrink-0 rounded-full bg-sena-cielo px-2 py-0.5 text-xs font-semibold text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
+                {Math.round(Number(documento.ponderacion) * 100) / 100}%
+              </span>
+            )}
             <EtiquetaDocumento obligatorio={Boolean(documento.obligatorio)} />
             {/* Regla propia del documento (libreta militar, tarjeta
                 profesional). Misma constante que usa el panel de postulación:

@@ -78,6 +78,7 @@ export default function AppRouter() {
           </Route>
           <Route element={<PermissionRoute permiso="evaluacion:evaluar" />}>
             <Route path="evaluacion/evaluar" element={<EvaluacionEvaluar />} />
+            <Route path="evaluacion/evaluar/:postulacionId" element={<EvaluacionEvaluar />} />
           </Route>
 
           <Route element={<PermissionRoute permiso="seleccion:ver" />}>

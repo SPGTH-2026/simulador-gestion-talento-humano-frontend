@@ -23,9 +23,11 @@ export const menu = [
   {
     id: 'evaluacion',
     label: 'Evaluación',
+    // Fuerza el acordeón aunque solo tenga un hijo, para que se vea
+    // "Evaluar aspirantes" como submódulo y no como enlace directo.
+    acordeon: true,
     children: [
-      { label: 'Aspirantes', to: '/evaluacion', permiso: 'evaluacion:ver' },
-      { label: 'Evaluar', to: '/evaluacion/evaluar', permiso: 'evaluacion:evaluar' },
+      { label: 'Evaluar aspirantes', to: '/evaluacion', permiso: 'evaluacion:ver' },
     ],
   },
 
@@ -37,6 +39,7 @@ export const menu = [
       { label: 'Decidir', to: '/seleccion/decidir', permiso: 'seleccion:decidir' },
     ],
   },
+
 
   { id: 'usuarios', label: 'Usuarios y Roles', to: '/usuarios', permiso: 'usuarios:gestionar' },
   { id: 'fichas', label: 'Fichas', to: '/fichas', permiso: 'usuarios:gestionar' },
