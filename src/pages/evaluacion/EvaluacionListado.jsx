@@ -5,6 +5,8 @@ import { mensajeError } from '../../api/mensajeError'
 import AvatarIniciales from '../../components/evaluacion/AvatarIniciales'
 import BadgeEstado from '../../components/evaluacion/BadgeEstado'
 import BarraProgreso from '../../components/evaluacion/BarraProgreso'
+import { IconoX } from '../../components/convocatorias/Iconos'
+import Boton from '../../components/ui/Boton'
 
 const CLASE_INPUT =
   'rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto'
@@ -49,6 +51,16 @@ export default function EvaluacionListado() {
       .catch((e) => setError(mensajeError(e)))
       .finally(() => setCargando(false))
   }, [pagina, busqueda, filtroConvocatoria, filtroFicha])
+
+  const hayFiltros = Boolean(termino || filtroFicha || filtroConvocatoria)
+
+  const limpiarFiltros = () => {
+    setTermino('')
+    setBusqueda('')
+    setFiltroFicha('')
+    setFiltroConvocatoria('')
+    setPagina(1)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -96,6 +108,13 @@ export default function EvaluacionListado() {
               </option>
             ))}
           </select>
+
+          {hayFiltros && (
+            <Boton variante="fantasma" tamano="sm" onClick={limpiarFiltros}>
+              <IconoX className="h-4 w-4" />
+              Limpiar filtros
+            </Boton>
+          )}
         </div>
       </div>
 
