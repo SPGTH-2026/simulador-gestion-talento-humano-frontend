@@ -1,40 +1,30 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   obtenerPortafolio,
   estadoRevision,
-  reemplazarDocumentoGestion,
-  guardarAdicionalGestion,
-  eliminarDocumentoGestion,
-  subirCertificadoGestion,
-  quitarCertificadoGestion,
+  descargarDocumentoRevision,
+  descargarCertificadoRevision,
 } from '../../api/portafolios'
 import { abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulacionesDocumentos'
-import { useAuth } from '../../auth/useAuth'
 import Mensaje from '../../components/ui/Mensaje'
 import Cargando from '../../components/ui/Cargando'
-import { useConfirmacion } from '../../hooks/useConfirmacion'
 import IndicadorCompletitud from '../../components/postulacion/IndicadorCompletitud'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
-import { IconoOjo, IconoBasura, IconoDescarga, BotonIcono } from '../../components/convocatorias/Iconos'
+import { IconoOjo, IconoDescarga } from '../../components/convocatorias/Iconos'
 import { formatearTamano } from '../../lib/postulacionDocumentos'
 
+// Portafolio en solo lectura: quien llega aquí ve y descarga, no escribe.
 export default function PortafolioDetalle() {
   const { userId } = useParams()
   const navigate = useNavigate()
-  const { can } = useAuth()
-  const puedeGestionar = can('documentos:gestionar')
 
   const [portafolio, setPortafolio] = useState(null)
   const [postulacionSel, setPostulacionSel] = useState(null)
   const [revision, setRevision] = useState(null)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
-  const [ocupado, setOcupado] = useState(null)
-  const [aviso, setAviso] = useState('')
   const [errorAccion, setErrorAccion] = useState('')
-  const inputArchivo = useRef(null)
-  const pendiente = useRef(null)
 
   const cargarPortafolio = useCallback(async () => {
     setCargando(true)
@@ -73,112 +63,10 @@ export default function PortafolioDetalle() {
     if (postulacion.puede_ver_documentos) {
       setPostulacionSel(postulacion)
       setRevision(null)
-      setAviso('')
       setErrorAccion('')
       cargarRevision(postulacion.id)
     }
   }
-
-  const recargarRevision = () => cargarRevision(postulacionSel.id)
-
-  // Ejecuta una acción de gestión con estado de "ocupado" y mensajes en español.
-  const ejecutar = async (clave, accion, textoOk) => {
-    setOcupado(clave)
-    setErrorAccion('')
-    setAviso('')
-    try {
-      await accion()
-      setAviso(textoOk)
-      await recargarRevision()
-    } catch (e) {
-      const msg = await mensajeErrorBlob(e)
-      setErrorAccion(msg || e?.response?.data?.message || 'No se pudo completar la acción.')
-    } finally {
-      setOcupado(null)
-    }
-  }
-
-  // Abre el selector de archivo; el resultado llega a onArchivoElegido.
-  const elegirArchivo = (tarea) => {
-    pendiente.current = tarea
-    inputArchivo.current?.click()
-  }
-
-  const onArchivoElegido = (evento) => {
-    const archivo = evento.target.files?.[0]
-    evento.target.value = ''
-    const tarea = pendiente.current
-    pendiente.current = null
-    if (!archivo || !tarea) return
-
-    const postulacionId = postulacionSel.id
-    if (tarea.tipo === 'requerido') {
-      ejecutar(tarea.clave,
-        () => reemplazarDocumentoGestion(postulacionId, tarea.codigo, archivo),
-        'Documento reemplazado.')
-    } else if (tarea.tipo === 'adicional') {
-      ejecutar(tarea.clave,
-        () => guardarAdicionalGestion(postulacionId, {
-          titulo: tarea.titulo,
-          nota: tarea.nota,
-          archivo,
-          documentoId: tarea.documentoId,
-        }),
-        'Documento adicional guardado.')
-    } else if (tarea.tipo === 'certificado') {
-      ejecutar(tarea.clave,
-        () => subirCertificadoGestion(postulacionId, tarea.skillId, archivo),
-        'Certificado reemplazado.')
-    }
-  }
-
-  const confirmar = useConfirmacion()
-
-  // Pide confirmación con el diálogo del sistema y, si acepta, ejecuta la acción.
-  const confirmarEliminar = async (clave, { titulo, mensaje, textoConfirmar }, accion, textoOk) => {
-    const ok = await confirmar({
-      titulo,
-      mensaje,
-      textoConfirmar,
-      textoCancelar: 'Cancelar',
-      peligro: true,
-    })
-    if (!ok) return
-    ejecutar(clave, accion, textoOk)
-  }
-
-  const eliminarRequerido = (d) => confirmarEliminar(
-    `eliminar-${d.archivo.id}`,
-    {
-      titulo: 'Eliminar documento',
-      mensaje: `¿Estás seguro de eliminar "${d.archivo.nombre_original}"? Esta acción no se puede deshacer.`,
-      textoConfirmar: 'Eliminar',
-    },
-    () => eliminarDocumentoGestion(postulacionSel.id, d.archivo.id),
-    'Documento eliminado.',
-  )
-
-  const eliminarAdicional = (d) => confirmarEliminar(
-    `eliminar-${d.archivo?.id}`,
-    {
-      titulo: 'Eliminar documento adicional',
-      mensaje: `¿Estás seguro de eliminar el adicional "${d.titulo}"? Esta acción no se puede deshacer.`,
-      textoConfirmar: 'Eliminar',
-    },
-    () => eliminarDocumentoGestion(postulacionSel.id, d.id),
-    'Documento adicional eliminado.',
-  )
-
-  const quitarCert = (s) => confirmarEliminar(
-    `quitar-${s.id}`,
-    {
-      titulo: 'Quitar certificado',
-      mensaje: `¿Estás seguro de quitar el certificado de "${s.nombre}"? La skill se conserva.`,
-      textoConfirmar: 'Quitar',
-    },
-    () => quitarCertificadoGestion(postulacionSel.id, s.id),
-    'Certificado quitado.',
-  )
 
   const verArchivo = (ruta, nombre) => {
     setErrorAccion('')
@@ -186,6 +74,16 @@ export default function PortafolioDetalle() {
       const msg = await mensajeErrorBlob(e)
       setErrorAccion(msg || 'No se pudo abrir el archivo.')
     })
+  }
+
+  const descargar = async (descarga) => {
+    setErrorAccion('')
+    try {
+      await descarga()
+    } catch (e) {
+      const msg = await mensajeErrorBlob(e)
+      setErrorAccion(msg || 'No se pudo descargar el archivo.')
+    }
   }
 
   const rutaArchivo = (suffix) =>
@@ -210,44 +108,27 @@ export default function PortafolioDetalle() {
 
   const { usuario, postulaciones } = portafolio
 
-  const botonesGestion = ({ clave, etiquetaReemplazar, onReemplazar, onEliminar, etiquetaEliminar }) => {
-    if (!puedeGestionar) return null
-    return (
-      <div className="flex items-center gap-1">
-        <BotonIcono
-          etiqueta={etiquetaReemplazar}
-          onClick={onReemplazar}
-          disabled={ocupado !== null}
-        >
-          <IconoDescarga />
-        </BotonIcono>
-        {onEliminar && (
-          <BotonIcono
-            etiqueta={etiquetaEliminar}
-            onClick={onEliminar}
-            disabled={ocupado !== null}
-            tono="rojo"
-          >
-            <IconoBasura />
-          </BotonIcono>
-        )}
-        {ocupado === clave && (
-          <span className="text-xs text-slate-500 dark:text-slate-400">Guardando...</span>
-        )}
-      </div>
-    )
-  }
+  const botonesLectura = (ver, descargarFn) => (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        onClick={ver}
+        className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap flex items-center gap-1.5"
+      >
+        <IconoOjo className="h-4 w-4" />
+        Ver
+      </button>
+      <button
+        onClick={() => descargar(descargarFn)}
+        className="px-3 py-1.5 text-sm font-semibold text-sena-azul border border-sena-azul/25 rounded hover:bg-sena-cielo/30 transition-colors whitespace-nowrap flex items-center gap-1.5 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
+      >
+        <IconoDescarga className="h-4 w-4" />
+        Descargar
+      </button>
+    </div>
+  )
 
   return (
     <>
-      <input
-        ref={inputArchivo}
-        type="file"
-        accept="application/pdf,.pdf"
-        className="hidden"
-        onChange={onArchivoElegido}
-      />
-
       <div className="flex flex-col gap-6">
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -329,21 +210,13 @@ export default function PortafolioDetalle() {
               Documentos de: {postulacionSel.convocatoria?.nombre}
             </h2>
             <button
-              onClick={() => { setPostulacionSel(null); setRevision(null); setAviso(''); setErrorAccion('') }}
+              onClick={() => { setPostulacionSel(null); setRevision(null); setErrorAccion('') }}
               className="text-sena-azul hover:underline text-sm"
             >
               ← Volver al listado de postulaciones
             </button>
           </header>
 
-          {puedeGestionar && (
-            <div className="mb-4 p-3 bg-sena-cielo/30 dark:bg-sena-superficie-alta border border-sena-azul/20 rounded-lg text-sm text-slate-700 dark:text-sena-texto">
-              Como gestor documental puedes reemplazar y eliminar estos archivos aunque la
-              convocatoria esté cerrada o la evaluación haya comenzado. Cada cambio queda registrado.
-            </div>
-          )}
-
-          {aviso && <div className="mb-4"><Mensaje tipo="exito">{aviso}</Mensaje></div>}
           {errorAccion && <div className="mb-4"><Mensaje tipo="error">{errorAccion}</Mensaje></div>}
 
           <IndicadorCompletitud estado={revision} />
@@ -390,28 +263,12 @@ export default function PortafolioDetalle() {
                       )}
                     </div>
 
-                    {(d.archivo || puedeGestionar) && (
-                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                        {d.archivo && (
-                          <button
-                            onClick={() => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original)}
-                            className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap flex items-center gap-1.5"
-                          >
-                            <IconoOjo className="h-4 w-4" />
-                            Ver
-                          </button>
+                    {d.archivo && (
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
+                        {botonesLectura(
+                          () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
+                          () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
                         )}
-                        {puedeGestionar && botonesGestion({
-                          clave: `req-${d.parametro?.codigo}`,
-                          etiquetaReemplazar: d.archivo ? 'Reemplazar documento' : 'Subir documento',
-                          onReemplazar: () => elegirArchivo({
-                            tipo: 'requerido',
-                            clave: `req-${d.parametro?.codigo}`,
-                            codigo: d.parametro?.codigo,
-                          }),
-                          etiquetaEliminar: 'Eliminar documento',
-                          onEliminar: d.archivo ? () => eliminarRequerido(d) : null,
-                        })}
                       </div>
                     )}
                   </article>
@@ -436,30 +293,12 @@ export default function PortafolioDetalle() {
                         {d.archivo?.nombre_original} · {formatearTamano(d.archivo?.tamano_bytes)}
                       </div>
                     </div>
-                    {(d.archivo || puedeGestionar) && (
-                      <div className="flex flex-wrap items-center gap-2 pt-2 mt-3 border-t border-slate-100 dark:border-slate-700">
-                        {d.archivo && (
-                          <button
-                            onClick={() => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original)}
-                            className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap flex items-center gap-1.5"
-                          >
-                            <IconoOjo className="h-4 w-4" />
-                            Ver
-                          </button>
+                    {d.archivo && (
+                      <div className="pt-2 mt-3 border-t border-slate-100 dark:border-slate-700">
+                        {botonesLectura(
+                          () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
+                          () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
                         )}
-                        {puedeGestionar && botonesGestion({
-                          clave: `adi-${d.id}`,
-                          etiquetaReemplazar: 'Reemplazar archivo del adicional',
-                          onReemplazar: () => elegirArchivo({
-                            tipo: 'adicional',
-                            clave: `adi-${d.id}`,
-                            documentoId: d.id,
-                            titulo: d.titulo,
-                            nota: d.nota,
-                          }),
-                          etiquetaEliminar: 'Eliminar adicional',
-                          onEliminar: () => eliminarAdicional(d),
-                        })}
                       </div>
                     )}
                   </article>
@@ -491,28 +330,10 @@ export default function PortafolioDetalle() {
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {s.certificado && (
-                          <button
-                            onClick={() => verArchivo(rutaArchivo(`skills/${s.id}/certificado/archivo?inline=1`), s.certificado.nombre_original)}
-                            className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap flex items-center gap-1.5"
-                          >
-                            <IconoOjo className="h-4 w-4" />
-                            Ver certificado
-                          </button>
-                        )}
-                        {puedeGestionar && botonesGestion({
-                          clave: `cert-${s.id}`,
-                          etiquetaReemplazar: s.certificado ? 'Reemplazar certificado' : 'Subir certificado',
-                          onReemplazar: () => elegirArchivo({
-                            tipo: 'certificado',
-                            clave: `cert-${s.id}`,
-                            skillId: s.id,
-                          }),
-                          etiquetaEliminar: 'Quitar certificado',
-                          onEliminar: s.certificado ? () => quitarCert(s) : null,
-                        })}
-                      </div>
+                      {s.certificado && botonesLectura(
+                        () => verArchivo(rutaArchivo(`skills/${s.id}/certificado/archivo?inline=1`), s.certificado.nombre_original),
+                        () => descargarCertificadoRevision(postulacionSel.id, s.id, s.certificado.nombre_original),
+                      )}
                     </div>
                   </article>
                 ))}

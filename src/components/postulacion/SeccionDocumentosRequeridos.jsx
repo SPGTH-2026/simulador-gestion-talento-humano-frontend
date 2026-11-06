@@ -5,6 +5,7 @@ import { CODIGO_LIBRETA_MILITAR, formatearTamano } from '../../lib/postulacionDo
 import { formatearFechaHora } from '../../lib/ventanaPostulacion'
 import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 import EtiquetaDocumento from '../ui/EtiquetaDocumento'
+import { IconoSubir } from '../convocatorias/Iconos'
 import {
   subirDocumento,
   eliminarDocumento,
@@ -211,13 +212,16 @@ export default function SeccionDocumentosRequeridos({
                       onClick={() => refsInput.current[codigo]?.click()}
                       className={CLASE_BOTON}
                     >
-                      {enProceso
-                        ? 'Subiendo...'
-                        : estadoDoc === 'subido'
-                          ? 'Reemplazar'
-                          : error
-                            ? 'Reintentar'
-                            : 'Subir'}
+                      <span className="inline-flex items-center gap-1.5">
+                        <IconoSubir className="h-3.5 w-3.5" />
+                        {enProceso
+                          ? 'Subiendo...'
+                          : estadoDoc === 'subido'
+                            ? 'Reemplazar'
+                            : error
+                              ? 'Reintentar'
+                              : 'Subir'}
+                      </span>
                     </button>
                   )}
 
