@@ -191,7 +191,6 @@ export default function EvaluacionEvaluar() {
           <div className="flex flex-col gap-0.5">
             <p className="text-lg font-bold">{dato.aspirante.name}</p>
             <p className="text-sm opacity-90">{dato.aspirante.email}</p>
-            <p className="text-xs opacity-75">Perfil técnico: Técnico en Sistemas</p>
             <p className="text-xs opacity-75">Convocatoria: {dato.convocatoria.titulo}</p>
             {dato.evaluacion?.fecha && (
               <p className="text-xs opacity-75">Fecha de evaluación: {dato.evaluacion.fecha}</p>
@@ -237,31 +236,6 @@ export default function EvaluacionEvaluar() {
                 color={docsValidados === documentos.length && documentos.length > 0 ? 'bg-green-500' : 'bg-orange-500'}
               />
             </div>
-          </div>
-
-          {/* Información del aspirante */}
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-              Información del aspirante
-            </h2>
-            <dl className="flex flex-col gap-2 text-sm">
-              <div className="flex justify-between gap-2">
-                <dt className="text-slate-500 dark:text-sena-texto-suave">Formación</dt>
-                <dd className="font-medium text-slate-800 dark:text-sena-texto">Técnico en Sistemas</dd>
-              </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-slate-500 dark:text-sena-texto-suave">Experiencia</dt>
-                <dd className="font-medium text-slate-800 dark:text-sena-texto">2 años</dd>
-              </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-slate-500 dark:text-sena-texto-suave">Ciudad</dt>
-                <dd className="font-medium text-slate-800 dark:text-sena-texto">Bogotá</dd>
-              </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-slate-500 dark:text-sena-texto-suave">Postulación</dt>
-                <dd className="font-medium text-slate-800 dark:text-sena-texto">{dato.convocatoria.titulo}</dd>
-              </div>
-            </dl>
           </div>
         </aside>
 
