@@ -124,7 +124,7 @@ export default function Topbar({ onAbrirMenu }) {
               {etiqueta(user?.role)}
               {user?.subrole ? ` · ${etiqueta(user.subrole)}` : ''}
             </p>
-            {user?.role === 'aspirante' && user?.ficha && (
+            {(user?.role === 'aspirante' || user?.role === 'aprendiz') && user?.ficha && (
               <p className="truncate text-xs text-slate-300">Ficha {user.ficha.codigo}</p>
             )}
           </div>
