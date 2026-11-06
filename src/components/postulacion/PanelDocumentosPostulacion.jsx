@@ -7,6 +7,7 @@ import {
   mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError } from '../../api/mensajeError'
+import { useAuth } from '../../auth/useAuth'
 import { estadoVentana } from '../../lib/ventanaPostulacion'
 import { CODIGO_LIBRETA_MILITAR, motivoNoEditable } from '../../lib/postulacionDocumentos'
 import { CLASE_CAJA_SUAVE } from '../../lib/estilos'
@@ -40,6 +41,7 @@ export default function PanelDocumentosPostulacion({
   onEnviado,
   onVerDocumentos,
 }) {
+  const { user } = useAuth()
   const idInicial = postulacionId ?? miPostulacion?.id ?? null
 
   const [idPostulacion, setIdPostulacion] = useState(idInicial)
@@ -234,12 +236,18 @@ export default function PanelDocumentosPostulacion({
     )
   }
 
-  const editable = Boolean(vista.editable)
+  // Solo el aspirante dueño escribe. Sin postulación todavía, quien se postula
+  // es el propio usuario; con postulación, debe ser suya (user_id).
+  const esAspirante = user?.role === 'aspirante'
+  const esPropia = !vista.postulacion?.user_id || vista.postulacion.user_id === user?.id
+  const puedeEscribir = esAspirante && esPropia
+
+  const editable = Boolean(vista.editable) && puedeEscribir
   const motivo = motivoNoEditable(vista)
   const codigo = vista.postulacion?.estado?.codigo
   const esBorrador = codigo === 'borrador'
   const esRetirada = codigo === 'retirada'
-  const editableSexo = ventana === 'abierta'
+  const editableSexo = ventana === 'abierta' && puedeEscribir
   const faltan = (vista.documentos ?? [])
     .filter((d) => d.obligatorio && d.estado !== 'subido' && d.estado !== 'no_aplica')
     .map((d) => d.parametro.nombre)
