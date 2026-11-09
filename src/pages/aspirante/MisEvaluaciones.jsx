@@ -1,11 +1,242 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { misEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
 import client from '../../api/client'
-import AvatarIniciales from '../../components/evaluacion/AvatarIniciales'
-import BadgeEstado from '../../components/evaluacion/BadgeEstado'
+import { IconoOjo, IconoX } from '../../components/convocatorias/Iconos'
+import {
+  DatosAspirante,
+  EtiquetaConIcono,
+  EtiquetaEvaluacion,
+  Puntaje,
+  Resultado,
+} from '../../components/evaluacion/PresentacionEvaluacion'
+import Boton from '../../components/ui/Boton'
+import Cargando from '../../components/ui/Cargando'
+import Dialogo from '../../components/ui/Dialogo'
+import Icono from '../../components/ui/Icono'
+import { MensajeAviso, MensajeError } from '../../components/ui/Mensaje'
+import {
+  CLASE_CAJA_SUAVE,
+  CLASE_SUBTITULO_PAGINA,
+  CLASE_TARJETA,
+  CLASE_TARJETA_PLANA,
+  CLASE_TEXTO_FUERTE,
+  CLASE_TEXTO_PARTIDO,
+  CLASE_TEXTO_SUAVE,
+  CLASE_TITULO_PAGINA,
+} from '../../lib/estilos'
+import { ESTADO_DOCUMENTO, formatearPeso } from '../../lib/evaluacion'
+
+// El contrato puede traer el aspirante como texto o como objeto.
+const datosAspirante = (e) =>
+  typeof e.aspirante === 'string' ? { name: e.aspirante } : (e.aspirante ?? { name: '—' })
+
+// El evaluador puede venir como texto o como objeto ({ name, email }).
+const nombreEvaluador = (e) =>
+  typeof e.evaluador === 'string' ? e.evaluador : e.evaluador?.name || e.evaluador?.email || null
+
+function Dato({ etiqueta, children }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2.5">
+      <dt className={`text-sm ${CLASE_TEXTO_SUAVE}`}>{etiqueta}</dt>
+      <dd className={`text-sm font-medium ${CLASE_TEXTO_FUERTE}`}>{children}</dd>
+    </div>
+  )
+}
+
+function TituloBloque({ children }) {
+  return <h3 className={`mb-2 text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>{children}</h3>
+}
+
+function TarjetaEvaluacion({ evaluacion, onVerDetalle }) {
+  return (
+    <li className={`${CLASE_TARJETA_PLANA} flex min-w-0 flex-col gap-4 p-4`}>
+      <DatosAspirante aspirante={datosAspirante(evaluacion)} tamano="md" />
+      <p className={`text-sm font-medium ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>
+        {evaluacion.convocatoria?.titulo ?? '—'}
+      </p>
+      {nombreEvaluador(evaluacion) && (
+        <p className={`-mt-2 text-xs ${CLASE_TEXTO_SUAVE}`}>Evaluador: {nombreEvaluador(evaluacion)}</p>
+      )}
+
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-6 gap-y-2 border-t border-sena-linea/70 pt-4 dark:border-sena-borde/50">
+        <div>
+          <dt className={`mb-1 text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Puntaje</dt>
+          <dd>
+            <Puntaje evaluacion={evaluacion} />
+          </dd>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <dt className="sr-only">Evaluación</dt>
+          <dd className="flex flex-wrap items-center justify-end gap-2">
+            <EtiquetaEvaluacion evaluacion={evaluacion} />
+            <Resultado evaluacion={evaluacion} />
+          </dd>
+        </div>
+      </dl>
+
+      <Boton variante="contorno" tamano="tactil" onClick={onVerDetalle} className="mt-auto w-full">
+        <IconoOjo className="h-4 w-4" />
+        Ver detalle
+      </Boton>
+    </li>
+  )
+}
+
+// Lo que el evaluador decidió sobre un documento. Un «No» pide corregirlo; si el
+// aspirante ya lo reemplazó, queda a la espera de que el evaluador lo revise.
+function DecisionDocumento({ decision, reemplazado }) {
+  if (decision === true) {
+    return (
+      <EtiquetaConIcono tono="exito" icono={<Icono nombre="check" className="size-3.5" />}>
+        Cumple
+      </EtiquetaConIcono>
+    )
+  }
+  if (decision !== false) return null
+  return reemplazado ? (
+    <EtiquetaConIcono tono="azul" icono={<Icono nombre="reintentar" className="size-3.5" />}>
+      Corregido (en revisión)
+    </EtiquetaConIcono>
+  ) : (
+    <EtiquetaConIcono tono="peligro" icono={<IconoX className="size-3.5" />}>
+      Corregir
+    </EtiquetaConIcono>
+  )
+}
+
+function DetalleEvaluacion({ evaluacion, documentos, estadoDocumentos, onCerrar }) {
+  const completada = evaluacion.estado === 'finalizada'
+  const actualizados = evaluacion.documentos_actualizados ?? []
+  const aspirante = datosAspirante(evaluacion)
+
+  return (
+    <Dialogo idTitulo="detalle-titulo" onCerrar={onCerrar} className="max-w-lg p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 id="detalle-titulo" className={`text-lg font-bold ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>
+            {aspirante.name}
+          </h2>
+          <p className={`text-sm ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_SUAVE}`}>
+            {evaluacion.convocatoria?.titulo}
+          </p>
+          {nombreEvaluador(evaluacion) && (
+            <p className={`text-xs ${CLASE_TEXTO_SUAVE}`}>Evaluador: {nombreEvaluador(evaluacion)}</p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onCerrar}
+          aria-label="Cerrar detalle"
+          className="-mr-2 -mt-2 grid size-11 shrink-0 place-items-center rounded-full text-slate-600 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto-suave dark:hover:bg-white/10 dark:hover:text-white"
+        >
+          <IconoX />
+        </button>
+      </div>
+
+      <dl className="mt-3 divide-y divide-sena-linea/70 dark:divide-sena-borde/50">
+        <Dato etiqueta="Evaluación">
+          <EtiquetaEvaluacion evaluacion={evaluacion} />
+        </Dato>
+        <Dato etiqueta="Resultado">
+          <Resultado evaluacion={evaluacion} />
+        </Dato>
+        <Dato etiqueta="Puntaje total">
+          <Puntaje evaluacion={evaluacion} />
+        </Dato>
+        <Dato etiqueta={completada ? 'Cumplimiento' : 'Cumplimiento provisional'}>
+          {evaluacion.cumplimiento != null ? `${evaluacion.cumplimiento} %` : '—'}
+        </Dato>
+        {evaluacion.fecha && <Dato etiqueta="Iniciada el">{evaluacion.fecha}</Dato>}
+      </dl>
+
+      <div className="mt-4">
+        <TituloBloque>Documentos</TituloBloque>
+        {estadoDocumentos === 'cargando' ? (
+          <Cargando>Cargando documentos…</Cargando>
+        ) : estadoDocumentos === 'error' ? (
+          <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>No se pudieron cargar los documentos.</p>
+        ) : documentos.length === 0 ? (
+          <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>Esta convocatoria no pide documentos.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {documentos.map((d) => {
+              const estado = ESTADO_DOCUMENTO[d.estado] ?? ESTADO_DOCUMENTO.pendiente
+              return (
+                <li key={d.id ?? d.nombre} className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 text-sm">
+                  <span className={`min-w-0 ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>{d.nombre}</span>
+                  <span className="flex min-w-0 flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                    {d.ponderacion != null && (
+                      <span className={`text-xs ${CLASE_TEXTO_SUAVE}`}>Peso {formatearPeso(d.ponderacion)}</span>
+                    )}
+                    <DecisionDocumento
+                      decision={evaluacion.perfil?.[d.id]}
+                      reemplazado={actualizados.includes(d.id)}
+                    />
+                    <EtiquetaConIcono
+                      tono={estado.tono}
+                      icono={d.estado === 'subido' ? <Icono nombre="check" className="size-3.5" /> : null}
+                    >
+                      {estado.texto}
+                    </EtiquetaConIcono>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+
+      {evaluacion.criterios?.length > 0 && (
+        <div className="mt-4">
+          <TituloBloque>Criterios</TituloBloque>
+          <ul className="flex flex-col gap-1">
+            {evaluacion.criterios.map((c) => (
+              <li key={c.criterio} className={`flex justify-between gap-3 text-sm ${CLASE_TEXTO_FUERTE}`}>
+                <span>{c.criterio}</span>
+                <span className="font-medium tabular-nums">{c.puntaje}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {evaluacion.observaciones && (
+        <div className="mt-4">
+          <TituloBloque>Observaciones</TituloBloque>
+          <p className={`${CLASE_CAJA_SUAVE} p-3 text-sm ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>
+            {evaluacion.observaciones}
+          </p>
+        </div>
+      )}
+
+      {evaluacion.estado === 'correccion_solicitada' && (
+        <MensajeAviso className="mt-4 flex flex-col items-start gap-2">
+          <span>
+            <strong>El evaluador pidió corregir</strong> los documentos marcados con «Corregir».
+          </span>
+          {evaluacion.postulacion_id && (
+            <Boton
+              as={Link}
+              to={`/postulaciones/${evaluacion.postulacion_id}/documentos`}
+              onClick={onCerrar}
+              variante="contorno"
+              tamano="tactil"
+            >
+              Ir a corregir mis documentos
+            </Boton>
+          )}
+        </MensajeAviso>
+      )}
+
+      <Boton tamano="tactil" onClick={onCerrar} className="mt-5 w-full">
+        Cerrar
+      </Boton>
+    </Dialogo>
+  )
+}
 
 export default function MisEvaluaciones() {
   const { can } = useAuth()
@@ -13,50 +244,32 @@ export default function MisEvaluaciones() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [detalle, setDetalle] = useState(null)
-  const [docsDetalle, setDocsDetalle] = useState([])
-  const [cargandoDocs, setCargandoDocs] = useState(false)
-  // Refresco automático para que el instructor/super admin vea las
-  // evaluaciones nuevas de los evaluadores sin recargar la página.
-  const [refresco, setRefresco] = useState(0)
+  const [documentos, setDocumentos] = useState([])
+  // 'cargando' | 'listo' | 'error': los documentos del detalle.
+  const [estadoDocumentos, setEstadoDocumentos] = useState('listo')
 
-  const verDetalle = async (e) => {
-    setDetalle(e)
-    setDocsDetalle([])
-    if (!e?.postulacion_id) return
-    setCargandoDocs(true)
-    const url = can('documentos:ver')
-      ? `/revision/postulaciones/${e.postulacion_id}/documentos`
-      : `/postulaciones/${e.postulacion_id}/documentos`
-    try {
-      const res = await client.get(url)
-      const payload = res.data?.data ?? res.data ?? {}
-      const docs = payload.documentos ?? []
-      setDocsDetalle(
-        docs
-          .filter((d) => d.parametro?.nombre)
-          .map((d) => ({
-            id: `doc-${d.parametro.id}`,
-            nombre: d.parametro.nombre,
-            // Peso del documento en esta convocatoria (null = sin configurar).
-            ponderacion: d.ponderacion != null ? Number(d.ponderacion) : null,
-            estado:
-              d.estado === 'subido'
-                ? 'Cargado'
-                : d.estado === 'no_aplica'
-                  ? 'No aplica'
-                  : 'Pendiente',
-          })),
-      )
-    } catch {
-      setDocsDetalle([])
-    } finally {
-      setCargandoDocs(false)
-    }
-  }
+  const cargar = useCallback(
+    () =>
+      misEvaluaciones()
+        .then((res) => {
+          setEvaluaciones(res.data)
+          setError('')
+        })
+        .catch((e) => setError(mensajeError(e)))
+        .finally(() => setCargando(false)),
+    [],
+  )
 
   useEffect(() => {
+    cargar()
+  }, [cargar])
+
+  // Refresco automático: el instructor o super admin ve las evaluaciones nuevas
+  // de los evaluadores sin recargar. Es silencioso (no vuelve a mostrar la
+  // carga) y solo corre con la pestaña a la vista.
+  useEffect(() => {
     const actualizar = () => {
-      if (document.visibilityState === 'visible') setRefresco((n) => n + 1)
+      if (document.visibilityState === 'visible') cargar()
     }
     const intervalo = setInterval(actualizar, 10000)
     document.addEventListener('visibilitychange', actualizar)
@@ -66,295 +279,93 @@ export default function MisEvaluaciones() {
       document.removeEventListener('visibilitychange', actualizar)
       window.removeEventListener('focus', actualizar)
     }
-  }, [])
+  }, [cargar])
 
-  useEffect(() => {
-    let vivo = true
+  const reintentar = () => {
+    setCargando(true)
+    setError('')
+    cargar()
+  }
 
-    misEvaluaciones()
-      .then((res) => {
-        if (vivo) setEvaluaciones(res.data)
-      })
-      .catch((e) => {
-        if (vivo) setError(mensajeError(e))
-      })
-      .finally(() => {
-        if (vivo) setCargando(false)
-      })
-
-    return () => {
-      vivo = false
+  const verDetalle = async (e) => {
+    setDetalle(e)
+    setDocumentos([])
+    if (!e?.postulacion_id) {
+      setEstadoDocumentos('listo')
+      return
     }
-  }, [refresco])
-
-  const nombreAspirante = (e) =>
-    typeof e.aspirante === 'string' ? e.aspirante : (e.aspirante?.name ?? '—')
+    setEstadoDocumentos('cargando')
+    const url = can('documentos:ver')
+      ? `/revision/postulaciones/${e.postulacion_id}/documentos`
+      : `/postulaciones/${e.postulacion_id}/documentos`
+    try {
+      const res = await client.get(url)
+      const payload = res.data?.data ?? res.data ?? {}
+      setDocumentos(
+        (payload.documentos ?? [])
+          .filter((d) => d.parametro?.nombre)
+          .map((d) => ({
+            id: `doc-${d.parametro.id}`,
+            nombre: d.parametro.nombre,
+            // Peso del documento en esta convocatoria (null = sin configurar).
+            ponderacion: d.ponderacion != null ? Number(d.ponderacion) : null,
+            estado: d.estado,
+          })),
+      )
+      setEstadoDocumentos('listo')
+    } catch {
+      setEstadoDocumentos('error')
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">Mis evaluaciones</h1>
-
-      {error && (
-        <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </p>
-      )}
-
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-sena-borde dark:bg-sena-superficie">
-        <table className="w-full min-w-160 text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-sena-borde dark:text-sena-texto-suave">
-            <tr>
-              <th className="p-3">Aspirante</th>
-              <th className="p-3">Convocatoria</th>
-              <th className="p-3">Puntaje</th>
-              <th className="p-3">Evaluación</th>
-              <th className="p-3 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-sena-borde">
-            {cargando && (
-              <tr>
-                <td colSpan="5" className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
-                  Cargando evaluaciones...
-                </td>
-              </tr>
-            )}
-
-            {!cargando && evaluaciones.length === 0 && !error && (
-              <tr>
-                <td colSpan="5" className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
-                  Aún no tienes evaluaciones registradas.
-                </td>
-              </tr>
-            )}
-
-            {!cargando &&
-              evaluaciones.map((e) => (
-                <tr key={e.id} className="hover:bg-sena-cielo/20 dark:hover:bg-sena-superficie-alta/20">
-                  <td className="p-3">
-                    <div className="flex items-center gap-3">
-                      <AvatarIniciales nombre={nombreAspirante(e)} size="sm" />
-                      <div>
-                        <div className="font-semibold text-slate-800 dark:text-sena-texto">
-                          {nombreAspirante(e)}
-                        </div>
-                        {e.evaluador && (
-                          <div className="text-xs text-slate-500 dark:text-sena-texto-suave">
-                            Evaluador: {typeof e.evaluador === 'string' ? e.evaluador : (e.evaluador?.name || e.evaluador?.email || '—')}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-3 text-slate-700 dark:text-sena-texto">{e.convocatoria?.titulo ?? '—'}</td>
-                  <td className="p-3">
-                    <span className="font-semibold text-slate-800 dark:text-sena-texto">
-                      {e.puntaje_total ?? '—'}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <BadgeEstado
-                      estado={
-                        e.estado === 'finalizada'
-                          ? 'Completada'
-                          : e.estado === 'correccion_solicitada'
-                            ? 'Corrección solicitada'
-                            : 'Pendiente'
-                      }
-                    />
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => verDetalle(e)}
-                        className="inline-flex items-center justify-center rounded bg-sena-azul px-2 py-1 text-white transition-colors hover:bg-sena-azul/90"
-                        aria-label="Ver evaluación"
-                        title="Ver evaluación"
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                          <circle cx="12" cy="12" r="3" strokeWidth={2} />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className={CLASE_TITULO_PAGINA}>Mis evaluaciones</h1>
+        <p className={CLASE_SUBTITULO_PAGINA}>Consulta el estado y el resultado de cada evaluación.</p>
       </div>
 
-      {/* Modal de detalle (solo lectura) */}
-      {detalle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-sena-superficie">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold text-slate-800 dark:text-sena-texto">
-                  {nombreAspirante(detalle)}
-                </h2>
-                <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
-                  {detalle.convocatoria?.titulo}
-                </p>
-                {detalle.evaluador && (
-                  <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
-                    Evaluador: {typeof detalle.evaluador === 'string' ? detalle.evaluador : (detalle.evaluador?.name || detalle.evaluador?.email || '—')}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => setDetalle(null)}
-                className="rounded p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-sena-superficie-alta"
-                aria-label="Cerrar"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-sena-texto-suave">Puntaje total</span>
-                <span className="font-bold text-slate-800 dark:text-sena-texto">{detalle.puntaje_total ?? '—'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-sena-texto-suave">Cumplimiento</span>
-                <span className="font-medium text-slate-800 dark:text-sena-texto">{detalle.cumplimiento ?? 0}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-sena-texto-suave">Pasa a Preselección</span>
-                {detalle.pasa_seleccion == null ? (
-                  <span className="font-medium text-slate-500 dark:text-sena-texto-suave">En revisión</span>
-                ) : (
-                  <span className={`font-medium ${detalle.pasa_seleccion ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
-                    {detalle.pasa_seleccion ? 'Sí' : 'No'}
-                  </span>
-                )}
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-sena-texto-suave">Estado</span>
-                <span className="font-medium text-slate-800 dark:text-sena-texto">
-                  {detalle.estado === 'finalizada'
-                    ? 'Finalizada'
-                    : detalle.estado === 'correccion_solicitada'
-                      ? 'Corrección solicitada'
-                      : 'En proceso'}
-                </span>
-              </div>
-
-              {detalle.fecha && (
-                <div className="flex justify-between">
-                  <span className="text-slate-500 dark:text-sena-texto-suave">Fecha de evaluación</span>
-                  <span className="font-medium text-slate-800 dark:text-sena-texto">{detalle.fecha}</span>
-                </div>
-              )}
-
-              {/* Documentos (solo lectura) */}
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-                  Documentos
-                </p>
-                {cargandoDocs ? (
-                  <p className="text-xs text-slate-500 dark:text-sena-texto-suave">Cargando documentos...</p>
-                ) : docsDetalle.length === 0 ? (
-                  <p className="text-xs text-slate-500 dark:text-sena-texto-suave">Sin documentos.</p>
-                ) : (
-                  <ul className="flex flex-col gap-1">
-                    {docsDetalle.map((d, i) => {
-                      const decision = detalle.perfil?.[d.id]
-                      const reemplazado = (detalle.documentos_actualizados ?? []).includes(d.id)
-                      return (
-                        <li key={i} className="flex justify-between gap-2 text-slate-700 dark:text-sena-texto">
-                          <span className="min-w-0 truncate">{d.nombre}</span>
-                          <span className="flex shrink-0 items-center gap-2">
-                            {d.ponderacion != null && (
-                              <span className="rounded-full bg-sena-cielo/60 px-2 py-0.5 text-[11px] font-semibold text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
-                                Peso: {Math.round(d.ponderacion * 100) / 100}%
-                              </span>
-                            )}
-                            {decision === true && (
-                              <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700 dark:bg-green-950 dark:text-green-300">
-                                ✓ Cumple
-                              </span>
-                            )}
-                            {decision === false && (
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                                  reemplazado
-                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                                    : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                }`}
-                              >
-                                {reemplazado ? '↻ Corregido (en revisión)' : '✗ Corregir'}
-                              </span>
-                            )}
-                            <span className="font-medium">{d.estado}</span>
-                          </span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </div>
-
-              {detalle.criterios?.length > 0 && (
-                <div>
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-                    Criterios
-                  </p>
-                  <ul className="flex flex-col gap-1">
-                    {detalle.criterios.map((c, i) => (
-                      <li key={i} className="flex justify-between text-slate-700 dark:text-sena-texto">
-                        <span>{c.criterio}</span>
-                        <span className="font-medium">{c.puntaje}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {detalle.observaciones && (
-                <div>
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-                    Observaciones
-                  </p>
-                  <p className="rounded bg-slate-50 p-2 text-slate-600 dark:bg-sena-noche dark:text-sena-texto-suave">
-                    {detalle.observaciones}
-                  </p>
-                </div>
-              )}
-
-              {detalle.estado === 'correccion_solicitada' && (
-                <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                  <p className="font-semibold">
-                    El evaluador solicitó corregir los documentos marcados con «✗ Corregir».
-                  </p>
-                  {detalle.observaciones && <p>{detalle.observaciones}</p>}
-                  {detalle.postulacion_id && (
-                    <Link
-                      to={`/postulaciones/${detalle.postulacion_id}/documentos`}
-                      onClick={() => setDetalle(null)}
-                      className="mt-1 inline-flex w-fit items-center rounded bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-800"
-                    >
-                      Ir a corregir mis documentos
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-4 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => setDetalle(null)}
-                className="w-full rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
+      {error && (
+        <div className="flex flex-col items-start gap-3">
+          <MensajeError className="w-full">{error}</MensajeError>
+          <Boton variante="contorno" tamano="tactil" onClick={reintentar}>
+            Reintentar
+          </Boton>
         </div>
+      )}
+
+      {cargando ? (
+        <div role="status">
+          <Cargando>Cargando evaluaciones…</Cargando>
+        </div>
+      ) : (
+        evaluaciones.length === 0 &&
+        !error && (
+          <section className={`${CLASE_TARJETA} flex flex-col items-center gap-2 px-6 py-12 text-center`}>
+            <Icono nombre="evaluaciones" className="size-8 text-slate-500 dark:text-sena-texto-suave" />
+            <h2 className={`text-lg font-semibold ${CLASE_TEXTO_FUERTE}`}>Aún no tienes evaluaciones registradas</h2>
+            <p className={`max-w-md text-sm ${CLASE_TEXTO_SUAVE}`}>
+              Cuando haya una evaluación, aquí verás su estado y su resultado.
+            </p>
+          </section>
+        )
+      )}
+
+      {!cargando && evaluaciones.length > 0 && (
+        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {evaluaciones.map((e) => (
+            <TarjetaEvaluacion key={e.id} evaluacion={e} onVerDetalle={() => verDetalle(e)} />
+          ))}
+        </ul>
+      )}
+
+      {detalle && (
+        <DetalleEvaluacion
+          evaluacion={detalle}
+          documentos={documentos}
+          estadoDocumentos={estadoDocumentos}
+          onCerrar={() => setDetalle(null)}
+        />
       )}
     </div>
   )
