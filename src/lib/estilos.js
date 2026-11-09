@@ -26,11 +26,13 @@ export const CLASE_INPUT_FICHA = `text-center text-lg font-normal text-slate-700
 // Etiqueta de un campo: texto en columna con su control debajo.
 export const CLASE_LABEL = 'flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto'
 
-// Superficie base de tarjetas y contenedores. Sombra suave tintada con el azul
-// institucional: da profundidad sin ensuciar. En oscuro se apaga a una sombra
-// negra mínima, porque el contraste lo marcan los bordes.
+// Superficie base de tarjetas y contenedores. Marco claro: la tarjeta se separa
+// del lienzo con su borde y una sombra de contacto mínima (sin la sombra
+// difusa larga de antes), para que las pantallas dejen de verse como cajas
+// flotantes. En oscuro la sombra es negra mínima, porque el contraste lo marcan
+// los bordes.
 export const CLASE_TARJETA =
-  'rounded-2xl border border-sena-linea bg-white shadow-[0_1px_2px_rgba(0,48,77,0.06),0_14px_30px_-20px_rgba(0,48,77,0.45)] dark:border-sena-borde/70 dark:bg-sena-superficie dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]'
+  'rounded-2xl border border-sena-linea bg-white shadow-[0_1px_2px_rgba(0,48,77,0.05)] dark:border-sena-borde/70 dark:bg-sena-superficie dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]'
 
 // Variante plana de la tarjeta: mismo borde, radio y superficie, sin la sombra
 // alta. Se usa en rejillas densas de datos y en cajas repetidas, donde la
@@ -63,6 +65,26 @@ export const CLASE_CHIP =
 // Título de sección con la barra verde institucional a la izquierda.
 export const CLASE_TITULO_SECCION =
   'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
+
+// Texto de apoyo y texto principal sobre una superficie (7.6:1 en claro, 6.6:1 en
+// oscuro). Slate-500 no se usa para texto: queda en 4.5:1 sobre el lienzo.
+export const CLASE_TEXTO_SUAVE = 'text-slate-600 dark:text-sena-texto-suave'
+export const CLASE_TEXTO_FUERTE = 'text-slate-800 dark:text-sena-texto'
+
+// Botón redondo solo con ícono (tema, notificaciones). 44 px en pantallas
+// táctiles y 40 px desde 'lg', donde hay puntero.
+export const CLASE_BOTON_ICONO =
+  'grid size-11 place-items-center rounded-full text-slate-600 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto-suave dark:hover:bg-white/10 dark:hover:text-white lg:size-10'
+
+// Campos con el borde de contraste (4.0:1) que exige WCAG para identificar un
+// control; el de CLASE_INPUT queda en 1.5:1. Lo usa Evaluación; se unificará
+// con los formularios de cada módulo.
+export const CLASE_CAMPO =
+  'min-h-11 w-full rounded-md border border-sena-azul/60 bg-white px-3 text-sm font-normal text-slate-700 placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-texto-suave/70 dark:bg-sena-noche dark:text-sena-texto dark:placeholder:text-sena-texto-suave'
+
+// Un texto largo se parte en varias líneas en lugar de cortarse. 'anywhere'
+// permite partir un correo (no tiene espacios) sin empujar a sus vecinos.
+export const CLASE_TEXTO_PARTIDO = '[overflow-wrap:anywhere]'
 
 // Tablas.
 export const CLASE_TABLA = 'w-full text-left text-sm'
