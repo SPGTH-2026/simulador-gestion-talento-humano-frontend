@@ -147,9 +147,12 @@ export default function PanelDocumentosPostulacion({
     const promesa = (async () => {
       const postulacion = await postularse(convocatoria?.id)
       onPostulacionCreada?.(postulacion)
+      // Primero el estado y DESPUÉS el id. Si el id se pone antes, el panel
+      // muestra "Cargando tus datos..." mientras llega el estado y desmonta la
+      // sección de documentos en plena subida (se perdía el progreso y el archivo).
+      const fresco = await estadoDocumentos(postulacion.id).catch(() => null)
+      if (fresco) aplicarEstado(fresco)
       setIdPostulacion(postulacion.id)
-      const fresco = await estadoDocumentos(postulacion.id)
-      aplicarEstado(fresco)
       setError('')
       return { postulacionId: postulacion.id, estado: fresco }
     })().finally(() => {
