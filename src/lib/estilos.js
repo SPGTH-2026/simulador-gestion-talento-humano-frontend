@@ -17,12 +17,6 @@ const BASE_INPUT =
 // Campo normal.
 export const CLASE_INPUT = `font-normal text-sm text-slate-700 ${BASE_INPUT}`
 
-// Código de verificación (OTP): centrado, en números grandes y espaciados.
-export const CLASE_INPUT_CODIGO = `text-center text-2xl font-semibold tracking-[0.5em] text-slate-700 ${BASE_INPUT}`
-
-// Código corto (ficha): centrado y algo más grande que el campo normal.
-export const CLASE_INPUT_FICHA = `text-center text-lg font-normal text-slate-700 ${BASE_INPUT}`
-
 // Etiqueta de un campo: texto en columna con su control debajo.
 export const CLASE_LABEL = 'flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto'
 
@@ -79,8 +73,16 @@ export const CLASE_BOTON_ICONO =
 // Campos con el borde de contraste (4.0:1) que exige WCAG para identificar un
 // control; el de CLASE_INPUT queda en 1.5:1. Lo usa Evaluación; se unificará
 // con los formularios de cada módulo.
-export const CLASE_CAMPO =
-  'min-h-11 w-full rounded-md border border-sena-azul/60 bg-white px-3 text-sm font-normal text-slate-700 placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-texto-suave/70 dark:bg-sena-noche dark:text-sena-texto dark:placeholder:text-sena-texto-suave'
+const BASE_CAMPO =
+  'min-h-11 w-full rounded-md border border-sena-azul/60 bg-white px-3 text-slate-700 placeholder:text-slate-500 aria-invalid:border-peligro disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-texto-suave/70 dark:bg-sena-noche dark:text-sena-texto dark:placeholder:text-sena-texto-suave dark:aria-invalid:border-peligro'
+
+export const CLASE_CAMPO = `text-sm font-normal ${BASE_CAMPO}`
+
+// Código de un solo uso (OTP) y código de ficha: centrados y más grandes. Cada
+// variante lleva su propio tamaño de texto para no mezclar dos en una clase. El
+// espaciado del OTP es moderado: con 0.5em los seis dígitos no caben en 188 px.
+export const CLASE_CAMPO_CODIGO = `text-center text-xl font-semibold tracking-[0.3em] ${BASE_CAMPO}`
+export const CLASE_CAMPO_FICHA = `text-center text-lg font-normal ${BASE_CAMPO}`
 
 // Un texto largo se parte en varias líneas en lugar de cortarse. 'anywhere'
 // permite partir un correo (no tiene espacios) sin empujar a sus vecinos.
