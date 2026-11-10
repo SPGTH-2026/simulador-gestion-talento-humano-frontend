@@ -25,6 +25,9 @@ export default function EvaluacionListado() {
 
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  // Cambia cada cierto tiempo para volver a consultar el avance de los
+  // evaluadores sin que el instructor/super admin recargue la página.
+  const [refresco, setRefresco] = useState(0)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -33,6 +36,20 @@ export default function EvaluacionListado() {
     }, 300)
     return () => clearTimeout(t)
   }, [termino])
+
+  useEffect(() => {
+    const actualizar = () => {
+      if (document.visibilityState === 'visible') setRefresco((n) => n + 1)
+    }
+    const intervalo = setInterval(actualizar, 10000)
+    document.addEventListener('visibilitychange', actualizar)
+    window.addEventListener('focus', actualizar)
+    return () => {
+      clearInterval(intervalo)
+      document.removeEventListener('visibilitychange', actualizar)
+      window.removeEventListener('focus', actualizar)
+    }
+  }, [])
 
   useEffect(() => {
     listaEvaluaciones({
@@ -50,7 +67,7 @@ export default function EvaluacionListado() {
       })
       .catch((e) => setError(mensajeError(e)))
       .finally(() => setCargando(false))
-  }, [pagina, busqueda, filtroConvocatoria, filtroFicha])
+  }, [pagina, busqueda, filtroConvocatoria, filtroFicha, refresco])
 
   const hayFiltros = Boolean(termino || filtroFicha || filtroConvocatoria)
 
