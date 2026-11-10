@@ -132,16 +132,15 @@ export default function EvaluacionListado() {
               <th className="p-3">Convocatoria</th>
               <th className="p-3">Estado</th>
               <th className="p-3">Portafolio docs.</th>
-              <th className="p-3">Puntaje</th>
+              <th className="p-3">Cumplimiento</th>
               <th className="p-3">Evaluación</th>
-              <th className="p-3">Resultado</th>
               <th className="p-3 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-sena-borde">
             {cargando && (
               <tr>
-                <td colSpan="8" className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
+                <td colSpan="7" className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
                   Cargando aspirantes...
                 </td>
               </tr>
@@ -149,7 +148,7 @@ export default function EvaluacionListado() {
 
             {!cargando && filas.length === 0 && (
               <tr>
-                <td colSpan="8" className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
+                <td colSpan="7" className="p-8 text-center text-slate-500 dark:text-sena-texto-suave">
                   No hay aspirantes que coincidan con los filtros.
                 </td>
               </tr>
@@ -157,13 +156,13 @@ export default function EvaluacionListado() {
 
             {!cargando &&
               filas.map((fila) => {
-                const docs = fila.documentos ?? { total: 0, validados: 0 }
+                const docs = fila.documentos ?? { total: 0, cargados: 0 }
                 const colorBarra =
                   docs.total === 0
                     ? 'bg-slate-300'
-                    : docs.validados === docs.total
+                    : docs.cargados === docs.total
                       ? 'bg-green-500'
-                      : docs.validados > 0
+                      : docs.cargados > 0
                         ? 'bg-orange-500'
                         : 'bg-slate-400'
                 return (
@@ -184,38 +183,33 @@ export default function EvaluacionListado() {
                     <td className="p-3">
                       <div className="flex min-w-24 flex-col gap-1">
                         <BarraProgreso
-                          valor={docs.validados}
+                          valor={docs.cargados}
                           max={docs.total || 1}
                           color={colorBarra}
-                          valorTexto={`${docs.validados}/${docs.total}`}
+                          valorTexto={`${docs.cargados}/${docs.total}`}
                         />
                       </div>
                     </td>
                     <td className="p-3">
                       <span className="font-semibold text-slate-800 dark:text-sena-texto">
-                        {fila.evaluacion?.puntaje_total ?? '—'}
+                        {fila.evaluacion?.cumplimiento != null ? `${fila.evaluacion.cumplimiento}%` : '—'}
                       </span>
                     </td>
                     <td className="p-3">
                       {fila.evaluacion ? (
-                        <BadgeEstado estado={fila.evaluacion.estado === 'finalizada' ? 'Completada' : 'Pendiente'} />
+                        <BadgeEstado
+                          estado={
+                            fila.evaluacion.estado === 'finalizada'
+                              ? 'Completada'
+                              : fila.evaluacion.estado === 'correccion_solicitada'
+                                ? (fila.evaluacion.documentos_actualizados?.length ?? 0) > 0
+                                  ? 'Corregido por revisar'
+                                  : 'En corrección'
+                                : 'Pendiente'
+                          }
+                        />
                       ) : (
                         <BadgeEstado estado="Pendiente" />
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {fila.evaluacion?.estado === 'finalizada' ? (
-                        fila.evaluacion.pasa_seleccion ? (
-                          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300">
-                            Pasa a selección
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-                            No pasa
-                          </span>
-                        )
-                      ) : (
-                        <span className="text-xs text-slate-400 dark:text-sena-texto-suave">—</span>
                       )}
                     </td>
                     <td className="p-3 text-right">
