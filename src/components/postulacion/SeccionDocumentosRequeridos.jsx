@@ -45,12 +45,13 @@ export default function SeccionDocumentosRequeridos({
   // códigos de los documentos con una petición EN VUELO. Un Set permite que
   // varias filas trabajen a la vez sin pisarse (una operación por documento).
   const [enVuelo, setEnVuelo] = useState(() => new Set())
-  // progreso[codigo] = porcentaje (0-100) de la subida en curso de ese documento.
+  // progreso[clave] = porcentaje (0-100) de la subida en curso de ese documento.
   const [progreso, setProgreso] = useState({})
-  // archivosSubidos[codigo] = documento recién subido, para mostrarlo de inmediato
+  // archivosSubidos[clave] = documento recién subido, para mostrarlo de inmediato
   // sin esperar a que onRecargar() vuelva a traer todo el estado.
   const [archivosSubidos, setArchivosSubidos] = useState({})
-  // errores[codigo] = mensaje de validación o del backend.
+  // errores[clave] = mensaje de validación o del backend.
+  // 'clave' es el código del documento o, si es nuevo y no tiene, su id.
   const [errores, setErrores] = useState({})
   const refsInput = useRef({})
 
@@ -79,31 +80,31 @@ export default function SeccionDocumentosRequeridos({
   // si no, el borrador se crea de forma silenciosa justo antes de guardar.
   const pidSeguro = async () => vista.postulacion?.id ?? (await asegurar()).postulacionId
 
-  const elegirArchivo = async (codigo, archivo) => {
+  const elegirArchivo = async (clave, parametro, archivo) => {
     const validacion = validarArchivoPostulacion(archivo)
     if (!validacion.ok) {
-      setErrores((prev) => ({ ...prev, [codigo]: validacion.mensaje }))
+      setErrores((prev) => ({ ...prev, [clave]: validacion.mensaje }))
       return
     }
 
-    marcarEnVuelo(codigo, true)
-    setProgreso((prev) => ({ ...prev, [codigo]: 0 }))
-    limpiarError(codigo)
+    marcarEnVuelo(clave, true)
+    setProgreso((prev) => ({ ...prev, [clave]: 0 }))
+    limpiarError(clave)
     try {
       const { postulacionId } = await asegurar()
-      const resultado = await subirDocumento(postulacionId, codigo, archivo, (porcentaje) =>
-        setProgreso((prev) => ({ ...prev, [codigo]: porcentaje })),
+      const resultado = await subirDocumento(postulacionId, parametro, archivo, (porcentaje) =>
+        setProgreso((prev) => ({ ...prev, [clave]: porcentaje })),
       )
       // Mostrar el archivo de inmediato, sin esperar a onRecargar().
-      setArchivosSubidos((prev) => ({ ...prev, [codigo]: resultado }))
+      setArchivosSubidos((prev) => ({ ...prev, [clave]: resultado }))
       onRecargar() // sincroniza en segundo plano, sin bloquear
     } catch (e) {
       // 422 por archivo, tipo de documento o libreta militar: se pinta en la fila.
       const deCampo = erroresDeCampo(e)
-      const mensaje = deCampo.codigo || deCampo.archivo || mensajeError(e)
-      setErrores((prev) => ({ ...prev, [codigo]: mensaje }))
+      const mensaje = deCampo.codigo || deCampo.parametro_id || deCampo.archivo || mensajeError(e)
+      setErrores((prev) => ({ ...prev, [clave]: mensaje }))
     } finally {
-      marcarEnVuelo(codigo, false)
+      marcarEnVuelo(clave, false)
     }
   }
 
@@ -151,11 +152,14 @@ export default function SeccionDocumentosRequeridos({
         {documentos.map((documento) => {
           const { parametro, obligatorio, estado: estadoDoc, archivo } = documento
           const codigo = parametro.codigo
+          // Clave estable para el estado local: los documentos nuevos del
+          // gestor nacen sin código, así que se usa el id como respaldo.
+          const clave = parametro.codigo ?? parametro.id
           // Si acaba de subir, usamos el archivo local para mostrar las opciones
           // de inmediato, sin esperar a que onRecargar() vuelva.
-          const archivoMostrar = archivosSubidos[codigo] ?? archivo
-          const enProceso = enVuelo.has(codigo)
-          const error = errores[codigo]
+          const archivoMostrar = archivosSubidos[clave] ?? archivo
+          const enProceso = enVuelo.has(clave)
+          const error = errores[clave]
           const esLibreta = codigo === CODIGO_LIBRETA_MILITAR
           const noAplicaReal = estadoDoc === 'no_aplica'
           const noAplica = noAplicaReal || (esLibreta && sexoMujer)
@@ -188,7 +192,7 @@ export default function SeccionDocumentosRequeridos({
                     )}
                   </p>
 
-                  {(estadoDoc === 'subido' || archivosSubidos[codigo]) && archivoMostrar && (
+                  {(estadoDoc === 'subido' || archivosSubidos[clave]) && archivoMostrar && (
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
                       {archivoMostrar.nombre_original} �� {formatearTamano(archivoMostrar.tamano_bytes)}
                       {archivoMostrar.subido_en && <> �� Subido el {formatearFechaHora(archivoMostrar.subido_en)}</>}
@@ -209,7 +213,7 @@ export default function SeccionDocumentosRequeridos({
                       {motivoLibreta}
                     </p>
                   )}
-                  {enProceso && <BarraProgreso valor={progreso[codigo] ?? 0} />}
+                  {enProceso && <BarraProgreso valor={progreso[clave] ?? 0} />}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -230,14 +234,14 @@ export default function SeccionDocumentosRequeridos({
                       type="button"
                       disabled={bloqueoLibreta || enProceso}
                       title={bloqueoLibreta ? motivoLibreta : undefined}
-                      onClick={() => refsInput.current[codigo]?.click()}
+                      onClick={() => refsInput.current[clave]?.click()}
                       className={CLASE_BOTON}
                     >
                       <span className="inline-flex items-center gap-1.5">
                         <IconoSubir className="h-3.5 w-3.5" />
                         {enProceso
                           ? 'Subiendo...'
-                          : estadoDoc === 'subido' || archivosSubidos[codigo]
+                          : estadoDoc === 'subido' || archivosSubidos[clave]
                             ? 'Reemplazar'
                             : error
                               ? 'Reintentar'
@@ -250,7 +254,7 @@ export default function SeccionDocumentosRequeridos({
                     <button
                       type="button"
                       disabled={enProceso}
-                      onClick={() => eliminar(archivoMostrar, codigo)}
+                      onClick={() => eliminar(archivoMostrar, clave)}
                       className={CLASE_ELIMINAR}
                     >
                       {enProceso ? 'Eliminando...' : 'Eliminar'}
@@ -267,7 +271,7 @@ export default function SeccionDocumentosRequeridos({
 
               <input
                 ref={(el) => {
-                  refsInput.current[codigo] = el
+                  refsInput.current[clave] = el
                 }}
                 type="file"
                 accept=".pdf,application/pdf"
@@ -275,7 +279,7 @@ export default function SeccionDocumentosRequeridos({
                 aria-label={`Subir ${parametro.nombre}`}
                 onChange={(e) => {
                   const archivo = e.target.files?.[0]
-                  if (archivo) elegirArchivo(codigo, archivo)
+                  if (archivo) elegirArchivo(clave, parametro, archivo)
                   // Se limpia para poder elegir el mismo archivo otra vez.
                   e.target.value = ''
                 }}

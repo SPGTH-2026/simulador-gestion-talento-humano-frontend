@@ -97,7 +97,7 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
           <p className="font-semibold">No se pudo enviar: faltan documentos obligatorios.</p>
           <ul className="mt-1 list-disc pl-4">
             {faltantes.map((faltante) => (
-              <li key={faltante.codigo}>
+              <li key={faltante.codigo ?? faltante.nombre}>
                 {faltante.nombre}
                 {faltante.motivo ? ` (${faltante.motivo})` : ''}
               </li>
