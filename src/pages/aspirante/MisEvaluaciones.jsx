@@ -15,6 +15,9 @@ export default function MisEvaluaciones() {
   const [detalle, setDetalle] = useState(null)
   const [docsDetalle, setDocsDetalle] = useState([])
   const [cargandoDocs, setCargandoDocs] = useState(false)
+  // Refresco automático para que el instructor/super admin vea las
+  // evaluaciones nuevas de los evaluadores sin recargar la página.
+  const [refresco, setRefresco] = useState(0)
 
   const verDetalle = async (e) => {
     setDetalle(e)
@@ -52,6 +55,20 @@ export default function MisEvaluaciones() {
   }
 
   useEffect(() => {
+    const actualizar = () => {
+      if (document.visibilityState === 'visible') setRefresco((n) => n + 1)
+    }
+    const intervalo = setInterval(actualizar, 10000)
+    document.addEventListener('visibilitychange', actualizar)
+    window.addEventListener('focus', actualizar)
+    return () => {
+      clearInterval(intervalo)
+      document.removeEventListener('visibilitychange', actualizar)
+      window.removeEventListener('focus', actualizar)
+    }
+  }, [])
+
+  useEffect(() => {
     let vivo = true
 
     misEvaluaciones()
@@ -68,7 +85,7 @@ export default function MisEvaluaciones() {
     return () => {
       vivo = false
     }
-  }, [])
+  }, [refresco])
 
   const nombreAspirante = (e) =>
     typeof e.aspirante === 'string' ? e.aspirante : (e.aspirante?.name ?? '—')
