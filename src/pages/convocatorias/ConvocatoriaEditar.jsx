@@ -141,9 +141,9 @@ export default function ConvocatoriaEditar() {
 
   const estado = detalle.estado?.codigo
   const soloLectura = estado === 'en_proceso' || estado === 'cerrada'
-  // Regla H: publicada con postulaciones → documentos bloqueados (el backend
-  // también los rechaza con 422 si se intentan cambiar).
-  const bloquearDocumentos = estado === 'publicada' && (detalle.postulantes ?? 0) > 0
+  // Con CUALQUIER postulación (también borrador) los documentos no se agregan
+  // ni quitan. El backend lo rechaza con 422 si se intentan cambiar.
+  const bloquearDocumentos = Boolean(detalle.tiene_postulaciones)
 
   return (
     <div className="flex flex-col gap-4">
