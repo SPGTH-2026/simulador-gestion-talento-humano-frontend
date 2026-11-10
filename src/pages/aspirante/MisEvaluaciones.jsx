@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { misEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
@@ -31,12 +32,13 @@ export default function MisEvaluaciones() {
         docs
           .filter((d) => d.parametro?.nombre)
           .map((d) => ({
+            id: `doc-${d.parametro.id}`,
             nombre: d.parametro.nombre,
             // Peso del documento en esta convocatoria (null = sin configurar).
             ponderacion: d.ponderacion != null ? Number(d.ponderacion) : null,
             estado:
               d.estado === 'subido'
-                ? 'Validado'
+                ? 'Cargado'
                 : d.estado === 'no_aplica'
                   ? 'No aplica'
                   : 'Pendiente',
@@ -119,9 +121,9 @@ export default function MisEvaluaciones() {
                         <div className="font-semibold text-slate-800 dark:text-sena-texto">
                           {nombreAspirante(e)}
                         </div>
-                        {e.evaluador && e.es_propia === false && (
+                        {e.evaluador && (
                           <div className="text-xs text-slate-500 dark:text-sena-texto-suave">
-                            Evaluador: {e.evaluador}
+                            Evaluador: {typeof e.evaluador === 'string' ? e.evaluador : (e.evaluador?.name || e.evaluador?.email || '—')}
                           </div>
                         )}
                       </div>
@@ -134,21 +136,31 @@ export default function MisEvaluaciones() {
                     </span>
                   </td>
                   <td className="p-3">
-                    <BadgeEstado estado={e.estado === 'finalizada' ? 'Completada' : 'Pendiente'} />
+                    <BadgeEstado
+                      estado={
+                        e.estado === 'finalizada'
+                          ? 'Completada'
+                          : e.estado === 'correccion_solicitada'
+                            ? 'Corrección solicitada'
+                            : 'Pendiente'
+                      }
+                    />
                   </td>
                   <td className="p-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => verDetalle(e)}
-                      className="inline-flex items-center justify-center rounded bg-sena-azul px-2 py-1 text-white transition-colors hover:bg-sena-azul/90"
-                      aria-label="Ver evaluación"
-                      title="Ver evaluación"
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                        <circle cx="12" cy="12" r="3" strokeWidth={2} />
-                      </svg>
-                    </button>
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => verDetalle(e)}
+                        className="inline-flex items-center justify-center rounded bg-sena-azul px-2 py-1 text-white transition-colors hover:bg-sena-azul/90"
+                        aria-label="Ver evaluación"
+                        title="Ver evaluación"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" strokeWidth={2} />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -168,6 +180,11 @@ export default function MisEvaluaciones() {
                 <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
                   {detalle.convocatoria?.titulo}
                 </p>
+                {detalle.evaluador && (
+                  <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
+                    Evaluador: {typeof detalle.evaluador === 'string' ? detalle.evaluador : (detalle.evaluador?.name || detalle.evaluador?.email || '—')}
+                  </p>
+                )}
               </div>
               <button
                 type="button"
@@ -189,15 +206,23 @@ export default function MisEvaluaciones() {
                 <span className="font-medium text-slate-800 dark:text-sena-texto">{detalle.cumplimiento ?? 0}%</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 dark:text-sena-texto-suave">Pasa a selección</span>
-                <span className={`font-medium ${detalle.pasa_seleccion ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
-                  {detalle.pasa_seleccion ? 'Sí' : 'No'}
-                </span>
+                <span className="text-slate-500 dark:text-sena-texto-suave">Pasa a Preselección</span>
+                {detalle.pasa_seleccion == null ? (
+                  <span className="font-medium text-slate-500 dark:text-sena-texto-suave">En revisión</span>
+                ) : (
+                  <span className={`font-medium ${detalle.pasa_seleccion ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                    {detalle.pasa_seleccion ? 'Sí' : 'No'}
+                  </span>
+                )}
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-sena-texto-suave">Estado</span>
                 <span className="font-medium text-slate-800 dark:text-sena-texto">
-                  {detalle.estado === 'finalizada' ? 'Finalizada' : 'En proceso'}
+                  {detalle.estado === 'finalizada'
+                    ? 'Finalizada'
+                    : detalle.estado === 'correccion_solicitada'
+                      ? 'Corrección solicitada'
+                      : 'En proceso'}
                 </span>
               </div>
 
@@ -219,19 +244,39 @@ export default function MisEvaluaciones() {
                   <p className="text-xs text-slate-500 dark:text-sena-texto-suave">Sin documentos.</p>
                 ) : (
                   <ul className="flex flex-col gap-1">
-                    {docsDetalle.map((d, i) => (
-                      <li key={i} className="flex justify-between gap-2 text-slate-700 dark:text-sena-texto">
-                        <span className="min-w-0 truncate">{d.nombre}</span>
-                        <span className="flex shrink-0 items-center gap-2">
-                          {d.ponderacion != null && (
-                            <span className="rounded-full bg-sena-cielo/60 px-2 py-0.5 text-[11px] font-semibold text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
-                              Peso: {Math.round(d.ponderacion * 100) / 100}%
-                            </span>
-                          )}
-                          <span className="font-medium">{d.estado}</span>
-                        </span>
-                      </li>
-                    ))}
+                    {docsDetalle.map((d, i) => {
+                      const decision = detalle.perfil?.[d.id]
+                      const reemplazado = (detalle.documentos_actualizados ?? []).includes(d.id)
+                      return (
+                        <li key={i} className="flex justify-between gap-2 text-slate-700 dark:text-sena-texto">
+                          <span className="min-w-0 truncate">{d.nombre}</span>
+                          <span className="flex shrink-0 items-center gap-2">
+                            {d.ponderacion != null && (
+                              <span className="rounded-full bg-sena-cielo/60 px-2 py-0.5 text-[11px] font-semibold text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
+                                Peso: {Math.round(d.ponderacion * 100) / 100}%
+                              </span>
+                            )}
+                            {decision === true && (
+                              <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700 dark:bg-green-950 dark:text-green-300">
+                                ✓ Cumple
+                              </span>
+                            )}
+                            {decision === false && (
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                  reemplazado
+                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                                    : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                                }`}
+                              >
+                                {reemplazado ? '↻ Corregido (en revisión)' : '✗ Corregir'}
+                              </span>
+                            )}
+                            <span className="font-medium">{d.estado}</span>
+                          </span>
+                        </li>
+                      )
+                    })}
                   </ul>
                 )}
               </div>
@@ -262,15 +307,35 @@ export default function MisEvaluaciones() {
                   </p>
                 </div>
               )}
+
+              {detalle.estado === 'correccion_solicitada' && (
+                <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                  <p className="font-semibold">
+                    El evaluador solicitó corregir los documentos marcados con «✗ Corregir».
+                  </p>
+                  {detalle.observaciones && <p>{detalle.observaciones}</p>}
+                  {detalle.postulacion_id && (
+                    <Link
+                      to={`/postulaciones/${detalle.postulacion_id}/documentos`}
+                      onClick={() => setDetalle(null)}
+                      className="mt-1 inline-flex w-fit items-center rounded bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-800"
+                    >
+                      Ir a corregir mis documentos
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setDetalle(null)}
-              className="mt-4 w-full rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul"
-            >
-              Cerrar
-            </button>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setDetalle(null)}
+                className="w-full rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}
