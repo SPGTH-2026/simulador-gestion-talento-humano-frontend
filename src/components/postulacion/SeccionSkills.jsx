@@ -11,6 +11,7 @@ import {
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import BarraProgreso from '../ui/BarraProgreso'
+import { IconoSubir } from '../convocatorias/Iconos'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
@@ -127,7 +128,10 @@ function FilaSkill({
                     onClick={onAdjuntar}
                     className="px-3 py-1.5 text-xs font-semibold text-sena-azul border border-sena-azul/25 rounded hover:bg-sena-cielo/30 transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
                   >
-                    Reemplazar
+                    <span className="inline-flex items-center gap-1.5">
+                      <IconoSubir className="h-3.5 w-3.5" />
+                      Reemplazar
+                    </span>
                   </button>
                 )}
                 {editable && !sinSiNo && (
@@ -150,7 +154,10 @@ function FilaSkill({
                   onClick={onAdjuntar}
                   className="rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
                 >
-                  {ocupada ? 'Subiendo...' : 'Adjuntar certificado'}
+                  <span className="inline-flex items-center gap-1.5">
+                    <IconoSubir className="h-3.5 w-3.5" />
+                    {ocupada ? 'Subiendo...' : 'Adjuntar certificado'}
+                  </span>
                 </button>
               )
             ))}

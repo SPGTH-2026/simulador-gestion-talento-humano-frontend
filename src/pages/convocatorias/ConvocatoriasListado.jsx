@@ -73,7 +73,7 @@ const CLASE_BOTON_ACCION =
 const CLASE_ICONO_ACCION = 'hidden h-4 w-4 shrink-0 @min-[420px]:block'
 
 // Parámetros de la URL que usa este listado (ver useFiltrosUrl).
-const CLAVES_FILTRO = ['q', 'estado', 'ficha']
+const CLAVES_FILTRO = ['q', 'estado', 'ficha', 'tipo', 'modalidad', 'orden']
 
 export default function ConvocatoriasListado() {
   const navigate = useNavigate()
@@ -99,14 +99,19 @@ export default function ConvocatoriasListado() {
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1, total: 0 })
   const [pagina, setPagina] = useState(1)
 
-  // Los filtros viven en la URL (?q=&estado=&ficha=): sobreviven a recargar y se
-  // pueden compartir. 'termino' es solo el texto que se está escribiendo; se
-  // pasa a la URL con un antirrebote.
+  // Los filtros viven en la URL (?q=&estado=&ficha=&tipo=&modalidad=&orden=):
+  // sobreviven a recargar y se pueden compartir. 'termino' es solo el texto que
+  // se está escribiendo; se pasa a la URL con un antirrebote.
   const { valores, setValor, limpiar: limpiarUrl } = useFiltrosUrl(CLAVES_FILTRO)
   const busqueda = valores.q
   const filtroEstado = valores.estado
   const filtroFicha = valores.ficha
+  const filtroTipo = valores.tipo
+  const filtroModalidad = valores.modalidad
+  const orden = valores.orden || 'reciente'
   const [termino, setTermino] = useState(() => valores.q)
+  const [opcionesTipo, setOpcionesTipo] = useState([])
+  const [opcionesModalidad, setOpcionesModalidad] = useState([])
   const [recarga, setRecarga] = useState(0)
   const qUrl = useRef(valores.q)
   useEffect(() => {
@@ -144,6 +149,25 @@ export default function ConvocatoriasListado() {
     }
   }, [])
 
+  // Tipo y modalidad: catálogos, igual que los estados.
+  useEffect(() => {
+    let activo = true
+    Promise.all([listaParametros('tipo_convocatoria'), listaParametros('modalidad')])
+      .then(([tipos, modalidades]) => {
+        if (!activo) return
+        setOpcionesTipo(tipos.data ?? [])
+        setOpcionesModalidad(modalidades.data ?? [])
+      })
+      .catch(() => {
+        if (!activo) return
+        setOpcionesTipo([])
+        setOpcionesModalidad([])
+      })
+    return () => {
+      activo = false
+    }
+  }, [])
+
   // Las fichas del filtro salen del alcance del usuario (GET /api/fichas):
   // un instructor solo ve las suyas; el super admin, todas.
   useEffect(() => {
@@ -173,6 +197,9 @@ export default function ConvocatoriasListado() {
       q: busqueda || undefined,
       estado: filtroEstado || undefined,
       ficha_id: filtroFicha || undefined,
+      tipo_convocatoria: filtroTipo || undefined,
+      modalidad: filtroModalidad || undefined,
+      orden: orden !== 'reciente' ? orden : undefined,
     })
       .then((res) => {
         setConvocatorias(res.data)
@@ -185,7 +212,7 @@ export default function ConvocatoriasListado() {
       .finally(() => setCargando(false))
 
     return () => control.abort()
-  }, [pagina, busqueda, filtroEstado, filtroFicha, recarga])
+  }, [pagina, busqueda, filtroEstado, filtroFicha, filtroTipo, filtroModalidad, orden, recarga])
 
   const confirmar = useConfirmacion()
 
@@ -220,7 +247,9 @@ export default function ConvocatoriasListado() {
     setPagina(1)
   }
 
-  const hayFiltros = Boolean(termino || filtroFicha || filtroEstado)
+  const hayFiltros = Boolean(
+    termino || filtroFicha || filtroEstado || filtroTipo || filtroModalidad || orden !== 'reciente',
+  )
 
   // Las mismas acciones se usan en todas las tarjetas, para no duplicar la
   // lógica de permisos.
@@ -367,6 +396,55 @@ export default function ConvocatoriasListado() {
                   ))}
                 </select>
               )}
+
+              <select
+                value={filtroTipo}
+                onChange={(e) => {
+                  setValor('tipo', e.target.value)
+                  setPagina(1)
+                }}
+                aria-label="Filtrar por tipo de convocatoria"
+                className={`${CLASE_INPUT} min-w-[10rem]`}
+              >
+                <option value="">Todos los tipos</option>
+                {opcionesTipo.map((o) => (
+                  <option key={o.codigo} value={o.codigo}>
+                    {o.nombre}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filtroModalidad}
+                onChange={(e) => {
+                  setValor('modalidad', e.target.value)
+                  setPagina(1)
+                }}
+                aria-label="Filtrar por modalidad"
+                className={`${CLASE_INPUT} min-w-[10rem]`}
+              >
+                <option value="">Todas las modalidades</option>
+                {opcionesModalidad.map((o) => (
+                  <option key={o.codigo} value={o.codigo}>
+                    {o.nombre}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={orden}
+                onChange={(e) => {
+                  setValor('orden', e.target.value === 'reciente' ? '' : e.target.value)
+                  setPagina(1)
+                }}
+                aria-label="Ordenar convocatorias"
+                className={`${CLASE_INPUT} min-w-[10rem]`}
+              >
+                <option value="reciente">Más recientes</option>
+                <option value="antigua">Más antiguas</option>
+                <option value="nombre">Nombre (A-Z)</option>
+                <option value="cierre">Próximas a cerrar</option>
+              </select>
 
               {puedeFiltrarFicha && (
                 <select
