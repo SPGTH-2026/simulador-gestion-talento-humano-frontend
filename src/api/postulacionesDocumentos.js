@@ -39,12 +39,15 @@ export const obtenerPerfil = () =>
 export const guardarSexo = (sexo) =>
   client.put('/perfil/sexo', { sexo }).then((res) => res.data.data.sexo)
 
-// POST /api/postulaciones/{id}/documentos  (multipart: codigo + archivo)
+// POST /api/postulaciones/{id}/documentos  (multipart: codigo|parametro_id + archivo)
 // 201 si es nuevo, 200 si reemplaza el existente.
+// Los documentos de sistema se identifican por `codigo`; los NUEVOS creados
+// por el gestor nacen sin código y se identifican por `parametro_id`.
 // 'alProgresar(porcentaje)' es opcional: informa el avance real de la subida.
-export const subirDocumento = (postulacionId, codigo, archivo, alProgresar) => {
+export const subirDocumento = (postulacionId, parametro, archivo, alProgresar) => {
   const datos = new FormData()
-  datos.append('codigo', codigo)
+  if (parametro?.codigo) datos.append('codigo', parametro.codigo)
+  else datos.append('parametro_id', parametro?.id)
   datos.append('archivo', archivo)
   return client
     .post(`/postulaciones/${postulacionId}/documentos`, datos, progresoSubida(alProgresar))

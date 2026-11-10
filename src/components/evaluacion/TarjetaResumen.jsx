@@ -1,11 +1,11 @@
-export default function TarjetaResumen({ cumplidos, total, porcentaje, ponderado = false }) {
+export default function TarjetaResumen({ cumplidos, total, porcentaje, ponderado = false, umbral = 60 }) {
   const pct =
     porcentaje != null
       ? Math.round(porcentaje)
       : total > 0
         ? Math.round((cumplidos / total) * 100)
         : 0
-  const pasa = pct >= 60
+  const pasa = pct >= umbral
   return (
     <div
       className={`rounded-lg border p-3 text-sm font-semibold ${
@@ -28,7 +28,7 @@ export default function TarjetaResumen({ cumplidos, total, porcentaje, ponderado
         />
       </div>
       <div className={`mt-2 text-xs font-bold ${pasa ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
-        {pasa ? '✓ Pasa a selección (≥ 60%)' : '✕ No pasa a selección (< 60%)'}
+        {pasa ? `✓ Pasa a selección (≥ ${umbral}%)` : `✕ No pasa a selección (< ${umbral}%)`}
       </div>
       <p className="mt-1 text-[11px] font-normal opacity-80">
         {ponderado
