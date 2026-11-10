@@ -1,12 +1,29 @@
 import BotonesToggle from './BotonesToggle'
 
-export default function ItemVerificacion({ icono, titulo, requerido, ponderacion, aspirante, respuesta, onChange, onVerDocumento }) {
+export default function ItemVerificacion({
+  icono,
+  titulo,
+  requerido,
+  ponderacion,
+  aspirante,
+  actualizado = false,
+  respuesta,
+  onChange,
+  onVerDocumento,
+}) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 py-3 last:border-0 dark:border-sena-borde">
       <div className="flex items-center gap-3">
         {icono && <span className="text-xl" aria-hidden="true">{icono}</span>}
         <div>
-          <p className="text-sm font-medium text-slate-800 dark:text-sena-texto">{titulo}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium text-slate-800 dark:text-sena-texto">{titulo}</p>
+            {actualizado && (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                ↻ Corregido por el aspirante
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
             Requerido: {requerido} · Aspirante: {aspirante}
           </p>
