@@ -2,6 +2,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { obtenerEvaluacion, guardarEvaluacion } from '../../api/evaluaciones'
 import { listaDocumentos } from '../../api/documentos'
+import { abrirArchivoEnPestana } from '../../api/postulacionesDocumentos'
 import { mensajeError } from '../../api/mensajeError'
 import AvatarIniciales from '../../components/evaluacion/AvatarIniciales'
 import BadgeEstado from '../../components/evaluacion/BadgeEstado'
@@ -13,9 +14,10 @@ const CLASE_INPUT =
   'rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto'
 
 const ETIQUETA_DOC = {
-  validado: 'Validado',
+  validado: 'Cargado',
   cargado: 'Pendiente',
   rechazado: 'Sin cargar',
+  no_aplica: 'No aplica',
 }
 
 export default function EvaluacionEvaluar() {
@@ -32,15 +34,21 @@ export default function EvaluacionEvaluar() {
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
 
-  // Peso (%) de cada documento. Si la convocatoria no configuró porcentajes,
-  // todos valen lo mismo (reparto equitativo). Mismo criterio que el backend:
-  // lo que el gestor no configuró se reparte con lo que sobra del 100 %.
-  const ponderado = documentos.some((d) => d.ponderacion != null)
+  // Solo los documentos OBLIGATORIOS y APLICABLES pesan en el 60 %. Es la
+  // misma regla del backend: un documento opcional no resta y un "no aplica"
+  // (la libreta militar de una mujer) se excluye.
+  const aplicables = documentos.filter((d) => d.obligatorio && d.estado !== 'no_aplica')
+
+  // Peso (%) de cada documento aplicable. Si la convocatoria no configuró
+  // porcentajes, todos valen lo mismo (reparto equitativo). Mismo criterio que
+  // el backend: lo que el gestor no configuró se reparte con lo que sobra del
+  // 100 %.
+  const ponderado = aplicables.some((d) => d.ponderacion != null)
   const pesos = {}
   {
     const sinPeso = []
     let suma = 0
-    documentos.forEach((d) => {
+    aplicables.forEach((d) => {
       if (d.ponderacion == null) {
         sinPeso.push(d.id)
         return
@@ -56,12 +64,15 @@ export default function EvaluacionEvaluar() {
     }
   }
 
-  // Items de verificación = documentos requeridos de la convocatoria.
-  const items = documentos.map((d) => ({
+  // Items de verificación = documentos obligatorios aplicables.
+  const actualizados = dato?.evaluacion?.documentos_actualizados ?? []
+  const items = aplicables.map((d) => ({
     id: d.id,
     titulo: d.nombre,
     requerido: 'Obligatorio',
     ponderacion: pesos[d.id],
+    archivo: d.archivo,
+    actualizado: actualizados.includes(d.id),
     aspirante: d.estado === 'validado' ? 'Subido' : d.estado === 'cargado' ? 'Pendiente' : 'Sin cargar',
   }))
 
@@ -121,12 +132,23 @@ export default function EvaluacionEvaluar() {
         cumplimiento,
       })
       setDato(res.data)
-      setModal({
-        mensaje:
-          estadoFinal === 'finalizada'
-            ? 'Evaluación finalizada y guardada.'
-            : 'Borrador guardado.',
-      })
+      setModal(
+        estadoFinal === 'finalizada'
+          ? {
+              titulo: 'Evaluación finalizada',
+              descripcion: 'Los resultados se han guardado correctamente.',
+            }
+          : estadoFinal === 'correccion_solicitada'
+            ? {
+                titulo: 'Solicitud enviada',
+                descripcion:
+                  'Se ha notificado al aspirante para realizar las correcciones solicitadas.',
+              }
+            : {
+                titulo: 'Borrador guardado',
+                descripcion: 'La evaluación se ha guardado correctamente.',
+              },
+      )
     } catch (err) {
       setError(mensajeError(err))
     } finally {
@@ -168,7 +190,7 @@ export default function EvaluacionEvaluar() {
     )
   }
 
-  const docsValidados = documentos.filter((d) => d.estado === 'validado').length
+  const docsValidados = aplicables.filter((d) => d.estado === 'validado').length
 
   return (
     <div className="flex flex-col gap-4 pb-24">
@@ -197,8 +219,40 @@ export default function EvaluacionEvaluar() {
             )}
           </div>
         </div>
-        <BadgeEstado estado={dato.evaluacion?.estado === 'finalizada' ? 'Completada' : 'En revisión'} />
+        <BadgeEstado
+          estado={
+            dato.evaluacion?.estado === 'finalizada'
+              ? 'Completada'
+              : dato.evaluacion?.estado === 'correccion_solicitada'
+                ? actualizados.length > 0
+                  ? 'Corregido por revisar'
+                  : 'En corrección'
+                : 'En revisión'
+          }
+        />
       </div>
+
+      {dato.evaluacion?.estado === 'correccion_solicitada' && (
+        <div
+          className={`rounded-lg border p-3 text-sm ${
+            actualizados.length > 0
+              ? 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200'
+              : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200'
+          }`}
+        >
+          {actualizados.length > 0 ? (
+            <p>
+              <strong>↻ El aspirante ya reemplazó {actualizados.length} documento(s).</strong> Revisa los archivos
+              marcados como <em>Corregido por el aspirante</em> y actualiza tu calificación.
+            </p>
+          ) : (
+            <p>
+              <strong>En espera de corrección del aspirante:</strong> se solicitó subsanar los documentos marcados
+              con «No».
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[30%_70%]">
         {/* Sidebar */}
@@ -218,23 +272,32 @@ export default function EvaluacionEvaluar() {
                       <span aria-hidden="true">📄</span>
                       {doc.nombre}
                     </span>
-                    <BadgeEstado estado={ETIQUETA_DOC[doc.estado] ?? doc.estado} />
+                    <BadgeEstado
+                      estado={
+                        !doc.obligatorio
+                          ? 'Opcional'
+                          : (ETIQUETA_DOC[doc.estado] ?? doc.estado)
+                      }
+                    />
                   </li>
                 ))}
               </ul>
             )}
             <div className="mt-4">
               <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-sena-texto-suave">
-                <span>Documentos validados</span>
+                <span>Documentos cargados</span>
                 <span className="font-medium">
-                  {docsValidados}/{documentos.length}
+                  {docsValidados}/{aplicables.length}
                 </span>
               </div>
               <BarraProgreso
                 valor={docsValidados}
-                max={documentos.length || 1}
-                color={docsValidados === documentos.length && documentos.length > 0 ? 'bg-green-500' : 'bg-orange-500'}
+                max={aplicables.length || 1}
+                color={docsValidados === aplicables.length && aplicables.length > 0 ? 'bg-green-500' : 'bg-orange-500'}
               />
+              <p className="mt-2 text-[11px] text-slate-500 dark:text-sena-texto-suave">
+                Solo cuentan los documentos obligatorios y aplicables de la convocatoria.
+              </p>
             </div>
           </div>
         </aside>
@@ -246,7 +309,7 @@ export default function EvaluacionEvaluar() {
           </h2>
 
           {items.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-sena-texto-suave">Sin documentos cargados.</p>
+            <p className="text-sm text-slate-500 dark:text-sena-texto-suave">Sin documentos obligatorios aplicables.</p>
           ) : (
             items.map((item) => (
               <ItemVerificacion
@@ -255,9 +318,18 @@ export default function EvaluacionEvaluar() {
                 requerido={item.requerido}
                 ponderacion={item.ponderacion}
                 aspirante={item.aspirante}
+                actualizado={item.actualizado}
                 respuesta={respuestas[item.id]}
                 onChange={(v) => setRespuestas((prev) => ({ ...prev, [item.id]: v }))}
-                onVerDocumento={() => window.alert(`Visualizando documento: ${item.titulo}`)}
+                onVerDocumento={
+                  item.archivo?.id
+                    ? () =>
+                        abrirArchivoEnPestana(
+                          `/revision/postulaciones/${postulacionId}/documentos/${item.archivo.id}/archivo?inline=1`,
+                          { nombre: item.archivo.nombre_original },
+                        ).catch((e) => setError(mensajeError(e)))
+                    : undefined
+                }
               />
             ))
           )}
@@ -267,6 +339,7 @@ export default function EvaluacionEvaluar() {
             total={total}
             porcentaje={cumplimiento}
             ponderado={ponderado}
+            umbral={60}
           />
 
           <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
@@ -280,7 +353,7 @@ export default function EvaluacionEvaluar() {
             />
           </label>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
               onClick={() => guardar('en_proceso')}
@@ -288,6 +361,14 @@ export default function EvaluacionEvaluar() {
               className="rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:opacity-60 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
             >
               {guardando ? 'Guardando…' : 'Guardar borrador'}
+            </button>
+            <button
+              type="button"
+              onClick={() => guardar('correccion_solicitada')}
+              disabled={guardando}
+              className="rounded border border-amber-500 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-60 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200 dark:hover:bg-amber-900"
+            >
+              {guardando ? 'Enviando…' : 'Mandar a corregir'}
             </button>
             <button
               type="button"
@@ -310,9 +391,12 @@ export default function EvaluacionEvaluar() {
       {/* Modal de confirmación */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6 text-center shadow-xl dark:bg-sena-superficie">
-            <p className="text-lg font-semibold text-slate-800 dark:text-sena-texto">{modal.mensaje}</p>
-            <div className="mt-4 flex justify-center gap-2">
+          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-sena-superficie">
+            <div className="flex flex-col gap-1">
+              <p className="text-lg font-bold text-slate-800 dark:text-sena-texto">{modal.titulo}</p>
+              <p className="text-sm text-slate-500 dark:text-sena-texto-suave">{modal.descripcion}</p>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setModal(null)}
