@@ -97,3 +97,12 @@ export const CLASE_TH = 'p-3'
 export const CLASE_TD = 'p-3'
 export const CLASE_FILA = 'hover:bg-sena-hundido dark:hover:bg-sena-superficie-alta/40'
 export const CLASE_TABLA_ESTADO = 'p-8 text-center text-sm text-slate-500 dark:text-sena-texto-suave'
+
+// Enlace de título dentro de una lista o tarjeta (convocatoria, postulación).
+// Mide al menos 44 px de alto aunque el título sea corto, para que se pueda
+// pulsar con el dedo.
+export const CLASE_ENLACE_TITULO =
+  'inline-flex min-h-11 items-center font-semibold text-sena-azul underline-offset-2 hover:underline dark:text-sena-texto'
+
+// Lista con separadores finos entre filas, para los bloques de Inicio.
+export const CLASE_LISTA = 'divide-y divide-sena-linea/70 dark:divide-sena-borde/50'
