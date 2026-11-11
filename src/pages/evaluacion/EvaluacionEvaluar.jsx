@@ -1,80 +1,57 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { obtenerEvaluacion, guardarEvaluacion } from '../../api/evaluaciones'
 import { listaDocumentos } from '../../api/documentos'
-import { abrirArchivoEnPestana } from '../../api/postulacionesDocumentos'
+import { obtenerEvaluacion, guardarEvaluacion } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
+import { abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulacionesDocumentos'
+import { IconoFlechaIzquierda } from '../../components/convocatorias/Iconos'
 import AvatarIniciales from '../../components/evaluacion/AvatarIniciales'
-import BadgeEstado from '../../components/evaluacion/BadgeEstado'
-import BarraProgreso from '../../components/evaluacion/BarraProgreso'
-import ItemVerificacion from '../../components/evaluacion/ItemVerificacion'
-import TarjetaResumen from '../../components/evaluacion/TarjetaResumen'
-
-const CLASE_INPUT =
-  'rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto'
-
-const ETIQUETA_DOC = {
-  validado: 'Cargado',
-  cargado: 'Pendiente',
-  rechazado: 'Sin cargar',
-  no_aplica: 'No aplica',
-}
+import {
+  EtiquetaConIcono,
+  EtiquetaEvaluacion,
+} from '../../components/evaluacion/PresentacionEvaluacion'
+import RequisitoEvaluacion from '../../components/evaluacion/RequisitoEvaluacion'
+import ResumenCumplimiento from '../../components/evaluacion/ResumenCumplimiento'
+import Boton from '../../components/ui/Boton'
+import Campo from '../../components/ui/Campo'
+import Cargando from '../../components/ui/Cargando'
+import Mensaje, { MensajeAviso, MensajeError } from '../../components/ui/Mensaje'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
+import {
+  CLASE_CAMPO,
+  CLASE_TARJETA,
+  CLASE_TEXTO_FUERTE,
+  CLASE_TEXTO_PARTIDO,
+  CLASE_TEXTO_SUAVE,
+} from '../../lib/estilos'
+import { repartirPesos } from '../../lib/evaluacion'
 
 export default function EvaluacionEvaluar() {
   const { postulacionId } = useParams()
   const navigate = useNavigate()
+  const confirmar = useConfirmacion()
 
   const [dato, setDato] = useState(null)
   const [documentos, setDocumentos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
-  const [modal, setModal] = useState(null)
+  const [errorDocumento, setErrorDocumento] = useState('')
+  const [abriendo, setAbriendo] = useState(null)
 
   const [respuestas, setRespuestas] = useState({})
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const botonBorrador = useRef(null)
+  const botonCorregir = useRef(null)
+  const botonFinalizar = useRef(null)
 
-  // Solo los documentos OBLIGATORIOS y APLICABLES pesan en el 60 %. Es la
-  // misma regla del backend: un documento opcional no resta y un "no aplica"
-  // (la libreta militar de una mujer) se excluye.
+  // Solo los documentos OBLIGATORIOS y APLICABLES pesan en el cumplimiento. Es
+  // la misma regla del backend: un documento opcional no resta y uno que "no
+  // aplica" (la libreta militar de una mujer) se excluye. Los demás se listan
+  // aparte, sin peso ni respuesta.
   const aplicables = documentos.filter((d) => d.obligatorio && d.estado !== 'no_aplica')
-
-  // Peso (%) de cada documento aplicable. Si la convocatoria no configuró
-  // porcentajes, todos valen lo mismo (reparto equitativo). Mismo criterio que
-  // el backend: lo que el gestor no configuró se reparte con lo que sobra del
-  // 100 %.
-  const ponderado = aplicables.some((d) => d.ponderacion != null)
-  const pesos = {}
-  {
-    const sinPeso = []
-    let suma = 0
-    aplicables.forEach((d) => {
-      if (d.ponderacion == null) {
-        sinPeso.push(d.id)
-        return
-      }
-      pesos[d.id] = Number(d.ponderacion)
-      suma += Number(d.ponderacion)
-    })
-    if (sinPeso.length > 0) {
-      const cuota = Math.max(0, 100 - suma) / sinPeso.length
-      sinPeso.forEach((id) => {
-        pesos[id] = cuota
-      })
-    }
-  }
-
-  // Items de verificación = documentos obligatorios aplicables.
-  const actualizados = dato?.evaluacion?.documentos_actualizados ?? []
-  const items = aplicables.map((d) => ({
-    id: d.id,
-    titulo: d.nombre,
-    requerido: 'Obligatorio',
-    ponderacion: pesos[d.id],
-    archivo: d.archivo,
-    actualizado: actualizados.includes(d.id),
-    aspirante: d.estado === 'validado' ? 'Subido' : d.estado === 'cargado' ? 'Pendiente' : 'Sin cargar',
-  }))
+  const excluidos = documentos.filter((d) => !(d.obligatorio && d.estado !== 'no_aplica'))
+  const pesos = repartirPesos(aplicables)
 
   useEffect(() => {
     if (!postulacionId) return
@@ -93,7 +70,7 @@ export default function EvaluacionEvaluar() {
           setRespuestas(ev.data.evaluacion.perfil ?? {})
         }
         // Sin evaluación previa no se preselecciona nada: el evaluador decide
-        // Sí/No en cada ítem.
+        // Sí/No en cada requisito.
 
         setError('')
       })
@@ -109,20 +86,26 @@ export default function EvaluacionEvaluar() {
     }
   }, [postulacionId])
 
-  const cumplidos = items.filter((it) => respuestas[it.id] === true).length
-  const total = items.length
+  const total = aplicables.length
+  const cumplidos = aplicables.filter((d) => respuestas[d.id] === true).length
+  const sinResponder = aplicables.filter((d) => respuestas[d.id] == null).length
+  const sinSubir = aplicables.filter((d) => d.estado === 'pendiente').length
   const pesoTotal = Object.values(pesos).reduce((acc, valor) => acc + valor, 0)
-  const pesoObtenido = items.reduce(
-    (acc, it) => acc + (respuestas[it.id] === true ? (pesos[it.id] ?? 0) : 0),
+  const pesoObtenido = aplicables.reduce(
+    (acc, d) => acc + (respuestas[d.id] === true ? (pesos[d.id] ?? 0) : 0),
     0,
   )
   const cumplimiento = pesoTotal > 0 ? Math.round((pesoObtenido / pesoTotal) * 100) : 0
 
+  // Documentos que el aspirante reemplazó después de que se le pidió corregir.
+  const actualizados = dato?.evaluacion?.documentos_actualizados ?? []
+  const enCorreccion = dato?.evaluacion?.estado === 'correccion_solicitada'
+
   const guardar = async (estadoFinal) => {
     setError('')
-
     setGuardando(true)
 
+    let guardada
     try {
       const res = await guardarEvaluacion(postulacionId, {
         observaciones: observaciones || null,
@@ -132,292 +115,272 @@ export default function EvaluacionEvaluar() {
         cumplimiento,
       })
       setDato(res.data)
-      setModal(
-        estadoFinal === 'finalizada'
-          ? {
-              titulo: 'Evaluación finalizada',
-              descripcion: 'Los resultados se han guardado correctamente.',
-            }
-          : estadoFinal === 'correccion_solicitada'
-            ? {
-                titulo: 'Solicitud enviada',
-                descripcion:
-                  'Se ha notificado al aspirante para realizar las correcciones solicitadas.',
-              }
-            : {
-                titulo: 'Borrador guardado',
-                descripcion: 'La evaluación se ha guardado correctamente.',
-              },
-      )
+      guardada = res.data.evaluacion
     } catch (err) {
       setError(mensajeError(err))
+      return
     } finally {
       setGuardando(false)
     }
+
+    // Con los botones ya habilitados: al cerrar el diálogo el foco vuelve al
+    // que lo abrió, y un botón deshabilitado no puede recibirlo.
+    const textos = {
+      finalizada: {
+        titulo: 'Evaluación finalizada',
+        mensaje: `El resultado quedó guardado: ${guardada?.cumplimiento ?? cumplimiento} % de cumplimiento.`,
+      },
+      correccion_solicitada: {
+        titulo: 'Solicitud enviada',
+        mensaje:
+          'Se notificó al aspirante para que corrija los documentos marcados con «No». La evaluación queda en espera de su respuesta.',
+      },
+      en_proceso: {
+        titulo: 'Borrador guardado',
+        mensaje:
+          'Tus respuestas quedaron guardadas. La evaluación sigue en proceso y puedes retomarla cuando quieras.',
+      },
+    }[estadoFinal]
+    const volver = await confirmar({
+      ...textos,
+      textoConfirmar: 'Volver al listado',
+      textoCancelar: 'Seguir aquí',
+    })
+    if (volver) {
+      navigate('/evaluacion')
+      return
+    }
+    // Los botones se deshabilitaron mientras se guardaba y perdieron el foco.
+    const boton =
+      estadoFinal === 'finalizada'
+        ? botonFinalizar
+        : estadoFinal === 'correccion_solicitada'
+          ? botonCorregir
+          : botonBorrador
+    setTimeout(() => boton.current?.focus(), 0)
   }
+
+  const finalizar = async () => {
+    const pendientes =
+      sinResponder > 0
+        ? ` ${sinResponder === 1 ? '1 requisito sin responder contará' : `${sinResponder} requisitos sin responder contarán`} como no cumplido.`
+        : ''
+    const continuar = await confirmar({
+      titulo: '¿Finalizar la evaluación?',
+      mensaje: `Se guardará el resultado con ${cumplimiento} % de cumplimiento (${cumplidos} de ${total} requisitos).${pendientes}`,
+      textoConfirmar: 'Finalizar evaluación',
+      textoCancelar: 'Seguir revisando',
+    })
+    if (continuar) guardar('finalizada')
+  }
+
+  const verDocumento = async (documento) => {
+    setErrorDocumento('')
+    setAbriendo(documento.id)
+    try {
+      await abrirArchivoEnPestana(
+        `/revision/postulaciones/${postulacionId}/documentos/${documento.archivo.id}/archivo?inline=1`,
+        { nombre: documento.archivo.nombre_original },
+      )
+    } catch (e) {
+      setErrorDocumento((await mensajeErrorBlob(e)) || mensajeError(e))
+    } finally {
+      setAbriendo(null)
+    }
+  }
+
+  const volverAlListado = (
+    <Boton as={Link} to="/evaluacion" variante="fantasma" tamano="tactil" className="-ml-4 self-start">
+      <IconoFlechaIzquierda className="h-4 w-4" />
+      Volver al listado
+    </Boton>
+  )
 
   if (!postulacionId) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 dark:border-sena-borde dark:bg-sena-superficie">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">Evaluación de aspirante</h1>
-        <p className="mt-2 text-slate-500 dark:text-sena-texto-suave">
-          Elige un aspirante en el listado para calificarlo.
-        </p>
-        <Link
-          to="/evaluacion"
-          className="mt-4 inline-block rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul"
-        >
-          Ir al listado de aspirantes
-        </Link>
+      <div className="flex flex-col gap-4">
+        <section className={`${CLASE_TARJETA} p-6`}>
+          <h1 className={`text-xl font-bold ${CLASE_TEXTO_FUERTE}`}>Evaluación de aspirante</h1>
+          <p className={`mt-2 text-sm ${CLASE_TEXTO_SUAVE}`}>Elige un aspirante en el listado para calificarlo.</p>
+          <Boton as={Link} to="/evaluacion" tamano="tactil" className="mt-4">
+            Ir al listado de aspirantes
+          </Boton>
+        </section>
       </div>
     )
   }
 
   if (cargando) {
-    return <p className="text-slate-500 dark:text-sena-texto-suave">Cargando…</p>
+    return (
+      <div role="status">
+        <Cargando>Cargando evaluación…</Cargando>
+      </div>
+    )
   }
 
   if (!dato) {
     return (
       <div className="flex flex-col gap-4">
-        <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error || 'No se pudo cargar la postulación.'}
-        </p>
-        <Link to="/evaluacion" className="text-sm font-medium text-sena-azul underline dark:text-sena-acento">
-          Volver a la lista
-        </Link>
+        <MensajeError>{error || 'No se pudo cargar la postulación.'}</MensajeError>
+        {volverAlListado}
       </div>
     )
   }
 
-  const docsValidados = aplicables.filter((d) => d.estado === 'validado').length
+  const { aspirante, convocatoria, evaluacion } = dato
 
   return (
-    <div className="flex flex-col gap-4 pb-24">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Link
-            to="/evaluacion"
-            className="inline-flex items-center rounded bg-sena-azul px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro"
-          >
-            ← Volver
-          </Link>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">Evaluación de aspirante</h1>
-        </div>
-      </div>
+    <div className="flex flex-col gap-4">
+      {volverAlListado}
 
-      {/* Tarjeta resumen azul oscuro del aspirante */}
-      <div className="flex flex-col gap-4 rounded-xl bg-sena-azul p-5 text-white shadow-md sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <AvatarIniciales nombre={dato.aspirante.name} size="lg" />
-          <div className="flex flex-col gap-0.5">
-            <p className="text-lg font-bold">{dato.aspirante.name}</p>
-            <p className="text-sm opacity-90">{dato.aspirante.email}</p>
-            <p className="text-xs opacity-75">Convocatoria: {dato.convocatoria.titulo}</p>
-            {dato.evaluacion?.fecha && (
-              <p className="text-xs opacity-75">Fecha de evaluación: {dato.evaluacion.fecha}</p>
+      <header className={`${CLASE_TARJETA} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5`}>
+        <div className="flex min-w-0 items-center gap-4">
+          <span className="shrink-0 rounded-full dark:ring-1 dark:ring-sena-texto-suave/60">
+            <AvatarIniciales nombre={aspirante.name} size="lg" />
+          </span>
+          <div className="min-w-0">
+            <p className={`text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Evaluación de aspirante</p>
+            <h1
+              className={`text-xl font-bold tracking-tight text-sena-azul dark:text-sena-texto sm:text-2xl ${CLASE_TEXTO_PARTIDO}`}
+            >
+              {aspirante.name}
+            </h1>
+            {aspirante.email && (
+              <p className={`text-sm ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_SUAVE}`}>{aspirante.email}</p>
             )}
+            <p className={`mt-0.5 text-sm font-medium ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>
+              {convocatoria.titulo}
+            </p>
           </div>
         </div>
-        <BadgeEstado
-          estado={
-            dato.evaluacion?.estado === 'finalizada'
-              ? 'Completada'
-              : dato.evaluacion?.estado === 'correccion_solicitada'
-                ? actualizados.length > 0
-                  ? 'Corregido por revisar'
-                  : 'En corrección'
-                : 'En revisión'
-          }
-        />
-      </div>
-
-      {dato.evaluacion?.estado === 'correccion_solicitada' && (
-        <div
-          className={`rounded-lg border p-3 text-sm ${
-            actualizados.length > 0
-              ? 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200'
-              : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200'
-          }`}
-        >
-          {actualizados.length > 0 ? (
-            <p>
-              <strong>↻ El aspirante ya reemplazó {actualizados.length} documento(s).</strong> Revisa los archivos
-              marcados como <em>Corregido por el aspirante</em> y actualiza tu calificación.
-            </p>
-          ) : (
-            <p>
-              <strong>En espera de corrección del aspirante:</strong> se solicitó subsanar los documentos marcados
-              con «No».
-            </p>
+        <div className="flex shrink-0 flex-row flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+          <EtiquetaEvaluacion evaluacion={evaluacion} />
+          {evaluacion?.fecha && (
+            <span className={`text-xs ${CLASE_TEXTO_SUAVE}`}>Iniciada el {evaluacion.fecha}</span>
           )}
         </div>
-      )}
+      </header>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[30%_70%]">
-        {/* Sidebar */}
-        <aside className="flex flex-col gap-4">
-          {/* Portafolio */}
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-              Portafolio
+      {enCorreccion &&
+        (actualizados.length > 0 ? (
+          <Mensaje tipo="info">
+            <strong>
+              El aspirante ya reemplazó {actualizados.length}{' '}
+              {actualizados.length === 1 ? 'documento' : 'documentos'}.
+            </strong>{' '}
+            Revisa los archivos marcados como «Corregido por el aspirante» y actualiza tu calificación.
+          </Mensaje>
+        ) : (
+          <MensajeAviso>
+            <strong>En espera de corrección del aspirante:</strong> se le pidió subsanar los documentos
+            marcados con «No».
+          </MensajeAviso>
+        ))}
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
+        <div className="xl:col-start-2 xl:row-start-1">
+          <ResumenCumplimiento
+            evaluacion={evaluacion}
+            porcentaje={cumplimiento}
+            cumplidos={cumplidos}
+            total={total}
+            sinResponder={sinResponder}
+            sinSubir={sinSubir}
+          />
+        </div>
+
+        <section
+          aria-labelledby="requisitos-titulo"
+          className={`${CLASE_TARJETA} flex flex-col gap-5 p-4 sm:p-5 xl:col-start-1 xl:row-start-1`}
+        >
+          <div>
+            <h2 id="requisitos-titulo" className={`text-lg font-semibold ${CLASE_TEXTO_FUERTE}`}>
+              Requisitos del perfil
             </h2>
-            {documentos.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-sena-texto-suave">Sin documentos cargados.</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {documentos.map((doc) => (
-                  <li key={doc.id} className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-sena-texto">
-                      <span aria-hidden="true">📄</span>
-                      {doc.nombre}
-                    </span>
-                    <BadgeEstado
-                      estado={
-                        !doc.obligatorio
-                          ? 'Opcional'
-                          : (ETIQUETA_DOC[doc.estado] ?? doc.estado)
-                      }
-                    />
+            <p className={`mt-1 text-sm ${CLASE_TEXTO_SUAVE}`}>
+              Abre cada documento y marca si cumple el requisito. Solo cuentan los documentos
+              obligatorios y aplicables de la convocatoria.
+            </p>
+          </div>
+
+          {errorDocumento && <MensajeError>{errorDocumento}</MensajeError>}
+
+          {total === 0 ? (
+            <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>Sin documentos obligatorios aplicables.</p>
+          ) : (
+            <ul className="@container divide-y divide-sena-linea/70 dark:divide-sena-borde/50">
+              {aplicables.map((documento) => (
+                <RequisitoEvaluacion
+                  key={documento.id}
+                  documento={documento}
+                  peso={pesos[documento.id]}
+                  respuesta={respuestas[documento.id]}
+                  actualizado={actualizados.includes(documento.id)}
+                  onChange={(valor) => setRespuestas((prev) => ({ ...prev, [documento.id]: valor }))}
+                  onVerDocumento={() => verDocumento(documento)}
+                  abriendo={abriendo === documento.id}
+                />
+              ))}
+            </ul>
+          )}
+
+          {excluidos.length > 0 && (
+            <div className="border-t border-sena-linea/70 pt-4 dark:border-sena-borde/50">
+              <h3 className={`text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>No cuentan en el cumplimiento</h3>
+              <ul className="mt-2 flex flex-col gap-2">
+                {excluidos.map((documento) => (
+                  <li
+                    key={documento.id}
+                    className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm ${CLASE_TEXTO_SUAVE}`}
+                  >
+                    <span className={`min-w-0 ${CLASE_TEXTO_PARTIDO}`}>{documento.nombre}</span>
+                    <EtiquetaConIcono tono="neutral">
+                      {documento.estado === 'no_aplica' ? 'No aplica' : 'Opcional'}
+                    </EtiquetaConIcono>
                   </li>
                 ))}
               </ul>
-            )}
-            <div className="mt-4">
-              <div className="mb-1 flex items-center justify-between text-xs text-slate-600 dark:text-sena-texto-suave">
-                <span>Documentos cargados</span>
-                <span className="font-medium">
-                  {docsValidados}/{aplicables.length}
-                </span>
-              </div>
-              <BarraProgreso
-                valor={docsValidados}
-                max={aplicables.length || 1}
-                color={docsValidados === aplicables.length && aplicables.length > 0 ? 'bg-green-500' : 'bg-orange-500'}
-              />
-              <p className="mt-2 text-[11px] text-slate-500 dark:text-sena-texto-suave">
-                Solo cuentan los documentos obligatorios y aplicables de la convocatoria.
-              </p>
             </div>
-          </div>
-        </aside>
-
-        {/* Panel central */}
-        <section className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-sena-borde dark:bg-sena-superficie">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-            Lista de verificación de perfil
-          </h2>
-
-          {items.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-sena-texto-suave">Sin documentos obligatorios aplicables.</p>
-          ) : (
-            items.map((item) => (
-              <ItemVerificacion
-                key={item.id}
-                titulo={item.titulo}
-                requerido={item.requerido}
-                ponderacion={item.ponderacion}
-                aspirante={item.aspirante}
-                actualizado={item.actualizado}
-                respuesta={respuestas[item.id]}
-                onChange={(v) => setRespuestas((prev) => ({ ...prev, [item.id]: v }))}
-                onVerDocumento={
-                  item.archivo?.id
-                    ? () =>
-                        abrirArchivoEnPestana(
-                          `/revision/postulaciones/${postulacionId}/documentos/${item.archivo.id}/archivo?inline=1`,
-                          { nombre: item.archivo.nombre_original },
-                        ).catch((e) => setError(mensajeError(e)))
-                    : undefined
-                }
-              />
-            ))
           )}
 
-          <TarjetaResumen
-            cumplidos={cumplidos}
-            total={total}
-            porcentaje={cumplimiento}
-            ponderado={ponderado}
-            umbral={60}
-          />
-
-          <label className="flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto">
-            Observaciones del evaluador sobre el perfil del aspirante...
+          <Campo etiqueta="Observaciones">
             <textarea
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
-              rows="4"
-              className={CLASE_INPUT}
-              placeholder="Observaciones del evaluador sobre el perfil del aspirante..."
+              rows={4}
+              maxLength={2000}
+              className={`${CLASE_CAMPO} py-2`}
+              placeholder="Escribe tus observaciones"
             />
-          </label>
+          </Campo>
 
-          <div className="flex flex-wrap justify-end gap-2">
-            <button
-              type="button"
+          {error && <MensajeError>{error}</MensajeError>}
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+            <Boton
+              ref={botonBorrador}
+              variante="contorno"
+              tamano="tactil"
               onClick={() => guardar('en_proceso')}
               disabled={guardando}
-              className="rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:opacity-60 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
             >
               {guardando ? 'Guardando…' : 'Guardar borrador'}
-            </button>
-            <button
-              type="button"
+            </Boton>
+            <Boton
+              ref={botonCorregir}
+              variante="contorno"
+              tamano="tactil"
               onClick={() => guardar('correccion_solicitada')}
               disabled={guardando}
-              className="rounded border border-amber-500 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:opacity-60 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200 dark:hover:bg-amber-900"
             >
               {guardando ? 'Enviando…' : 'Mandar a corregir'}
-            </button>
-            <button
-              type="button"
-              onClick={() => guardar('finalizada')}
-              disabled={guardando}
-              className="rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:opacity-60"
-            >
+            </Boton>
+            <Boton ref={botonFinalizar} tamano="tactil" onClick={finalizar} disabled={guardando} className="whitespace-normal!">
               {guardando ? 'Guardando…' : 'Finalizar y enviar resultado'}
-            </button>
+            </Boton>
           </div>
         </section>
       </div>
-
-      {error && (
-        <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </p>
-      )}
-
-      {/* Modal de confirmación */}
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl dark:bg-sena-superficie">
-            <div className="flex flex-col gap-1">
-              <p className="text-lg font-bold text-slate-800 dark:text-sena-texto">{modal.titulo}</p>
-              <p className="text-sm text-slate-500 dark:text-sena-texto-suave">{modal.descripcion}</p>
-            </div>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setModal(null)}
-                className="rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setModal(null)
-                  navigate('/evaluacion')
-                }}
-                className="rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul"
-              >
-                Aceptar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

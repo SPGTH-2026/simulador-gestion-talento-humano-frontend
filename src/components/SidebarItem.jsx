@@ -1,39 +1,28 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
+import Icono from './ui/Icono'
 
-// El ítem activo se pinta con el verde institucional y texto azul oscuro: el
-// verde puro no alcanza 4.5:1 con blanco, pero sí con el azul de la marca.
-const claseLink = ({ isActive }) =>
-  `block rounded-lg px-3 py-2 text-sm transition-colors ${
-    isActive
-      ? 'bg-sena font-semibold text-sena-menu-bajo shadow-sm'
-      : 'text-slate-200 hover:bg-white/10 hover:text-white'
+// Ítem activo: tinte azul suave, texto azul institucional y el ícono en verde.
+// El verde ya no rellena el ítem: queda como señal pequeña y el texto conserva
+// un contraste alto (azul sobre el tinte: 11.5:1).
+const CLASE_BASE =
+  'group flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors motion-reduce:transition-none lg:min-h-10'
+const CLASE_ACTIVO = 'bg-sena-hundido font-semibold text-sena-azul dark:bg-white/10 dark:text-white'
+const CLASE_REPOSO =
+  'text-slate-600 hover:bg-sena-fondo hover:text-sena-azul dark:text-sena-texto-suave dark:hover:bg-white/5 dark:hover:text-white'
+
+const claseIcono = (activo) =>
+  `size-5 shrink-0 transition-colors motion-reduce:transition-none ${
+    activo
+      ? 'text-sena-oscuro dark:text-sena-acento'
+      : 'text-slate-500 group-hover:text-sena-azul dark:text-sena-texto-suave dark:group-hover:text-white'
   }`
-
-function IconoChevron({ abierto }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
-        abierto ? 'rotate-180' : ''
-      }`}
-      aria-hidden="true"
-    >
-      <path d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-    </svg>
-  )
-}
 
 // onNavegar es opcional: en móvil el menú es un cajón y necesita cerrarse
 // cuando se elige una opción. Conserva la navegación normal del NavLink.
 export default function SidebarItem({ item, onNavegar }) {
   const { pathname } = useLocation()
+  const idPanel = useId()
   const hijos = item.children ?? []
   // Un módulo con un solo hijo visible no necesita acordeón: se muestra como
   // enlace directo (por ejemplo, el aspirante solo tiene 'Listado'). La opción
@@ -46,8 +35,18 @@ export default function SidebarItem({ item, onNavegar }) {
   if (!tieneHijos) {
     const destino = hijos.length === 1 ? hijos[0].to : item.to
     return (
-      <NavLink to={destino} end={destino === '/'} className={claseLink} onClick={onNavegar}>
-        {item.label}
+      <NavLink
+        to={destino}
+        end={destino === '/'}
+        onClick={onNavegar}
+        className={({ isActive }) => `${CLASE_BASE} ${isActive ? CLASE_ACTIVO : CLASE_REPOSO}`}
+      >
+        {({ isActive }) => (
+          <>
+            <Icono nombre={item.icono} className={claseIcono(isActive)} />
+            <span className="min-w-0 truncate">{item.label}</span>
+          </>
+        )}
       </NavLink>
     )
   }
@@ -59,20 +58,38 @@ export default function SidebarItem({ item, onNavegar }) {
         type="button"
         onClick={() => setAbierto(!abierto)}
         aria-expanded={abierto}
-        className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
-          hijoActivo
-            ? 'font-semibold text-white'
-            : 'text-slate-200 hover:bg-white/10 hover:text-white'
+        aria-controls={idPanel}
+        className={`${CLASE_BASE} w-full ${
+          hijoActivo ? 'font-semibold text-sena-azul dark:text-white' : CLASE_REPOSO
         }`}
       >
-        <span className="min-w-0 truncate">{item.label}</span>
-        <IconoChevron abierto={abierto} />
+        <Icono nombre={item.icono} className={claseIcono(hijoActivo)} />
+        <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
+        <Icono
+          nombre="chevron"
+          className={`size-4 shrink-0 text-slate-500 transition-transform duration-200 motion-reduce:transition-none dark:text-sena-texto-suave ${
+            abierto ? 'rotate-180' : ''
+          }`}
+        />
       </button>
 
       {abierto && (
-        <div className="ml-3 mt-1 flex flex-col gap-1 border-l border-white/15 pl-3">
+        <div
+          id={idPanel}
+          className="ml-[1.375rem] mt-1 flex flex-col gap-1 border-l border-sena-linea pl-3 dark:border-white/10"
+        >
           {item.children.map((hijo) => (
-            <NavLink key={hijo.to} to={hijo.to} end className={claseLink} onClick={onNavegar}>
+            <NavLink
+              key={hijo.to}
+              to={hijo.to}
+              end
+              onClick={onNavegar}
+              className={({ isActive }) =>
+                `flex min-h-11 items-center rounded-lg px-3 py-2 text-sm transition-colors motion-reduce:transition-none lg:min-h-10 ${
+                  isActive ? CLASE_ACTIVO : CLASE_REPOSO
+                }`
+              }
+            >
               {hijo.label}
             </NavLink>
           ))}

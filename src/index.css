@@ -21,6 +21,12 @@
      se lee sin bordes fuertes y el conjunto no se ve deslavado.
        texto azul sobre fondo #eef3f9 -> 12.30:1 */
   --color-sena-fondo: #eef3f9; /* fondo de la aplicación */
+  /* Lienzo del contenido en claro (marco claro): más neutro que sena-fondo para
+     que las pantallas descansen sobre él y no sobre una caja de color. Los
+     textos de apoyo sobre el lienzo usan slate-600 (7.1:1); slate-500 queda en
+     4.5:1 y no se usa para texto.
+       texto azul sobre #f6f8fb -> 12.9:1 */
+  --color-sena-lienzo: #f6f8fb;
   --color-sena-hundido: #e3ecf5; /* zonas hundidas y estados hover */
   --color-sena-linea: #d6e3ef; /* bordes y separadores */
 
@@ -95,22 +101,27 @@ html.dark {
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Barras de desplazamiento.
-   Se declaran las propiedades estándar y los pseudo-elementos webkit porque
-   cada motor soporta un juego distinto: solo con las estándar la barra se ve
-   plana, y solo con las webkit no funciona en Firefox. Pista transparente,
-   6px y pulgar redondeado. El hover cambia opacidad, no grosor: el ancho
-   forma parte del cálculo del layout y no se puede animar.
+   Pista transparente, 6px y pulgar redondeado. El hover cambia opacidad, no
+   grosor: el ancho forma parte del cálculo del layout y no se puede animar.
    Colores fijados por contraste, no a criterio: sobre el fondo del menú
    (#00314f) el verde institucional ronda 4.5:1; sobre el fondo claro
-   (#eef3f9) no alcanzaría, así que ahí se usa el verde oscuro. */
-.scroll-sena-lateral {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(57, 169, 0, 0.55) transparent;
-}
-.scroll-sena-lateral::-webkit-scrollbar {
+   (#eef3f9) no alcanzaría, así que ahí se usa el verde oscuro.
+
+   Chrome y Safari usan los pseudo-elementos webkit. No se declaran además las
+   propiedades estándar (scrollbar-width / scrollbar-color) porque Chrome, si
+   las ve, ignora los pseudo-elementos y dibuja su barra delgada con las
+   flechas ▲ ▼ en los extremos, que aquí sobran. Firefox no soporta los
+   pseudo-elementos y recibe las propiedades estándar por @supports. */
+.scroll-sena-lateral::-webkit-scrollbar,
+.scroll-sena-contenido::-webkit-scrollbar {
   width: 6px;
 }
-.scroll-sena-lateral::-webkit-scrollbar-track {
+.scroll-sena-lateral::-webkit-scrollbar-button,
+.scroll-sena-contenido::-webkit-scrollbar-button {
+  display: none;
+}
+.scroll-sena-lateral::-webkit-scrollbar-track,
+.scroll-sena-contenido::-webkit-scrollbar-track {
   background: transparent;
 }
 .scroll-sena-lateral::-webkit-scrollbar-thumb {
@@ -119,17 +130,6 @@ html.dark {
 }
 .scroll-sena-lateral:is(:hover, :focus-within)::-webkit-scrollbar-thumb {
   background-color: #39a900;
-}
-
-.scroll-sena-contenido {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 120, 50, 0.5) transparent;
-}
-.scroll-sena-contenido::-webkit-scrollbar {
-  width: 6px;
-}
-.scroll-sena-contenido::-webkit-scrollbar-track {
-  background: transparent;
 }
 .scroll-sena-contenido::-webkit-scrollbar-thumb {
   background-color: rgba(0, 120, 50, 0.5);
@@ -141,57 +141,23 @@ html.dark {
 
 /* En oscuro la superficie pasa a #001a2e y el verde institucional vuelve a
    cumplir con creces, asi que se recupera. */
-.dark .scroll-sena-contenido {
-  scrollbar-color: rgba(57, 169, 0, 0.6) transparent;
-}
 .dark .scroll-sena-contenido::-webkit-scrollbar-thumb {
   background-color: rgba(57, 169, 0, 0.6);
 }
 .dark .scroll-sena-contenido:is(:hover, :focus-within)::-webkit-scrollbar-thumb {
   background-color: #39a900;
 }
-/* Fondo de autenticación con profundidad sutil */
-.auth-fondo {
-  background:
-    radial-gradient(
-      circle at 16% 10%,
-      rgba(80, 229, 249, 0.26),
-      transparent 36%
-    ),
-    radial-gradient(
-      circle at 88% 84%,
-      rgba(57, 169, 0, 0.16),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 78% 6%,
-      rgba(0, 48, 77, 0.08),
-      transparent 42%
-    ),
-    linear-gradient(
-      150deg,
-      #eaf7fd 0%,
-      #dbedf8 46%,
-      #e7f6ee 100%
-    );
-}
 
-.dark .auth-fondo {
-  background:
-    radial-gradient(
-      circle at 16% 10%,
-      rgba(80, 229, 249, 0.14),
-      transparent 36%
-    ),
-    radial-gradient(
-      circle at 88% 84%,
-      rgba(57, 169, 0, 0.10),
-      transparent 32%
-    ),
-    linear-gradient(
-      150deg,
-      #001a2e 0%,
-      #06304c 52%,
-      #00141f 100%
-    );
+@supports not selector(::-webkit-scrollbar) {
+  .scroll-sena-lateral {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(57, 169, 0, 0.55) transparent;
+  }
+  .scroll-sena-contenido {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 120, 50, 0.5) transparent;
+  }
+  .dark .scroll-sena-contenido {
+    scrollbar-color: rgba(57, 169, 0, 0.6) transparent;
+  }
 }

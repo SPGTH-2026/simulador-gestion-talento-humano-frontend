@@ -1,145 +1,109 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import { CLASE_BOTON_ICONO, CLASE_TEXTO_SUAVE } from '../lib/estilos'
+import { migasDe } from '../lib/migas'
+import DatosUsuario from './DatosUsuario'
 import ThemeToggle from './ThemeToggle'
-import Boton from './ui/Boton'
+import Icono from './ui/Icono'
 
-// Convierte la clave del rol en un texto legible.
-// Ej: 'revisor_documental' -> 'Revisor documental'
-function etiqueta(clave) {
-  if (!clave) return ''
-  const texto = clave.replace(/_/g, ' ')
-  return texto.charAt(0).toUpperCase() + texto.slice(1)
-}
+// Ruta de navegación: dónde está el usuario dentro del menú. En móvil caben
+// dos líneas: el tramo anterior, pequeño y con enlace si lo tiene, sobre la
+// página actual. Desde 'sm' se ve la ruta completa en una sola línea.
+function Migas() {
+  const { pathname } = useLocation()
+  const tramos = migasDe(pathname)
+  // Con un solo tramo la ruta repetiría el título de la página; solo se muestra
+  // cuando orienta (módulo / pantalla) o ofrece volver (detalle, edición).
+  if (tramos.length <= 1) return <div className="min-w-0 flex-1" />
 
-// Dos iniciales para el avatar: la primera letra del nombre y del apellido.
-function iniciales(nombre) {
-  if (!nombre) return '?'
-  return nombre
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((parte) => parte.charAt(0))
-    .join('')
-    .toUpperCase()
-}
-
-function IconoMenu() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-6 w-6"
-      aria-hidden="true"
-    >
-      <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-    </svg>
+    <nav aria-label="Ruta de navegación" className="min-w-0 flex-1">
+      <ol className="flex min-w-0 flex-col justify-center sm:flex-row sm:items-center sm:justify-start sm:gap-2 sm:text-sm">
+        {tramos.map((tramo, i) => {
+          const ultimo = i === tramos.length - 1
+          const visibleEnMovil = i >= tramos.length - 2
+          return (
+            <li
+              key={tramo.texto}
+              className={`min-w-0 items-center gap-2 ${visibleEnMovil ? 'flex' : 'hidden sm:flex'}`}
+            >
+              {i > 0 && (
+                <span className="hidden text-slate-500 dark:text-sena-texto-suave sm:inline" aria-hidden="true">
+                  /
+                </span>
+              )}
+              {tramo.to ? (
+                <Link
+                  to={tramo.to}
+                  className={`inline-flex min-h-6 items-center truncate text-xs hover:underline sm:text-sm ${CLASE_TEXTO_SUAVE}`}
+                >
+                  {tramo.texto}
+                </Link>
+              ) : (
+                <span
+                  aria-current={ultimo ? 'page' : undefined}
+                  className={`truncate ${
+                    ultimo
+                      ? 'text-base font-semibold leading-snug text-sena-azul dark:text-white sm:text-sm'
+                      : `text-xs sm:text-sm ${CLASE_TEXTO_SUAVE}`
+                  }`}
+                >
+                  {tramo.texto}
+                </span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
   )
 }
 
-function IconoCampana() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-    </svg>
-  )
-}
-
-function IconoSalir() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5"
-      aria-hidden="true"
-    >
-      <path d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-    </svg>
-  )
-}
-
-// La topbar comparte el azul del menú lateral: juntos forman el marco oscuro
-// de la aplicación y dejan el blanco/gris para el contenido. El texto y los
-// controles van en claro en ambos temas.
+// Barra superior neutra: sobre el mismo lienzo del contenido, sin banda de
+// color. En móvil lleva el menú, la ruta y las notificaciones; el tema, la
+// cuenta y el cierre de sesión pasan al pie del cajón. Desde 'sm' vuelven a la
+// barra: tema, notificaciones, usuario con su rol y ficha, y cerrar sesión.
 export default function Topbar({ onAbrirMenu }) {
-  const { user, logout, can } = useAuth()
+  const { logout, can } = useAuth()
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sena-menu-bajo/60 bg-sena-menu px-3 text-white dark:border-sena-borde/60 dark:bg-sena-menu-bajo sm:px-5">
+    <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sena-linea bg-sena-lienzo px-3 dark:border-sena-borde/40 dark:bg-sena-noche sm:px-6 lg:px-8">
       {/* Solo en móvil/tablet: abre el cajón de navegación. */}
       <button
         type="button"
         onClick={onAbrirMenu}
         aria-label="Abrir menú"
-        className="rounded-lg p-2 text-slate-100 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+        className="-ml-1 grid size-11 shrink-0 place-items-center rounded-lg text-slate-700 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto dark:hover:bg-white/10 lg:hidden"
       >
-        <IconoMenu />
+        <Icono nombre="menu" className="size-6" />
       </button>
 
-      <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
-        <ThemeToggle />
+      <Migas />
+
+      <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+        <div className="hidden sm:block">
+          <ThemeToggle />
+        </div>
 
         {can('propio:notificaciones') && (
-          <Link
-            to="/notificaciones"
-            className="rounded-full p-2 text-slate-200 transition-colors hover:bg-white/10 hover:text-white"
-            aria-label="Notificaciones"
-          >
-            <IconoCampana />
+          <Link to="/notificaciones" className={CLASE_BOTON_ICONO} aria-label="Notificaciones">
+            <Icono nombre="campana" />
           </Link>
         )}
 
-        <span className="mx-1 hidden h-6 w-px bg-white/15 sm:block" aria-hidden="true" />
-
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span
-            role="img"
-            aria-label={user?.name ?? 'Usuario'}
-            className="grid size-9 shrink-0 place-items-center rounded-full bg-white/10 text-sm font-semibold text-white ring-1 ring-white/20"
+        <div className="hidden items-center gap-2 sm:flex">
+          <span className="mx-1 h-6 w-px bg-sena-linea dark:bg-sena-borde/60" aria-hidden="true" />
+          <DatosUsuario />
+          <button
+            type="button"
+            onClick={logout}
+            aria-label="Cerrar sesión"
+            className="ml-1 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto dark:hover:bg-white/10 dark:hover:text-white lg:min-h-10"
           >
-            {iniciales(user?.name)}
-          </span>
-          <div className="hidden min-w-0 text-left leading-tight sm:block">
-            <p className="truncate text-sm font-semibold text-white">{user?.name}</p>
-            <p className="truncate text-xs text-slate-300">
-              {etiqueta(user?.role)}
-              {user?.subrole ? ` · ${etiqueta(user.subrole)}` : ''}
-            </p>
-            {(user?.role === 'aspirante' || user?.role === 'aprendiz') && user?.ficha && (
-              <p className="truncate text-xs text-slate-300">Ficha {user.ficha.codigo}</p>
-            )}
-          </div>
+            <Icono nombre="salir" />
+            <span className="hidden lg:inline">Cerrar sesión</span>
+          </button>
         </div>
-
-        <Boton
-          variante="sobreOscuro"
-          tamano="sm"
-          onClick={logout}
-          aria-label="Cerrar sesión"
-          className="ml-1"
-        >
-          <IconoSalir />
-          <span className="hidden lg:inline">Cerrar sesión</span>
-        </Boton>
       </div>
     </header>
   )
