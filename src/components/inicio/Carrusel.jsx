@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CLASE_TARJETA } from '../../lib/estilos'
 import Icono from '../ui/Icono'
+import cafeteria640 from '../../assets/inicio/inicio-cafeteria-640.webp'
+import cafeteria1280 from '../../assets/inicio/inicio-cafeteria-1280.webp'
+import edificioHd640 from '../../assets/inicio/inicio-edificio-hd-640.webp'
+import edificioHd1280 from '../../assets/inicio/inicio-edificio-hd-1280.webp'
 import edificio640 from '../../assets/inicio/inicio-edificio-640.webp'
 import edificio1280 from '../../assets/inicio/inicio-edificio-1280.webp'
-import personal640 from '../../assets/inicio/inicio-personal-640.webp'
-import personal1280 from '../../assets/inicio/inicio-personal-1280.webp'
-import personas640 from '../../assets/inicio/inicio-personas-640.webp'
-import personas1280 from '../../assets/inicio/inicio-personas-1280.webp'
 
 // Fotografías institucionales. Los textos alternativos describen solo lo que se
 // ve: no se atribuyen nombres, eventos ni lugares. Cada una es un recorte 5:2
@@ -15,25 +15,25 @@ import personas1280 from '../../assets/inicio/inicio-personas-1280.webp'
 // no cortar rostros ni el letrero.
 const FOTOS = [
   {
+    id: 'cafeteria',
+    alt: 'Vista aérea de un edificio de varios pisos con fachada de vidrio y, al frente, un letrero blanco con el logosímbolo rojo del SENA y la leyenda «Servicio Nacional de Aprendizaje», bajo un cielo nublado.',
+    pequena: cafeteria640,
+    grande: cafeteria1280,
+    posicion: 'object-center',
+  },
+  {
+    id: 'edificio-hd',
+    alt: 'Fachada de un edificio con el letrero «Servicio Nacional de Aprendizaje» y el logosímbolo verde del SENA, bajo un cielo azul con nubes.',
+    pequena: edificioHd640,
+    grande: edificioHd1280,
+    posicion: 'object-center',
+  },
+  {
     id: 'edificio',
-    alt: 'Fachada de un edificio con el letrero «Servicio Nacional de Aprendizaje» y el logosímbolo del SENA.',
+    alt: 'Fachada de un edificio con el letrero «Servicio Nacional de Aprendizaje» y el logosímbolo rojo del SENA; delante, personas en una plazoleta y una mesa de ping-pong.',
     pequena: edificio640,
     grande: edificio1280,
     posicion: 'object-center',
-  },
-  {
-    id: 'personas',
-    alt: 'Personas con uniforme blanco sentadas en fila, con la mirada al frente.',
-    pequena: personas640,
-    grande: personas1280,
-    posicion: 'object-center',
-  },
-  {
-    id: 'personal',
-    alt: 'Personas con bata blanca y gorro desechable junto a un escáner y un monitor, en un espacio de trabajo.',
-    pequena: personal640,
-    grande: personal1280,
-    posicion: 'object-right-top',
   },
 ]
 
