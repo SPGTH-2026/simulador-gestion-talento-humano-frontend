@@ -211,7 +211,7 @@ export default function RecuperarContrasena() {
             )}
           </Campo>
 
-          <Boton type="submit" tamano="flexible" disabled={enviando || bloqueado}>
+          <Boton type="submit" tamano="flexible" ocupado={enviando} disabled={bloqueado}>
             {enviando
               ? 'Enviando...'
               : bloqueado
@@ -271,7 +271,7 @@ export default function RecuperarContrasena() {
         required
             />
 
-            <Boton type="submit" tamano="flexible" disabled={enviando || bloqueado}>
+            <Boton type="submit" tamano="flexible" ocupado={enviando} disabled={bloqueado}>
               {enviando ? 'Guardando...' : 'Restablecer contraseña'}
             </Boton>
           </form>
@@ -281,7 +281,7 @@ export default function RecuperarContrasena() {
               variante="enlace"
               tamano="flexible"
               onClick={reenviar}
-              disabled={reenviando || bloqueado}
+              ocupado={reenviando} disabled={bloqueado}
             >
               {reenviando
                 ? 'Enviando...'

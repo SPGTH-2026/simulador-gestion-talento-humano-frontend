@@ -50,7 +50,7 @@ function Grupo({ etiqueta, items, onNavegar }) {
 // (el marco devuelve entonces el foco al botón que lo abrió); 'onNavegar', para
 // cuando se eligió una opción.
 export default function Sidebar({ abierto = false, onCerrar, onNavegar }) {
-  const { can, logout } = useAuth()
+  const { can, logout, cerrandoSesion } = useAuth()
   const cajon = useRef(null)
   const items = filtrarMenu(menu, can)
 
@@ -137,9 +137,15 @@ export default function Sidebar({ abierto = false, onCerrar, onNavegar }) {
               <DatosUsuario />
             </div>
             <ThemeToggle conTexto />
-            <Boton variante="fantasma" tamano="tactil" onClick={logout} className="w-full justify-start">
-              <Icono nombre="salir" />
-              Cerrar sesión
+            <Boton
+              variante="fantasma"
+              tamano="tactil"
+              onClick={logout}
+              ocupado={cerrandoSesion}
+              className="w-full justify-start"
+            >
+              {!cerrandoSesion && <Icono nombre="salir" />}
+              {cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar sesión'}
             </Boton>
           </div>
         </div>

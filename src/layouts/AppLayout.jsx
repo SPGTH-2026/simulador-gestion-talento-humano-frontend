@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import IndicadorNavegacion from '../components/IndicadorNavegacion'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import PantallaCarga from '../components/ui/PantallaCarga'
@@ -55,6 +56,8 @@ export default function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-sena-lienzo dark:bg-sena-noche">
+      <IndicadorNavegacion />
+
       {/* Enlace para saltar el menú: solo se ve al enfocarlo con el teclado. */}
       <a
         href="#contenido"

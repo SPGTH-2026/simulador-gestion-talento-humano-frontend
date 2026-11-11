@@ -3,7 +3,15 @@
 // El radio, la transición y la opacidad al deshabilitar van en cada tamaño (no
 // en BASE) para que el tamaño 'tactil' pueda tener los suyos sin que dos
 // utilidades de la misma propiedad compitan dentro de una clase.
-const BASE = 'inline-flex items-center justify-center gap-2 font-semibold disabled:cursor-not-allowed'
+//
+// Cursor de un botón deshabilitado: "no permitido" (🚫) cuando la acción no está
+// disponible; "en curso" cuando el botón está trabajando ('ocupado'). Un 🚫 sobre
+// algo que solo está esperando una respuesta diría "no puedes" cuando en realidad
+// significa "espera".
+import Rueda from './Rueda'
+
+const BASE =
+  'inline-flex items-center justify-center gap-2 font-semibold disabled:cursor-not-allowed aria-busy:disabled:cursor-progress'
 
 const VARIANTES = {
   // Acción principal: verde oscuro institucional. El verde puro (#39A900) no
@@ -51,21 +59,31 @@ export default function Boton({
   variante = 'primario',
   tamano = 'md',
   as: Componente = 'button',
+  // 'ocupado': la acción está en curso. Bloquea el botón (un <button>), lo marca
+  // con aria-busy para lectores de pantalla y muestra la rueda junto al texto.
+  ocupado = false,
   className = '',
   children,
   ...props
 }) {
+  const esBoton = Componente === 'button'
   // Un <button> sin type explícito dentro de un formulario enviaría sin querer.
-  const atributos = Componente === 'button' && props.type == null ? { type: 'button' } : {}
+  const atributos = esBoton && props.type == null ? { type: 'button' } : {}
+  if (ocupado) {
+    atributos['aria-busy'] = true
+    if (esBoton) atributos.disabled = true
+  }
 
   return (
     <Componente
       {...atributos}
       {...props}
+      {...(ocupado && esBoton ? { disabled: true } : {})}
       className={`${BASE} ${VARIANTES[variante] ?? VARIANTES.primario} ${
         TAMANOS[tamano] ?? TAMANOS.md
       } ${className}`.trim()}
     >
+      {ocupado && <Rueda />}
       {children}
     </Componente>
   )

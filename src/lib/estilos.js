@@ -68,7 +68,7 @@ export const CLASE_TEXTO_FUERTE = 'text-slate-800 dark:text-sena-texto'
 // Botón redondo solo con ícono (tema, notificaciones). 44 px en pantallas
 // táctiles y 40 px desde 'lg', donde hay puntero.
 export const CLASE_BOTON_ICONO =
-  'grid size-11 place-items-center rounded-full text-slate-600 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto-suave dark:hover:bg-white/10 dark:hover:text-white lg:size-10'
+  'grid size-11 place-items-center rounded-full text-slate-600 transition-[color,background-color,scale] duration-150 hover:bg-sena-hundido hover:text-sena-azul active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100 dark:text-sena-texto-suave dark:hover:bg-white/10 dark:hover:text-white lg:size-10'
 
 // Campos con el borde de contraste (4.0:1) que exige WCAG para identificar un
 // control; el de CLASE_INPUT queda en 1.5:1. Lo usa Evaluación; se unificará

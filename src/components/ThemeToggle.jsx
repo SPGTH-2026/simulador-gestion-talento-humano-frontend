@@ -9,7 +9,13 @@ import Icono from './ui/Icono'
 export default function ThemeToggle({ conTexto = false }) {
   const { oscuro, alternar } = useTema()
   const etiqueta = oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'
-  const icono = <Icono nombre={oscuro ? 'sol' : 'luna'} />
+  // El ícono entra girando un poco al cambiar de tema (la 'key' fuerza que la
+  // animación corra de nuevo); con movimiento reducido no se mueve.
+  const icono = (
+    <span key={oscuro ? 'sol' : 'luna'} className="giro-icono grid place-items-center">
+      <Icono nombre={oscuro ? 'sol' : 'luna'} />
+    </span>
+  )
 
   if (conTexto) {
     return (

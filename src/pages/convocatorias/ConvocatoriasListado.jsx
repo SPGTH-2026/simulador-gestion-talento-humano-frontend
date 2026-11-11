@@ -488,13 +488,14 @@ export default function ConvocatoriasListado() {
           actualización viven en la misma barra. */}
       <Tarjeta className="p-4">
         <div role="search" aria-label="Buscar y filtrar convocatorias" className="flex flex-col gap-3">
-          {/* El buscador ocupa su propia fila hasta que cabe junto a los filtros
-              (pantallas muy anchas): con el menú lateral, una fila de tres
-              campos dejaría el buscador demasiado estrecho. */}
-          <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-end">
+          {/* El buscador ocupa siempre su propia fila y los filtros van debajo, que
+              se reparten según el espacio. Antes el buscador subía junto a los
+              filtros en pantallas anchas; con los filtros de tipo, modalidad y
+              orden ya no cabían en una línea, se partían en dos filas y el
+              buscador (alineado abajo) dejaba un hueco arriba a la izquierda. */}
+          <div className="flex flex-col gap-3">
             <Campo
               etiqueta={gestionaEstricto ? 'Buscar por nombre, código o cargo' : 'Buscar por nombre o cargo'}
-              className="2xl:min-w-64 2xl:flex-1"
             >
               {({ id, describedby }) => (
                 <div className="relative">
@@ -504,11 +505,7 @@ export default function ConvocatoriasListado() {
                   <input
                     id={id}
                     type="search"
-                    placeholder={
-                      gestionaEstricto
-                        ? 'Buscar por nombre, código o cargo...'
-                        : 'Buscar por nombre o cargo...'
-                    }
+                    placeholder="Escribe para buscar…"
                     value={termino}
                     onChange={(e) => setTermino(e.target.value)}
                     aria-describedby={describedby}
@@ -598,7 +595,7 @@ export default function ConvocatoriasListado() {
             </Campo>
 
             {puedeFiltrarFicha && (
-              <Campo etiqueta="Ficha" className="sm:min-w-0 sm:flex-1 2xl:w-72 2xl:flex-none">
+              <Campo etiqueta="Ficha" className="sm:min-w-0 sm:max-w-sm sm:flex-1">
                 {({ id }) => (
                   <select
                     id={id}

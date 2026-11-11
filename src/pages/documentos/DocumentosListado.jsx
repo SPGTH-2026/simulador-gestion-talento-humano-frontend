@@ -129,7 +129,7 @@ export default function DocumentosListado() {
                   </td>
                   <td className="py-3 pr-4">
                     {a.ficha ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-sena-azul/10 text-sena-azul dark:bg-sena-azul/20 dark:text-sena-azul">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-sena-azul/10 text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
                         {a.ficha.codigo}
                       </span>
                     ) : (
