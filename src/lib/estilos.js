@@ -17,20 +17,16 @@ const BASE_INPUT =
 // Campo normal.
 export const CLASE_INPUT = `font-normal text-sm text-slate-700 ${BASE_INPUT}`
 
-// Código de verificación (OTP): centrado, en números grandes y espaciados.
-export const CLASE_INPUT_CODIGO = `text-center text-2xl font-semibold tracking-[0.5em] text-slate-700 ${BASE_INPUT}`
-
-// Código corto (ficha): centrado y algo más grande que el campo normal.
-export const CLASE_INPUT_FICHA = `text-center text-lg font-normal text-slate-700 ${BASE_INPUT}`
-
 // Etiqueta de un campo: texto en columna con su control debajo.
 export const CLASE_LABEL = 'flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto'
 
-// Superficie base de tarjetas y contenedores. Sombra suave tintada con el azul
-// institucional: da profundidad sin ensuciar. En oscuro se apaga a una sombra
-// negra mínima, porque el contraste lo marcan los bordes.
+// Superficie base de tarjetas y contenedores. Marco claro: la tarjeta se separa
+// del lienzo con su borde y una sombra de contacto mínima (sin la sombra
+// difusa larga de antes), para que las pantallas dejen de verse como cajas
+// flotantes. En oscuro la sombra es negra mínima, porque el contraste lo marcan
+// los bordes.
 export const CLASE_TARJETA =
-  'rounded-2xl border border-sena-linea bg-white shadow-[0_1px_2px_rgba(0,48,77,0.06),0_14px_30px_-20px_rgba(0,48,77,0.45)] dark:border-sena-borde/70 dark:bg-sena-superficie dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]'
+  'rounded-2xl border border-sena-linea bg-white shadow-[0_1px_2px_rgba(0,48,77,0.05)] dark:border-sena-borde/70 dark:bg-sena-superficie dark:shadow-[0_1px_2px_rgba(0,0,0,0.4)]'
 
 // Variante plana de la tarjeta: mismo borde, radio y superficie, sin la sombra
 // alta. Se usa en rejillas densas de datos y en cajas repetidas, donde la
@@ -64,6 +60,34 @@ export const CLASE_CHIP =
 export const CLASE_TITULO_SECCION =
   'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
 
+// Texto de apoyo y texto principal sobre una superficie (7.6:1 en claro, 6.6:1 en
+// oscuro). Slate-500 no se usa para texto: queda en 4.5:1 sobre el lienzo.
+export const CLASE_TEXTO_SUAVE = 'text-slate-600 dark:text-sena-texto-suave'
+export const CLASE_TEXTO_FUERTE = 'text-slate-800 dark:text-sena-texto'
+
+// Botón redondo solo con ícono (tema, notificaciones). 44 px en pantallas
+// táctiles y 40 px desde 'lg', donde hay puntero.
+export const CLASE_BOTON_ICONO =
+  'grid size-11 place-items-center rounded-full text-slate-600 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto-suave dark:hover:bg-white/10 dark:hover:text-white lg:size-10'
+
+// Campos con el borde de contraste (4.0:1) que exige WCAG para identificar un
+// control; el de CLASE_INPUT queda en 1.5:1. Lo usa Evaluación; se unificará
+// con los formularios de cada módulo.
+const BASE_CAMPO =
+  'min-h-11 w-full rounded-md border border-sena-azul/60 bg-white px-3 text-slate-700 placeholder:text-slate-500 aria-invalid:border-peligro disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-texto-suave/70 dark:bg-sena-noche dark:text-sena-texto dark:placeholder:text-sena-texto-suave dark:aria-invalid:border-peligro'
+
+export const CLASE_CAMPO = `text-sm font-normal ${BASE_CAMPO}`
+
+// Código de un solo uso (OTP) y código de ficha: centrados y más grandes. Cada
+// variante lleva su propio tamaño de texto para no mezclar dos en una clase. El
+// espaciado del OTP es moderado: con 0.5em los seis dígitos no caben en 188 px.
+export const CLASE_CAMPO_CODIGO = `text-center text-xl font-semibold tracking-[0.3em] ${BASE_CAMPO}`
+export const CLASE_CAMPO_FICHA = `text-center text-lg font-normal ${BASE_CAMPO}`
+
+// Un texto largo se parte en varias líneas en lugar de cortarse. 'anywhere'
+// permite partir un correo (no tiene espacios) sin empujar a sus vecinos.
+export const CLASE_TEXTO_PARTIDO = '[overflow-wrap:anywhere]'
+
 // Tablas.
 export const CLASE_TABLA = 'w-full text-left text-sm'
 export const CLASE_THEAD =
@@ -73,3 +97,12 @@ export const CLASE_TH = 'p-3'
 export const CLASE_TD = 'p-3'
 export const CLASE_FILA = 'hover:bg-sena-hundido dark:hover:bg-sena-superficie-alta/40'
 export const CLASE_TABLA_ESTADO = 'p-8 text-center text-sm text-slate-500 dark:text-sena-texto-suave'
+
+// Enlace de título dentro de una lista o tarjeta (convocatoria, postulación).
+// Mide al menos 44 px de alto aunque el título sea corto, para que se pueda
+// pulsar con el dedo.
+export const CLASE_ENLACE_TITULO =
+  'inline-flex min-h-11 items-center font-semibold text-sena-azul underline-offset-2 hover:underline dark:text-sena-texto'
+
+// Lista con separadores finos entre filas, para los bloques de Inicio.
+export const CLASE_LISTA = 'divide-y divide-sena-linea/70 dark:divide-sena-borde/50'

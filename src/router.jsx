@@ -1,10 +1,11 @@
 import { lazy, Suspense } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 
 import ProtectedRoute from './auth/ProtectedRoute'
 import PermissionRoute from './auth/PermissionRoute'
 import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
+import PantallaCarga from './components/ui/PantallaCarga'
 
 import Login from './pages/login/Login'
 const Registro = lazy(() => import('./pages/login/Registro'))
@@ -35,8 +36,11 @@ const MisEvaluaciones = lazy(() => import('./pages/aspirante/MisEvaluaciones'))
 const Notificaciones = lazy(() => import('./pages/aspirante/Notificaciones'))
 
 export default function AppRouter() {
+  // El id distingue una espera de código de otra (cada ruta es una operación).
+  const { pathname } = useLocation()
+
   return (
-    <Suspense fallback={<p className="p-6 text-center text-slate-500">Cargando...</p>}>
+    <Suspense fallback={<PantallaCarga operacion="codigo" id={pathname} />}>
     <Routes>
       {/* Sin sesión: login, registro y recuperación de contraseña */}
       <Route element={<AuthLayout />}>

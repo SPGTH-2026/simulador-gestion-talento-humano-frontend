@@ -5,15 +5,22 @@ import { mensajeError } from '../../api/mensajeError'
 import GoogleIcon from '../../components/ui/GoogleIcon'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
+import CampoClave from '../../components/ui/CampoClave'
 import { MensajeError, MensajeExito } from '../../components/ui/Mensaje'
-import { CLASE_INPUT } from '../../lib/estilos'
+import { CLASE_CAMPO } from '../../lib/estilos'
+import {
+  enfocarPrimerError,
+  soloConError,
+  validarClaveActual,
+  validarCorreo,
+} from '../../lib/validacionAcceso'
 
 const GOOGLE_URL = import.meta.env.VITE_GOOGLE_URL ?? '/api/auth/google/redirect'
 
 const MENSAJES_ERROR = {
   oauth: 'No se pudo iniciar sesión con Google. Inténtalo de nuevo.',
   oauth_codigo:
-    'La autenticación de Google se caducó o ya se usó. Vuelve a pulsar "Entrar con Google".',
+    'La autenticación de Google se caducó o ya se usó. Vuelve a pulsar "Iniciar sesión con Google".',
   sin_correo: 'Tu cuenta de Google no compartió un correo, así que no podemos crear tu acceso.',
   desactivado: 'Tu usuario está desactivado. Contacta al instructor.',
 }
@@ -32,39 +39,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [entrandoConGoogle, setEntrandoConGoogle] = useState(false)
-  const [verClave, setVerClave] = useState(false)
-  const validarFormulario = (formulario) => {
-    const email = formulario.elements.namedItem('email')
-    const password = formulario.elements.namedItem('password')
-
-    email.setCustomValidity('')
-    password.setCustomValidity('')
-
-    const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-    if (!email.value.trim()) {
-      email.setCustomValidity('Ingresa tu correo electrónico.')
-    } else if (!emailValido.test(email.value.trim())) {
-      email.setCustomValidity(
-        'Ingresa un correo electrónico válido. Ejemplo: usuario@correo.com',
-      )
-    }
-
-    if (!password.value) {
-      password.setCustomValidity('Ingresa tu contraseña.')
-    }
-
-    const campos = [email, password]
-    const campoInvalido = campos.find((campo) => !campo.checkValidity())
-
-    if (campoInvalido) {
-      campoInvalido.reportValidity()
-      campoInvalido.focus()
-      return false
-    }
-
-    return true
-  }
+  const [errores, setErrores] = useState({})
 
   // Errores que devuelve el backend al callback de Google (?error=...)
   const errorOauth = busqueda.get('error')
@@ -74,7 +49,14 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    if (!validarFormulario(e.currentTarget)) {
+    const formulario = e.currentTarget
+    const encontrados = soloConError({
+      email: validarCorreo(email),
+      password: validarClaveActual(password),
+    })
+    setErrores(encontrados)
+    if (Object.keys(encontrados).length > 0) {
+      enfocarPrimerError(formulario, encontrados, ['email', 'password'])
       return
     }
     setEnviando(true)
@@ -101,14 +83,8 @@ export default function Login() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      className="flex flex-col gap-4"
-    >
-      <h2 className="text-xl font-semibold text-sena-azul dark:text-sena-texto">
-        Iniciar sesión
-      </h2>
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+      <h2 className="text-2xl font-bold text-sena-azul dark:text-sena-texto">Iniciar sesión</h2>
 
       {errorOauth && (
         <MensajeError>{MENSAJES_ERROR[errorOauth] ?? MENSAJES_ERROR.oauth}</MensajeError>
@@ -124,122 +100,70 @@ export default function Login() {
 
       {error && <MensajeError>{error}</MensajeError>}
 
-      <Campo etiqueta="Correo">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          name="email"
-          onInput={(e) => e.currentTarget.setCustomValidity('')}
-          required
-          autoComplete="email"
-          className={CLASE_INPUT}
-        />
-      </Campo>
-
-      <Campo etiqueta="Contraseña">
-        <div className="relative">
+      <Campo etiqueta="Correo" error={errores.email}>
+        {({ id, describedby, invalid }) => (
           <input
-            type={verClave ? 'text' : 'password'}
-            value={password}
-            name="password"
-            onInput={(e) => e.currentTarget.setCustomValidity('')}
-            onChange={(e) => {
-              const value = e.target.value
-              setPassword(value)
-
-              if (!value) {
-                setVerClave(false)
-              }
-            }}
+            id={id}
+            type="email"
+            name="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
             required
-            autoComplete="current-password"
-            className={`w-full pr-10 ${CLASE_INPUT}`}
+            aria-describedby={describedby}
+            aria-invalid={invalid || undefined}
+            className={CLASE_CAMPO}
           />
-
-          {password.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setVerClave((v) => !v)}
-              aria-label={verClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-sena-azul/60 hover:text-sena-oscuro dark:text-sena-texto-suave dark:hover:text-sena"
-            >
-              {verClave ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              )}
-            </button>
-          )}
-        </div>
+        )}
       </Campo>
 
-      <div className="flex justify-end text-sm">
-        <Link
-          to="/recuperar"
-          className="text-sena-oscuro hover:text-sena hover:underline dark:text-sena-acento dark:hover:text-sena"
-        >
-          ¿Olvidaste tu contraseña?
-        </Link>
-      </div>
+      <CampoClave
+        etiqueta="Contraseña"
+        name="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        autoComplete="current-password"
+        error={errores.password}
+        required
+      />
 
-      <Boton type="submit" disabled={enviando} className="w-full">
-        {enviando ? 'Entrando...' : 'Entrar'}
+      <Boton
+        as={Link}
+        to="/recuperar"
+        variante="enlace"
+        tamano="flexible"
+        className="-mr-3 -mt-3 self-end"
+      >
+        ¿Olvidaste tu contraseña?
       </Boton>
 
-      <div className="flex items-center gap-3 text-xs text-sena-azul/60 dark:text-sena-texto-suave">
-        <span className="h-px flex-1 bg-sena-azul/20 dark:bg-sena-borde" />
-        o iniciar sesión con
-        <span className="h-px flex-1 bg-sena-azul/20 dark:bg-sena-borde" />
+      <Boton type="submit" tamano="flexible" disabled={enviando} className="w-full">
+        {enviando ? 'Iniciando sesión...' : 'Iniciar sesión'}
+      </Boton>
+
+      <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-sena-texto-suave">
+        <span className="h-px flex-1 bg-sena-separador" />
+        o
+        <span className="h-px flex-1 bg-sena-separador" />
       </div>
 
       <Boton
-        variante="secundario"
+        variante="contorno"
+        tamano="flexible"
         type="button"
         onClick={entrarConGoogle}
         disabled={entrandoConGoogle}
         className="w-full"
       >
         <GoogleIcon />
-        {entrandoConGoogle ? 'Redirigiendo a Google...' : 'Entrar con Google'}
+        {entrandoConGoogle ? 'Redirigiendo a Google...' : 'Iniciar sesión con Google'}
       </Boton>
 
-      <p className="text-center text-sm text-sena-azul/80 dark:text-sena-texto-suave">
-        ¿No tienes cuenta?{' '}
+      <p className="flex flex-wrap items-center justify-center gap-x-1.5 text-center text-sm text-slate-600 dark:text-sena-texto-suave">
+        ¿No tienes cuenta?
         <Link
           to="/registro"
-          className="font-medium text-sena-oscuro hover:text-sena hover:underline dark:text-sena-acento dark:hover:text-sena"
+          className="inline-flex min-h-11 items-center font-semibold text-sena-oscuro underline-offset-4 hover:underline dark:text-sena-acento"
         >
           Crear cuenta de aspirante
         </Link>

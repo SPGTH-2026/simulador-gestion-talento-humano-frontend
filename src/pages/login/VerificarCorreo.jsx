@@ -4,12 +4,14 @@ import { useAuth } from '../../auth/useAuth'
 import * as authApi from '../../api/auth'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import { segundosReintento } from '../../api/reintento'
+import PantallaCarga from '../../components/ui/PantallaCarga'
 import TarjetaAuth from '../../components/ui/TarjetaAuth'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
 import { MensajeError } from '../../components/ui/Mensaje'
-import { CLASE_INPUT_CODIGO } from '../../lib/estilos'
+import { CLASE_CAMPO_CODIGO, CLASE_TEXTO_PARTIDO } from '../../lib/estilos'
 import { borrarOtp, guardarOtp, leerOtp, MINUTOS_VALIDEZ } from '../../lib/otpSesion'
+import { mostrarAvisoGlobal } from '../../lib/validacionAcceso'
 import { useCuentaAtras } from '../../lib/useCuentaAtras'
 
 const PANTALLA = 'verificar-correo'
@@ -46,7 +48,7 @@ export default function VerificarCorreo() {
   }, [authResolved, user, iniciar])
 
   if (!authResolved) {
-    return <p className="p-6 text-center">Cargando...</p>
+    return <PantallaCarga operacion="sesion" />
   }
 
   if (!user) {
@@ -102,57 +104,54 @@ export default function VerificarCorreo() {
 
   return (
     <TarjetaAuth>
-      <h2 className="text-xl font-semibold text-sena-azul dark:text-sena-texto">
+      <h2 className="text-2xl font-bold text-sena-azul dark:text-sena-texto">
         Verifica tu correo
       </h2>
 
-      <p className="mt-2 text-sm text-sena-azul/80 dark:text-sena-texto-suave">
-        Enviamos un código de 6 dígitos a <strong>{user.email}</strong>. Válido
-        durante {MINUTOS_VALIDEZ} minutos.
+      <p className="mt-2 text-sm text-slate-600 dark:text-sena-texto-suave">
+        Enviamos un código de 6 dígitos a{' '}
+        <strong className={CLASE_TEXTO_PARTIDO}>{user.email}</strong>. Válido durante{' '}
+        {MINUTOS_VALIDEZ} minutos.
       </p>
 
-      {errorGlobal && <MensajeError className="mt-4">{errorGlobal}</MensajeError>}
+      {errorGlobal && mostrarAvisoGlobal(errores, ['code']) && <MensajeError className="mt-4">{errorGlobal}</MensajeError>}
 
-      <form onSubmit={confirmar} className="mt-4 flex flex-col gap-4">
+      <form onSubmit={confirmar} noValidate className="mt-4 flex flex-col gap-4">
         <Campo etiqueta="Código" error={errores.code}>
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            required
-            className={CLASE_INPUT_CODIGO}
-          />
+          {({ id, describedby, invalid }) => (
+            <input
+              id={id}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              required
+            aria-describedby={describedby}
+              aria-invalid={invalid || undefined}
+              className={CLASE_CAMPO_CODIGO}
+            />
+          )}
         </Campo>
 
-        <Boton type="submit" disabled={enviando || code.length !== 6}>
+        <Boton type="submit" tamano="flexible" disabled={enviando || code.length !== 6}>
           {enviando ? 'Verificando...' : 'Confirmar correo'}
         </Boton>
       </form>
 
-      <div className="mt-4 flex flex-col items-center gap-2 text-sm">
-        <button
-          type="button"
-          onClick={reenviar}
-          disabled={reenviando || bloqueado}
-          className="text-sena-oscuro hover:text-sena hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-sena-acento dark:hover:text-sena"
-        >
+      <div className="mt-4 flex flex-col items-stretch gap-1">
+        <Boton variante="enlace" tamano="flexible" onClick={reenviar} disabled={reenviando || bloqueado}>
           {reenviando
             ? 'Enviando...'
             : bloqueado
               ? `Reenviar código (${segundos} s)`
               : 'Reenviar código'}
-        </button>
+        </Boton>
 
-        <button
-          type="button"
-          onClick={logout}
-          className="text-sena-azul/70 hover:text-sena hover:underline dark:text-sena-texto-suave dark:hover:text-sena"
-        >
+        <Boton variante="enlace" tamano="flexible" onClick={logout}>
           Cerrar sesión
-        </button>
+        </Boton>
       </div>
     </TarjetaAuth>
   )
