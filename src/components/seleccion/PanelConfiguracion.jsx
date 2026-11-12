@@ -9,6 +9,7 @@ import Rueda from '../ui/Rueda'
 import {
   CLASE_CAMPO,
   CLASE_CAJA_SUAVE,
+  CLASE_TARJETA_PLANA,
   CLASE_TEXTO_FUERTE,
   CLASE_TEXTO_SUAVE,
 } from '../../lib/estilos'
@@ -166,7 +167,12 @@ export default function PanelConfiguracion({ convocatoriaId, activo, puedeDecidi
   }
 
   return (
-    <form onSubmit={guardar} noValidate className="flex flex-col gap-5" aria-busy={guardando}>
+    <form
+      onSubmit={guardar}
+      noValidate
+      className={`${CLASE_TARJETA_PLANA} flex flex-col gap-5 p-4 @min-[600px]:p-5`}
+      aria-busy={guardando}
+    >
       <div className="flex flex-wrap items-center gap-3">
         <EstadoConfiguracion config={config} />
         {config.actualizada_por && (

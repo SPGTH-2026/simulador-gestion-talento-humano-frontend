@@ -4,11 +4,12 @@ import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
 import ListaConvocatorias from '../../components/seleccion/ListaConvocatorias'
 import PanelCandidatos from '../../components/seleccion/PanelCandidatos'
 import PanelConfiguracion from '../../components/seleccion/PanelConfiguracion'
+import Boton from '../../components/ui/Boton'
+import Icono from '../../components/ui/Icono'
 import Pestanas from '../../components/ui/Pestanas'
 import useFiltrosUrl from '../../hooks/useFiltrosUrl'
 import {
   CLASE_CHIP,
-  CLASE_SUBTITULO_PAGINA,
   CLASE_TARJETA_PLANA,
   CLASE_TEXTO_FUERTE,
   CLASE_TEXTO_PARTIDO,
@@ -49,11 +50,19 @@ export default function Preseleccion() {
     if (!desplazar.current || !convocatoriaId) return
     desplazar.current = false
     const detalle = document.getElementById('detalle-convocatoria')
-    const lista = document.getElementById('titulo-convocatorias')?.closest('section')
+    const lista = document.getElementById('lista-convocatorias')
     if (!detalle || !lista || detalle.getBoundingClientRect().top < lista.getBoundingClientRect().bottom) return
     // Inmediato: no hay animación que atender con movimiento reducido y el encabezado queda a la vista al instante.
     detalle.scrollIntoView({ behavior: 'auto', block: 'start' })
   }, [convocatoriaId])
+
+  // Solo en pantallas apiladas: vuelve a la lista, sobre la convocatoria activa, para elegir otra sin perder el sitio.
+  const volverALaLista = () => {
+    const activa = document.querySelector('#lista-convocatorias [aria-current="true"]')
+    if (!activa) return
+    activa.scrollIntoView({ behavior: 'auto', block: 'center' })
+    activa.focus()
+  }
 
   const cambiarPestana = (id) => setValores({ pestana: id === 'candidatos' ? '' : id })
 
@@ -61,18 +70,17 @@ export default function Preseleccion() {
   const actual = datos && String(datos.id) === String(convocatoriaId) ? datos : null
 
   return (
-    <div className="flex flex-col gap-5">
-      <header>
-        <h1 className={`${CLASE_TITULO_PAGINA} text-balance`}>Preselección</h1>
-        <p className={CLASE_SUBTITULO_PAGINA}>
-          Elige una convocatoria para ver el estado documental de sus candidatos y configurar las
-          actividades presenciales.
-        </p>
-      </header>
+    <div className="flex flex-col gap-4">
+      <h1 className={`${CLASE_TITULO_PAGINA} text-balance`}>Preselección</h1>
 
       <div className="@container">
-        <div className="grid items-start gap-5 @min-[1000px]:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)]">
-          <ListaConvocatorias seleccionadaId={convocatoriaId} onElegir={elegir} />
+        {/* Lista de navegación de 280 a 320 px y el detalle con todo el ancho restante. */}
+        <div className="grid items-start gap-x-6 gap-y-4 @min-[900px]:grid-cols-[minmax(17.5rem,20rem)_minmax(0,1fr)]">
+          <ListaConvocatorias
+            seleccionadaId={convocatoriaId}
+            onElegir={elegir}
+            className="@min-[900px]:sticky @min-[900px]:top-2 @min-[900px]:max-h-[calc(100dvh-10rem)]"
+          />
 
           {!convocatoriaId ? (
             <section
@@ -88,23 +96,34 @@ export default function Preseleccion() {
             <section
               id="detalle-convocatoria"
               aria-labelledby="titulo-detalle"
-              className={`${CLASE_TARJETA_PLANA} flex min-w-0 scroll-mt-20 flex-col gap-4 p-4 @max-[999px]:min-h-[75dvh] @min-[600px]:p-5`}
+              className="flex min-w-0 scroll-mt-20 flex-col gap-3 @max-[899px]:min-h-[75dvh]"
             >
-              <header className="flex flex-col gap-2">
+              <Boton
+                variante="enlace"
+                tamano="flexible"
+                onClick={volverALaLista}
+                className="-mb-1 self-start px-0 @min-[900px]:hidden"
+              >
+                <Icono nombre="flechaIzquierda" className="size-4" />
+                Elegir otra convocatoria
+              </Boton>
+
+              {/* Encabezado compacto: nombre, y debajo estado, código y vacantes en una sola línea. */}
+              <header className="flex flex-col gap-1.5">
                 <h2
                   id="titulo-detalle"
-                  className={`text-lg font-semibold ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}
+                  className={`text-xl font-semibold leading-snug text-balance ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}
                 >
                   {actual ? tituloConvocatoria(actual) : `Convocatoria ${convocatoriaId}`}
                 </h2>
                 {actual && (
-                  <div className="flex flex-wrap items-center gap-2">
+                  <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                     <EtiquetaEstado codigo={actual.estado?.codigo} nombre={actual.estado?.nombre} />
                     {actual.codigo && <span className={CLASE_CHIP}>{actual.codigo}</span>}
                     <span className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
                       {actual.vacantes} {actual.vacantes === 1 ? 'vacante' : 'vacantes'}
                     </span>
-                  </div>
+                  </p>
                 )}
               </header>
 
@@ -112,6 +131,7 @@ export default function Preseleccion() {
                   de la anterior) y sus respuestas tardías se descartan. */}
               <Pestanas
                 key={convocatoriaId}
+                className="flex flex-col gap-3"
                 etiquetaAccesible="Preselección de la convocatoria"
                 activaId={pestana}
                 onCambiar={cambiarPestana}

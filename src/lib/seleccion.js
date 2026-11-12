@@ -30,3 +30,54 @@ export const opcionPorId = (id) => OPCIONES_ACTIVIDADES.find((o) => o.id === id)
 // Nombre con el que se identifica una convocatoria. El código (CONV-AAAA-NNN) es
 // un dato de gestión y llega en null para quien no gestiona convocatorias.
 export const tituloConvocatoria = (c) => c?.nombre ?? 'Convocatoria sin nombre'
+
+// Solo el Instructor y el Superadministrador designan la evaluación de referencia. Los aprendices con
+// seleccion:decidir (general y seleccionador) pueden calificar, pero no resolver evaluaciones en conflicto.
+export const puedeDesignarReferencia = (user, can) =>
+  ['instructor', 'super_admin'].includes(user?.role) && can('seleccion:decidir')
+
+export const ACTIVIDADES = [
+  { id: 'entrevista', etiqueta: 'Entrevista' },
+  { id: 'prueba_tecnica', etiqueta: 'Prueba técnica' },
+]
+
+// Las notas llegan como "8.50"; en pantalla se leen con coma ("8,50"). null = sin dato.
+export const textoNota = (valor) => (valor == null ? null : String(valor).replace('.', ','))
+
+// Lo que escribe la persona ("8,5", "8.50") a lo que acepta el servidor ("8.5").
+export const notaParaServidor = (texto) => String(texto ?? '').trim().replace(',', '.')
+
+// Resultado adicional: pendiente de configurar y sin actividades son cosas distintas, y ninguna es un 0.
+export const ESTADO_RESULTADO = {
+  pendiente_de_configurar: 'Pendiente de configurar',
+  sin_actividades: 'Sin actividades',
+  incompleto: 'Pendiente: faltan notas',
+  completo: 'Completo',
+}
+
+export const RESULTADO_EVALUACION = {
+  habilitado: { texto: 'Habilitado', tono: 'exito', icono: 'check' },
+  no_habilitado: { texto: 'No habilitado', tono: 'peligro', icono: 'cerrar' },
+}
+
+// Fecha de hoy en America/Bogota (AAAA-MM-DD): el servidor no admite fechas futuras en esa zona.
+export const hoyBogota = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+
+export const formatoFecha = (iso) =>
+  iso ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeZone: 'America/Bogota' }).format(new Date(iso.length === 10 ? `${iso}T12:00:00-05:00` : iso)) : ''
+
+// El backend responde en español los mensajes propios de Selección, pero las reglas estándar de Laravel
+// (mínimo, máximo, obligatorio) llegan en inglés: se traducen aquí, sin tocar el resto de los mensajes.
+export const traducirError = (mensaje) => {
+  if (typeof mensaje !== 'string') return mensaje
+  const minimo = mensaje.match(/must be at least (\d+) characters/)
+  if (minimo) return `Debe tener al menos ${minimo[1]} caracteres.`
+  const maximo = mensaje.match(/(?:must not be greater than|may not be greater than) (\d+) characters/)
+  if (maximo) return `No puede superar los ${maximo[1]} caracteres.`
+  if (/field is required/.test(mensaje)) return 'Este campo es obligatorio.'
+  return mensaje
+}
+
+export const traducirErrores = (errores) =>
+  Object.fromEntries(Object.entries(errores).map(([campo, mensaje]) => [campo, traducirError(mensaje)]))

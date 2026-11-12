@@ -24,6 +24,9 @@ export default function Pestanas({
   etiquetaAccesible = 'Secciones',
   activaId,
   onCambiar,
+  // Separación entre la barra y el panel: 'gap-4' por defecto; una pantalla que necesite el contenido más
+  // cerca de las pestañas pasa su propia clase (por ejemplo 'flex flex-col gap-3').
+  className = 'flex flex-col gap-4',
 }) {
   const [activaInterna, setActivaInterna] = useState(pestanas[0]?.id ?? null)
   const refs = useRef({})
@@ -78,7 +81,7 @@ export default function Pestanas({
   const idActivo = pestanas[indiceActivo]?.id
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={className}>
       {/* La barra se desplaza dentro de su propio contenedor: en móvil las
           pestañas se deslizan sin arrastrar la página entera. overflow-y-hidden
           evita que el -mb-px de las pestañas genere una barra vertical de 1 px

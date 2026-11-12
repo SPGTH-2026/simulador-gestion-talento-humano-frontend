@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { candidatosConvocatoria } from '../../api/seleccion'
 import { mensajeError } from '../../api/mensajeError'
+import { useAuth } from '../../auth/useAuth'
 import { EtiquetaConIcono } from '../evaluacion/PresentacionEvaluacion'
 import AvatarIniciales from '../evaluacion/AvatarIniciales'
 import Boton from '../ui/Boton'
 import Icono from '../ui/Icono'
 import { MensajeError } from '../ui/Mensaje'
 import Rueda from '../ui/Rueda'
+import DetalleCandidato from './DetalleCandidato'
 import Paginacion from './Paginacion'
 import {
   CLASE_TARJETA_PLANA,
@@ -16,7 +18,7 @@ import {
   CLASE_TEXTO_SUAVE,
   CLASE_THEAD,
 } from '../../lib/estilos'
-import { estadoDocumental, textoCumplimiento } from '../../lib/seleccion'
+import { estadoDocumental, puedeDesignarReferencia, textoCumplimiento } from '../../lib/seleccion'
 
 const CLASE_TH = 'whitespace-nowrap px-3 py-3 first:pl-4 last:pr-4'
 const CLASE_TD = 'px-3 py-3.5 align-middle first:pl-4 last:pr-4'
@@ -46,12 +48,18 @@ function Cumplimiento({ valor }) {
 
 // Candidatos (postulaciones enviadas) de UNA convocatoria. El padre lo monta con
 // 'key' = id de la convocatoria: al cambiar de convocatoria el panel nace de cero
-// (página 1, sin filas) y la respuesta tardía de la anterior se descarta porque
-// su efecto ya fue limpiado.
+// (página 1, sin filas, sin detalle abierto) y la respuesta tardía de la anterior se
+// descarta porque su efecto ya fue limpiado.
 export default function PanelCandidatos({ convocatoriaId }) {
+  const { user, can } = useAuth()
+  const puedeDecidir = can('seleccion:decidir')
+  const puedeDesignar = puedeDesignarReferencia(user, can)
+
   const [pagina, setPagina] = useState(1)
   const [estado, setEstado] = useState({ fase: 'cargando', filas: [], meta: null, error: '' })
   const [intento, setIntento] = useState(0)
+  // Candidato cuyo detalle está abierto (id de la postulación). El detalle se pide solo al abrirlo.
+  const [abierto, setAbierto] = useState(null)
 
   useEffect(() => {
     let vigente = true
@@ -68,6 +76,7 @@ export default function PanelCandidatos({ convocatoriaId }) {
   }, [convocatoriaId, pagina, intento])
 
   const cambiarPagina = (n) => {
+    setAbierto(null)
     setEstado((previo) => ({ ...previo, fase: 'cargando', error: '' }))
     setPagina(n)
   }
@@ -76,12 +85,43 @@ export default function PanelCandidatos({ convocatoriaId }) {
     setIntento((n) => n + 1)
   }
 
+  // Lo que el servidor devolvió al guardar una referencia o una nota se aplica a la fila, sin recargar la lista:
+  // la convocatoria y la página siguen siendo las mismas.
+  const actualizarFila = ({ id, estado_documental, cumplimiento }) => {
+    setEstado((previo) => ({
+      ...previo,
+      filas: previo.filas.map((f) =>
+        f.id === id
+          ? {
+              ...f,
+              ...(estado_documental !== undefined && { estado_documental }),
+              ...(cumplimiento !== undefined && { cumplimiento }),
+            }
+          : f,
+      ),
+    }))
+  }
+
   const { fase, filas, meta, error } = estado
   const cargando = fase === 'cargando'
   const hayFilas = filas.length > 0
+  const filaAbierta = filas.find((f) => f.id === abierto) ?? null
+
+  // Función (no componente): el botón conserva su identidad entre renders y el foco puede volver a él al cerrar el detalle.
+  const botonDetalle = (fila, className = '') => (
+    <Boton
+      variante="contorno"
+      tamano="tactil"
+      className={className}
+      aria-label={`Abrir el detalle de ${fila.aspirante}`}
+      onClick={() => setAbierto(fila.id)}
+    >
+      Ver detalle
+    </Boton>
+  )
 
   return (
-    <div className="@container flex flex-col gap-4" aria-busy={cargando}>
+    <div className="@container flex flex-col gap-3" aria-busy={cargando}>
       {fase === 'error' && (
         <div className="flex flex-col items-start gap-3">
           <MensajeError>{error}</MensajeError>
@@ -108,20 +148,22 @@ export default function PanelCandidatos({ convocatoriaId }) {
 
       {hayFilas && (
         <div className={cargando ? 'opacity-60' : ''}>
-          <div className="hidden @min-[640px]:block">
+          <div className="hidden @min-[560px]:block">
             <div className={`${CLASE_TARJETA_PLANA} overflow-hidden`}>
               <table className="w-full table-fixed text-left text-sm">
                 <caption className="sr-only">Candidatos de la convocatoria</caption>
                 <colgroup>
                   <col />
-                  <col className="w-52" />
+                  <col className="w-48" />
                   <col className="w-32" />
+                  <col className="w-36" />
                 </colgroup>
                 <thead className={CLASE_THEAD}>
                   <tr>
                     <th scope="col" className={CLASE_TH}>Aspirante</th>
                     <th scope="col" className={CLASE_TH}>Estado documental</th>
                     <th scope="col" className={`${CLASE_TH} text-right`}>Cumplimiento</th>
+                    <th scope="col" className={`${CLASE_TH} text-right`}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody className={CLASE_TBODY}>
@@ -139,6 +181,9 @@ export default function PanelCandidatos({ convocatoriaId }) {
                       <td className={`${CLASE_TD} text-right`}>
                         <Cumplimiento valor={c.cumplimiento} />
                       </td>
+                      <td className={`${CLASE_TD} text-right`}>
+                        {botonDetalle(c)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -146,7 +191,7 @@ export default function PanelCandidatos({ convocatoriaId }) {
             </div>
           </div>
 
-          <ul className="grid gap-3 @min-[640px]:hidden">
+          <ul className="grid gap-3 @min-[560px]:hidden">
             {filas.map((c) => (
               <li key={c.id} className={`${CLASE_TARJETA_PLANA} flex min-w-0 flex-col gap-3 p-4`}>
                 <div className="flex min-w-0 items-center gap-3">
@@ -167,6 +212,7 @@ export default function PanelCandidatos({ convocatoriaId }) {
                     </dd>
                   </div>
                 </dl>
+                {botonDetalle(c, 'w-full')}
               </li>
             ))}
           </ul>
@@ -176,10 +222,24 @@ export default function PanelCandidatos({ convocatoriaId }) {
       {hayFilas && meta && (
         <Paginacion
           meta={meta}
-          unidad="candidato(s)"
+          singular="candidato"
+          plural="candidatos"
           etiqueta="Paginación de candidatos"
           ocupado={cargando}
           onPagina={cambiarPagina}
+          className="px-1"
+        />
+      )}
+
+      {filaAbierta && (
+        <DetalleCandidato
+          key={filaAbierta.id}
+          convocatoriaId={convocatoriaId}
+          fila={filaAbierta}
+          puedeDecidir={puedeDecidir}
+          puedeDesignar={puedeDesignar}
+          onCerrar={() => setAbierto(null)}
+          onCambio={actualizarFila}
         />
       )}
     </div>
