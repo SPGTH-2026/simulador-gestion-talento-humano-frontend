@@ -41,6 +41,7 @@ export const menu = [
     label: 'Selección',
     icono: 'seleccion',
     children: [
+      { label: 'Preselección', to: '/seleccion/preseleccion', permiso: 'seleccion:ver' },
       { label: 'Ranking', to: '/seleccion', permiso: 'seleccion:ver' },
       { label: 'Decidir', to: '/seleccion/decidir', permiso: 'seleccion:decidir' },
     ],
