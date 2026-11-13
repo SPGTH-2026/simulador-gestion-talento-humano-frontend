@@ -11,6 +11,7 @@ import {
   CLASE_TEXTO_SUAVE,
 } from '../../lib/estilos'
 import { MAX_ELEMENTOS, alcanceConvocatorias } from '../../lib/inicio'
+import { textoCandidatos } from '../../lib/seleccion'
 import { formatearFecha } from '../../lib/ventanaPostulacion'
 import BloqueInicio from './BloqueInicio'
 
@@ -113,6 +114,7 @@ export function BloqueConvocatoriasSeleccion({ recurso }) {
                 <span>
                   {c.vacantes} {c.vacantes === 1 ? 'vacante' : 'vacantes'}
                 </span>
+                {c.candidatos != null && <span>{textoCandidatos(c.candidatos)}</span>}
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -135,6 +137,55 @@ export function BloqueConvocatoriasSeleccion({ recurso }) {
                 Ranking
               </Boton>
             </div>
+          </li>
+        ))}
+      </ul>
+    </BloqueInicio>
+  )
+}
+
+// «Requiere tu atención»: convocatorias en proceso con candidatos listos para Ranking y sin lista de finalistas. El
+// criterio lo aplica el backend (GET /seleccion/convocatorias?atencion=1: hasta 4 y meta.hay_mas), así que un pendiente
+// aparece aunque no esté en la primera página del listado general. Enlaza cada una a su Ranking.
+export function BloqueRequiereAtencionSeleccion({ recurso }) {
+  const lista = recurso.datos?.data ?? []
+  const hayMas = recurso.datos?.meta?.hay_mas === true
+
+  return (
+    <BloqueInicio
+      titulo="Requiere tu atención"
+      descripcion="Convocatorias en proceso con candidatos listos y sin lista de finalistas confirmada."
+      recurso={recurso}
+      textoCarga="Buscando pendientes…"
+      vacio={lista.length === 0}
+      textoVacio="No tienes convocatorias pendientes por ahora."
+      pie={
+        hayMas ? (
+          <Boton as={Link} to="/seleccion/preseleccion?estado=en_proceso" variante="enlace" tamano="flexible">
+            Hay más pendientes: ver las que están en proceso
+          </Boton>
+        ) : null
+      }
+    >
+      <ul className={CLASE_LISTA}>
+        {lista.map((c) => (
+          <li key={c.id} className={CLASE_FILA_LISTA}>
+            <div className="min-w-0">
+              <p className={`font-semibold text-slate-800 dark:text-sena-texto ${CLASE_TEXTO_PARTIDO}`}>{c.nombre}</p>
+              <p className={`mt-0.5 text-sm ${CLASE_TEXTO_SUAVE}`}>
+                {c.listos} {c.listos === 1 ? 'listo' : 'listos'} de {textoCandidatos(c.candidatos)} · sin lista de finalistas
+              </p>
+            </div>
+            <Boton
+              as={Link}
+              to={`/seleccion?convocatoria=${c.id}`}
+              aria-label={`Ir al Ranking de ${c.nombre}`}
+              variante="contorno"
+              tamano="flexible"
+              className="shrink-0"
+            >
+              Ir al Ranking
+            </Boton>
           </li>
         ))}
       </ul>

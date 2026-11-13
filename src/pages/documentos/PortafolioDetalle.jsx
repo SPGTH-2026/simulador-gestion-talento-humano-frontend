@@ -7,12 +7,37 @@ import {
   descargarCertificadoRevision,
 } from '../../api/portafolios'
 import { abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulacionesDocumentos'
-import Mensaje from '../../components/ui/Mensaje'
+import Mensaje, { MensajeAviso } from '../../components/ui/Mensaje'
+import Boton from '../../components/ui/Boton'
 import Cargando from '../../components/ui/Cargando'
+import Etiqueta from '../../components/ui/Etiqueta'
+import Icono from '../../components/ui/Icono'
+import Tarjeta from '../../components/ui/Tarjeta'
 import IndicadorCompletitud from '../../components/postulacion/IndicadorCompletitud'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
-import { IconoOjo, IconoDescarga } from '../../components/convocatorias/Iconos'
+import { EtiquetaConIcono } from '../../components/evaluacion/PresentacionEvaluacion'
+import {
+  CLASE_SUBTITULO_PAGINA,
+  CLASE_TEXTO_FUERTE,
+  CLASE_TEXTO_PARTIDO,
+  CLASE_TEXTO_SUAVE,
+  CLASE_TITULO_PAGINA,
+} from '../../lib/estilos'
+import { ESTADO_DOCUMENTO } from '../../lib/evaluacion'
 import { formatearTamano } from '../../lib/postulacionDocumentos'
+
+// Línea de acciones de volver: botón fantasma con flecha, el mismo de Evaluación. Antes era texto azul sin variante
+// oscura y en modo noche desaparecía.
+function Volver({ onClick, children }) {
+  return (
+    <Boton variante="fantasma" tamano="tactil" onClick={onClick} className="-ml-4 self-start">
+      <Icono nombre="flechaIzquierda" className="size-4" />
+      {children}
+    </Boton>
+  )
+}
+
+const TITULO_BLOQUE = `text-base font-semibold ${CLASE_TEXTO_FUERTE}`
 
 // Portafolio en solo lectura: quien llega aquí ve y descarga, no escribe.
 export default function PortafolioDetalle() {
@@ -86,8 +111,7 @@ export default function PortafolioDetalle() {
     }
   }
 
-  const rutaArchivo = (suffix) =>
-    `/revision/postulaciones/${postulacionSel.id}/${suffix}`
+  const rutaArchivo = (suffix) => `/revision/postulaciones/${postulacionSel.id}/${suffix}`
 
   if (cargando && !portafolio) {
     return <Cargando mensaje="Cargando portafolio..." />
@@ -95,11 +119,11 @@ export default function PortafolioDetalle() {
 
   if (error && !portafolio) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <Mensaje tipo="error">{error}</Mensaje>
-        <button onClick={() => navigate(-1)} className="text-sena-azul hover:underline">
+        <Boton variante="contorno" tamano="tactil" onClick={() => navigate(-1)}>
           Volver
-        </button>
+        </Boton>
       </div>
     )
   }
@@ -108,200 +132,163 @@ export default function PortafolioDetalle() {
 
   const { usuario, postulaciones } = portafolio
 
+  // Ver y Descargar son acciones neutras de lectura: las dos con contorno, sin iconos decorativos.
   const botonesLectura = (ver, descargarFn) => (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        onClick={ver}
-        className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap flex items-center gap-1.5"
-      >
-        <IconoOjo className="h-4 w-4" />
+      <Boton variante="contorno" tamano="tactil" onClick={ver}>
         Ver
-      </button>
-      <button
-        onClick={() => descargar(descargarFn)}
-        className="px-3 py-1.5 text-sm font-semibold text-sena-azul border border-sena-azul/25 rounded hover:bg-sena-cielo/30 transition-colors whitespace-nowrap flex items-center gap-1.5 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-      >
-        <IconoDescarga className="h-4 w-4" />
+      </Boton>
+      <Boton variante="contorno" tamano="tactil" onClick={() => descargar(descargarFn)}>
         Descargar
-      </button>
+      </Boton>
     </div>
   )
 
   return (
     <>
-      <div className="flex flex-col gap-6">
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <button
-              onClick={() => navigate(-1)}
-              className="text-sm text-sena-azul hover:underline mb-2 inline-block"
-            >
-              ← Volver al listado
-            </button>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Portafolio de {usuario.name}
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {usuario.email} • Ficha: {usuario.ficha?.codigo ?? 'Sin ficha'}
-            </p>
-          </div>
+      <div className="flex flex-col gap-5">
+        <header className="flex flex-col">
+          <Volver onClick={() => navigate(-1)}>Volver al listado</Volver>
+          <h1 className={`${CLASE_TITULO_PAGINA} text-balance ${CLASE_TEXTO_PARTIDO}`}>Portafolio de {usuario.name}</h1>
+          <p className={CLASE_SUBTITULO_PAGINA}>
+            {usuario.email} · Ficha: {usuario.ficha?.codigo ?? 'Sin ficha'}
+          </p>
         </header>
 
         {portafolio.postulaciones.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-slate-500 dark:text-slate-400">
-              Este aspirante no tiene postulaciones visibles en sus fichas.
-            </p>
+          <div className="py-12 text-center">
+            <p className={CLASE_TEXTO_SUAVE}>Este aspirante no tiene postulaciones visibles en sus fichas.</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {postulaciones.map(p => (
-              <article
-                key={p.id}
-                className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-col gap-4">
+            {postulaciones.map((p) => (
+              <Tarjeta key={p.id} as="article" className="flex flex-col gap-3 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <div className="min-w-0">
+                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
                       <EtiquetaPostulacion codigo={p.estado?.codigo} nombre={p.estado?.nombre} />
                       {p.puede_ver_documentos ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                          Documentos disponibles
-                        </span>
+                        <Etiqueta tono="exito">Documentos disponibles</Etiqueta>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                          Sin documentos (borrador)
-                        </span>
+                        <Etiqueta tono="neutral">Sin documentos (borrador)</Etiqueta>
                       )}
                     </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      {p.convocatoria?.nombre} ({p.convocatoria?.codigo})
-                    </p>
+                    <p className={`font-medium ${CLASE_TEXTO_FUERTE} ${CLASE_TEXTO_PARTIDO}`}>{p.convocatoria?.nombre}</p>
+                    <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>{p.convocatoria?.codigo}</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <IndicadorCompletitud estado={{ completo: p.completo }} />
-                    {p.puede_ver_documentos && (
-                      <button
-                        onClick={() => handleVerDocumentos(p)}
-                        className="px-3 py-1.5 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
-                      >
-                        Ver documentos
-                      </button>
-                    )}
-                  </div>
+                  {p.puede_ver_documentos && (
+                    // Abre la revisión de la postulación: navegación, con contorno como «Ver detalle».
+                    <Boton variante="contorno" tamano="tactil" onClick={() => handleVerDocumentos(p)} className="shrink-0">
+                      Ver documentos
+                    </Boton>
+                  )}
                 </div>
 
-                <div className="text-xs text-slate-500 dark:text-slate-400">
+                <IndicadorCompletitud estado={{ completo: p.completo }} titulo="Estado de los documentos" />
+
+                <p className={`text-xs ${CLASE_TEXTO_SUAVE}`}>
                   Postulada el {p.fecha_postulacion ? new Date(p.fecha_postulacion).toLocaleDateString('es-CO') : '—'}
-                  • Convocatoria: {p.convocatoria?.codigo}
-                  • Documentos: {p.documentos?.subidos ?? 0}/{p.documentos?.requeridos ?? 0} requeridos, {p.documentos?.adicionales ?? 0} adicionales
-                  • Skills: {p.skills?.total ?? 0} ({p.skills?.con_certificado ?? 0} con certificado)
-                </div>
-              </article>
+                  {' · '}Documentos: {p.documentos?.subidos ?? 0}/{p.documentos?.requeridos ?? 0} requeridos,{' '}
+                  {p.documentos?.adicionales ?? 0} adicionales
+                  {' · '}Skills: {p.skills?.total ?? 0} ({p.skills?.con_certificado ?? 0} con certificado)
+                </p>
+              </Tarjeta>
             ))}
           </div>
         )}
       </div>
 
       {postulacionSel && revision && (
-        <section className="mt-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
-          <header className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+        <Tarjeta as="section" className="mt-6 flex flex-col gap-5 p-4 sm:p-6">
+          <header className="flex flex-col gap-1">
+            <Volver
+              onClick={() => {
+                setPostulacionSel(null)
+                setRevision(null)
+                setErrorAccion('')
+              }}
+            >
+              Volver al listado de postulaciones
+            </Volver>
+            <h2 className={`text-xl font-bold ${CLASE_TEXTO_FUERTE} ${CLASE_TEXTO_PARTIDO}`}>
               Documentos de: {postulacionSel.convocatoria?.nombre}
             </h2>
-            <button
-              onClick={() => { setPostulacionSel(null); setRevision(null); setErrorAccion('') }}
-              className="text-sena-azul hover:underline text-sm"
-            >
-              ← Volver al listado de postulaciones
-            </button>
           </header>
 
-          {errorAccion && <div className="mb-4"><Mensaje tipo="error">{errorAccion}</Mensaje></div>}
+          {errorAccion && <Mensaje tipo="error">{errorAccion}</Mensaje>}
 
-          <IndicadorCompletitud estado={revision} />
+          <IndicadorCompletitud estado={revision} titulo="Estado de los documentos" />
 
           {revision.requiere_sexo && (
-            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-200">
-              ⚠️ Esta convocatoria exige libreta militar y no hay sexo registrado en el perfil.
-            </div>
+            <MensajeAviso>Esta convocatoria exige libreta militar y no hay sexo registrado en el perfil.</MensajeAviso>
           )}
 
           {revision.documentos && revision.documentos.length > 0 && (
-            <section className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Documentos requeridos</h3>
+            <section>
+              <h3 className={`${TITULO_BLOQUE} mb-3`}>Documentos requeridos</h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {revision.documentos.map(d => (
-                  <article
-                    key={d.parametro?.id ?? d.id}
-                    className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-slate-900 dark:text-white">{d.parametro?.nombre ?? d.parametro?.codigo}</span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">{d.parametro?.codigo}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {d.obligatorio ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Obligatorio</span>
-                          ) : (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">Opcional</span>
+                {revision.documentos.map((d) => {
+                  const estado = ESTADO_DOCUMENTO[d.estado] ?? ESTADO_DOCUMENTO.pendiente
+                  return (
+                    <Tarjeta key={d.parametro?.id ?? d.id} as="article" className="flex flex-col gap-3 p-4">
+                      <div className="min-w-0">
+                        <p className={`font-medium ${CLASE_TEXTO_FUERTE} ${CLASE_TEXTO_PARTIDO}`}>
+                          {d.parametro?.nombre ?? d.parametro?.codigo}
+                        </p>
+                        <p className={`mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs ${CLASE_TEXTO_SUAVE}`}>
+                          <EtiquetaConIcono
+                            tono={estado.tono}
+                            icono={d.estado === 'subido' ? <Icono nombre="check" className="size-3.5" /> : null}
+                          >
+                            {estado.texto}
+                          </EtiquetaConIcono>
+                          <span className="whitespace-nowrap">{d.obligatorio ? 'Obligatorio' : 'Opcional'}</span>
+                        </p>
+                      </div>
+
+                      <p className={`text-sm ${CLASE_TEXTO_SUAVE} ${CLASE_TEXTO_PARTIDO}`}>
+                        {d.archivo
+                          ? `${d.archivo.nombre_original} · ${formatearTamano(d.archivo.tamano_bytes)}`
+                          : 'Sin archivo'}
+                      </p>
+
+                      {d.archivo && (
+                        <div className="mt-auto border-t border-sena-linea/70 pt-3 dark:border-sena-borde/50">
+                          {botonesLectura(
+                            () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
+                            () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
                           )}
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                            {d.estado === 'subido' ? 'Subido' : d.estado === 'pendiente' ? 'Pendiente' : 'No aplica'}
-                          </span>
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-                      {d.archivo ? (
-                        <span>{d.archivo.nombre_original} · {formatearTamano(d.archivo.tamano_bytes)}</span>
-                      ) : (
-                        <span className="text-slate-500 dark:text-slate-400">Sin archivo</span>
                       )}
-                    </div>
-
-                    {d.archivo && (
-                      <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
-                        {botonesLectura(
-                          () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
-                          () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
-                        )}
-                      </div>
-                    )}
-                  </article>
-                ))}
+                    </Tarjeta>
+                  )
+                })}
               </div>
             </section>
           )}
 
           {revision.adicionales && revision.adicionales.length > 0 && (
-            <section className="mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Documentos adicionales</h3>
+            <section>
+              <h3 className={`${TITULO_BLOQUE} mb-3`}>Documentos adicionales</h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {revision.adicionales.map(d => (
-                  <article
-                    key={d.id}
-                    className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-slate-900 dark:text-white">{d.titulo}</div>
-                      {d.nota && <div className="text-xs text-slate-500 dark:text-slate-400">{d.nota}</div>}
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {revision.adicionales.map((d) => (
+                  <Tarjeta key={d.id} as="article" className="flex flex-col gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className={`font-medium ${CLASE_TEXTO_FUERTE} ${CLASE_TEXTO_PARTIDO}`}>{d.titulo}</p>
+                      {d.nota && <p className={`text-xs ${CLASE_TEXTO_SUAVE} ${CLASE_TEXTO_PARTIDO}`}>{d.nota}</p>}
+                      <p className={`mt-1 text-xs ${CLASE_TEXTO_SUAVE} ${CLASE_TEXTO_PARTIDO}`}>
                         {d.archivo?.nombre_original} · {formatearTamano(d.archivo?.tamano_bytes)}
-                      </div>
+                      </p>
                     </div>
                     {d.archivo && (
-                      <div className="pt-2 mt-3 border-t border-slate-100 dark:border-slate-700">
+                      <div className="mt-auto border-t border-sena-linea/70 pt-3 dark:border-sena-borde/50">
                         {botonesLectura(
                           () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
                           () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
                         )}
                       </div>
                     )}
-                  </article>
+                  </Tarjeta>
                 ))}
               </div>
             </section>
@@ -309,44 +296,38 @@ export default function PortafolioDetalle() {
 
           {revision.skills && revision.skills.length > 0 && (
             <section>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-3">Skills declaradas</h3>
-              <div className="space-y-3">
-                {revision.skills.map(s => (
-                  <article
-                    key={s.id}
-                    className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-slate-900 dark:text-white">{s.nombre}</span>
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
-                            {s.origen}
-                          </span>
+              <h3 className={`${TITULO_BLOQUE} mb-3`}>Skills declaradas</h3>
+              <div className="flex flex-col gap-3">
+                {revision.skills.map((s) => (
+                  <Tarjeta key={s.id} as="article" className="p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <span className={`font-medium ${CLASE_TEXTO_FUERTE} ${CLASE_TEXTO_PARTIDO}`}>{s.nombre}</span>
+                          <Etiqueta tono="neutral">{s.origen}</Etiqueta>
                         </div>
                         {s.certificado && (
-                          <div className="text-xs text-slate-500 dark:text-slate-400">
+                          <p className={`text-xs ${CLASE_TEXTO_SUAVE} ${CLASE_TEXTO_PARTIDO}`}>
                             Certificado: {s.certificado.nombre_original} · {formatearTamano(s.certificado.tamano_bytes)}
-                          </div>
+                          </p>
                         )}
                       </div>
-                      {s.certificado && botonesLectura(
-                        () => verArchivo(rutaArchivo(`skills/${s.id}/certificado/archivo?inline=1`), s.certificado.nombre_original),
-                        () => descargarCertificadoRevision(postulacionSel.id, s.id, s.certificado.nombre_original),
-                      )}
+                      {s.certificado &&
+                        botonesLectura(
+                          () => verArchivo(rutaArchivo(`skills/${s.id}/certificado/archivo?inline=1`), s.certificado.nombre_original),
+                          () => descargarCertificadoRevision(postulacionSel.id, s.id, s.certificado.nombre_original),
+                        )}
                     </div>
-                  </article>
+                  </Tarjeta>
                 ))}
               </div>
             </section>
           )}
 
-          {(revision.documentos?.length === 0 && revision.adicionales?.length === 0 && revision.skills?.length === 0) && (
-            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-              No hay documentos ni skills en esta postulación.
-            </div>
+          {revision.documentos?.length === 0 && revision.adicionales?.length === 0 && revision.skills?.length === 0 && (
+            <p className={`py-8 text-center ${CLASE_TEXTO_SUAVE}`}>No hay documentos ni skills en esta postulación.</p>
           )}
-        </section>
+        </Tarjeta>
       )}
     </>
   )

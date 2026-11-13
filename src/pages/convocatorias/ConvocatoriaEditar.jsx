@@ -8,6 +8,8 @@ import {
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import ConvocatoriaWizard from '../../components/convocatorias/ConvocatoriaWizard'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import Boton from '../../components/ui/Boton'
+import Icono from '../../components/ui/Icono'
 
 // Borrador y publicada se editan completos; en_proceso y cerrada son de solo
 // lectura. Al publicar desde aquí se guarda (PATCH) y, si todo va bien, se
@@ -128,13 +130,11 @@ export default function ConvocatoriaEditar() {
         <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           {errorCarga || 'No se encontró la convocatoria.'}
         </p>
-        <button
-          type="button"
-          onClick={() => navigate('/convocatorias')}
-          className="self-start rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-        >
-          ← Volver
-        </button>
+        <Boton variante="fantasma" tamano="tactil" className="self-start"
+          onClick={() => navigate('/convocatorias')}>
+          <Icono nombre="flechaIzquierda" className="size-4" />
+          Volver
+        </Boton>
       </div>
     )
   }

@@ -5,7 +5,6 @@ import { CODIGO_LIBRETA_MILITAR, formatearTamano } from '../../lib/postulacionDo
 import { formatearFechaHora } from '../../lib/ventanaPostulacion'
 import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 import EtiquetaDocumento from '../ui/EtiquetaDocumento'
-import { IconoSubir } from '../convocatorias/Iconos'
 import {
   subirDocumento,
   eliminarDocumento,
@@ -13,16 +12,13 @@ import {
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import BarraProgreso from '../ui/BarraProgreso'
+import Boton from '../ui/Boton'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
 const ESTILO_TITULO = CLASE_TITULO_SECCION
 
-const CLASE_BOTON =
-  'rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
 
-const CLASE_ELIMINAR =
-  'rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50'
 
 const CLASE_ETIQUETA =
   'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
@@ -219,26 +215,19 @@ export default function SeccionDocumentosRequeridos({
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Botón Ver (preview) - solo si hay archivo */}
                   {archivoMostrar && (
-                    <button
-                      type="button"
+                    <Boton variante="contorno" tamano="tactil"
                       disabled={enProceso}
-                      onClick={() => ver(archivoMostrar)}
-                      className={CLASE_BOTON}
-                    >
+                      onClick={() => ver(archivoMostrar)}>
                       Ver
-                    </button>
+                    </Boton>
                   )}
 
                   {mostrarSubir && (
-                    <button
-                      type="button"
+                    <Boton variante="contorno" tamano="tactil"
                       disabled={bloqueoLibreta || enProceso}
                       title={bloqueoLibreta ? motivoLibreta : undefined}
-                      onClick={() => refsInput.current[clave]?.click()}
-                      className={CLASE_BOTON}
-                    >
+                      onClick={() => refsInput.current[clave]?.click()}>
                       <span className="inline-flex items-center gap-1.5">
-                        <IconoSubir className="h-3.5 w-3.5" />
                         {enProceso
                           ? 'Subiendo...'
                           : estadoDoc === 'subido' || archivosSubidos[clave]
@@ -247,18 +236,15 @@ export default function SeccionDocumentosRequeridos({
                               ? 'Reintentar'
                               : 'Subir'}
                       </span>
-                    </button>
+                    </Boton>
                   )}
 
                   {puedeEditar && estadoDoc === 'subido' && (
-                    <button
-                      type="button"
+                    <Boton variante="peligroSuave" tamano="tactil"
                       disabled={enProceso}
-                      onClick={() => eliminar(archivoMostrar, clave)}
-                      className={CLASE_ELIMINAR}
-                    >
+                      onClick={() => eliminar(archivoMostrar, clave)}>
                       {enProceso ? 'Eliminando...' : 'Eliminar'}
-                    </button>
+                    </Boton>
                   )}
                 </div>
               </div>

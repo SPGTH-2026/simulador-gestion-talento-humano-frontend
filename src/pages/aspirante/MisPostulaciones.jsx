@@ -8,7 +8,7 @@ import EtiquetaVentana from '../../components/convocatorias/EtiquetaVentana'
 import Boton from '../../components/ui/Boton'
 import Paginacion from '../../components/ui/Paginacion'
 import { estadoVentana, formatearFechaHora, textoVentana } from '../../lib/ventanaPostulacion'
-import { CLASE_META_DT, CLASE_TARJETA } from '../../lib/estilos'
+import { CLASE_META_DT, CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 
 // Botones de acción de una fila: 40 px de alto, 12 px de texto y separacion de
 // 8 px. El principal es el verde del sistema; el secundario, de contorno; el
@@ -111,7 +111,7 @@ function BloqueAcciones({
           <>
             <Boton
               variante="primario"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={enVuelo}
               onClick={() => irADocumentos(postulacion)}
@@ -120,7 +120,7 @@ function BloqueAcciones({
             </Boton>
             <Boton
               variante="peligroSuave"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={!publicada || enVuelo}
               onClick={() => cambiarEstado(postulacion, 'retirada', 'descartar')}
@@ -134,7 +134,7 @@ function BloqueAcciones({
           <>
             <Boton
               variante="primario"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={enVuelo}
               onClick={() => irADocumentos(postulacion)}
@@ -143,7 +143,7 @@ function BloqueAcciones({
             </Boton>
             <Boton
               variante="peligroSuave"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={!publicada || enVuelo}
               onClick={() => cambiarEstado(postulacion, 'retirada', 'retirar')}
@@ -156,8 +156,8 @@ function BloqueAcciones({
         {codigo === 'retirada' && (
           <>
             <Boton
-              variante="secundario"
-              tamano="sm"
+              variante="contorno"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={enVuelo}
               onClick={() => irADocumentos(postulacion)}
@@ -166,7 +166,7 @@ function BloqueAcciones({
             </Boton>
             <Boton
               variante="primario"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={!ventanaAbierta || enVuelo}
               onClick={() => reabrir(postulacion)}
@@ -308,7 +308,7 @@ export default function MisPostulaciones() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">Mis postulaciones</h1>
+        <h1 className={CLASE_TITULO_PAGINA}>Mis postulaciones</h1>
         <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
           Completa y envía tus borradores, consulta tus postulaciones, retíralas o
           reábrelas mientras la convocatoria lo permita.

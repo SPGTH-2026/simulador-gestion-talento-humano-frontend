@@ -31,6 +31,17 @@ export const opcionPorId = (id) => OPCIONES_ACTIVIDADES.find((o) => o.id === id)
 // un dato de gestión y llega en null para quien no gestiona convocatorias.
 export const tituloConvocatoria = (c) => c?.nombre ?? 'Convocatoria sin nombre'
 
+// Estados por los que se filtra el listado de Selección (el servidor excluye los borradores), en el orden del proceso.
+export const ESTADOS_FILTRO = [
+  { codigo: 'publicada', nombre: 'Publicada' },
+  { codigo: 'en_proceso', nombre: 'En proceso' },
+  { codigo: 'cerrada', nombre: 'Cerrada' },
+]
+export const estadoFiltroValido = (codigo) => (ESTADOS_FILTRO.some((e) => e.codigo === codigo) ? codigo : '')
+
+// «0 candidatos», «1 candidato»: el cero se dice siempre (es un dato, no una ausencia).
+export const textoCandidatos = (n) => `${n} ${n === 1 ? 'candidato' : 'candidatos'}`
+
 // Solo el Instructor y el Superadministrador designan la evaluación de referencia. Los aprendices con
 // seleccion:decidir (general y seleccionador) pueden calificar, pero no resolver evaluaciones en conflicto.
 export const puedeDesignarReferencia = (user, can) =>

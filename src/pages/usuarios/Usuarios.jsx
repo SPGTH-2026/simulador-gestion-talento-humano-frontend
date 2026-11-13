@@ -23,8 +23,7 @@ import {
   CLASE_TBODY,
   CLASE_TD,
   CLASE_TH,
-  CLASE_THEAD,
-} from '../../lib/estilos'
+  CLASE_THEAD, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 
 const ROLES = [
   { valor: 'super_admin', etiqueta: 'Super admin' },
@@ -239,7 +238,7 @@ export default function Usuarios() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">Usuarios y Roles</h1>
+      <h1 className={CLASE_TITULO_PAGINA}>Usuarios y Roles</h1>
 
       {/* Mismo bloque de filtros que Convocatorias y Evaluación: buscador con lupa en su propia fila y, debajo,
           los selectores con su etiqueta y «Limpiar filtros» cuando hay alguno activo. */}
@@ -290,7 +289,7 @@ export default function Usuarios() {
           </Campo>
 
           {hayFiltros && (
-            <Boton variante="contorno" tamano="flexible" onClick={limpiarFiltros} className="sm:shrink-0 lg:min-h-10">
+            <Boton variante="contorno" tamano="flexible" onClick={limpiarFiltros} className="sm:shrink-0">
               <Icono nombre="cerrar" className="size-5 shrink-0" />
               Limpiar filtros
             </Boton>
@@ -420,7 +419,7 @@ export default function Usuarios() {
                           </label>
 
                           <div className="ml-auto flex gap-2">
-                            <Boton variante="secundario" onClick={() => setEditandoId(null)}>
+                            <Boton variante="contorno" onClick={() => setEditandoId(null)}>
                               Cancelar
                             </Boton>
                             <Boton type="submit" disabled={guardando}>
@@ -457,12 +456,12 @@ export default function Usuarios() {
                             <span className="py-1.5 text-xs text-slate-500 dark:text-sena-texto-suave">Tu cuenta</span>
                           ) : (
                             <>
-                              <Boton variante="secundario" tamano="sm" onClick={() => empezarEdicion(u)}>
+                              <Boton variante="contorno" tamano="tactil" onClick={() => empezarEdicion(u)}>
                                 Cambiar rol
                               </Boton>
                               <Boton
-                                variante={u.active ? 'peligro' : 'secundario'}
-                                tamano="sm"
+                                variante={u.active ? 'peligro' : 'contorno'}
+                                tamano="tactil"
                                 onClick={() => alternarActivo(u)}
                               >
                                 {u.active ? 'Inhabilitar' : 'Reactivar'}

@@ -3,9 +3,14 @@ import client from './client'
 // Módulo de Selección. Todas las rutas viven bajo /seleccion y el backend decide
 // el alcance (fichas del usuario) y los permisos: el frontend solo los refleja.
 
-// GET /api/seleccion/convocatorias?page=
-//   -> { data: [{ id, codigo, nombre, cargo, estado: { codigo, nombre }, vacantes }],
+// GET /api/seleccion/convocatorias?page=&estado=&convocatoria=&atencion=
+//   -> { data: [{ id, codigo, nombre, cargo, estado: { codigo, nombre }, vacantes, candidatos }],
 //        meta: { current_page, last_page, per_page, total } }
+// 'candidatos': postulaciones en estado postulada (el mismo total del panel de candidatos; puede ser 0).
+// 'estado': publicada | en_proceso | cerrada; se aplica antes de paginar. 'convocatoria': una sola, por id (enlaces
+// directos fuera de la primera página). 'atencion=1': solo las que requieren atención del seleccionador (en proceso,
+// con algún candidato listo para Ranking y sin lista de finalistas); NO pagina: devuelve hasta 4 con
+// meta: { limite, hay_mas } y 'listos' en cada fila.
 // 'codigo' llega en null para quien no gestiona convocatorias (p. ej. el
 // seleccionador): se identifica por 'nombre'. Sin borradores.
 export const listaConvocatoriasSeleccion = (params) =>

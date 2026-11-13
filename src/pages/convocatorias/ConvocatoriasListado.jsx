@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import useFiltrosUrl from '../../hooks/useFiltrosUrl'
 import { useAuth } from '../../auth/useAuth'
 import {
@@ -43,7 +43,7 @@ const CLASE_ESQUELETO =
 // sistema compartido (components/ui/Icono): el mismo tamaño y trazo en todos.
 // El texto puede partirse en dos líneas en un botón angosto, pero nunca se
 // comprime ni se corta.
-const CLASE_BOTON_ACCION = 'justify-center lg:min-h-10'
+const CLASE_BOTON_ACCION = 'justify-center'
 
 // Tamaño único de los iconos de los botones.
 const ICONO_BOTON = 'size-5 shrink-0'
@@ -376,8 +376,8 @@ export default function ConvocatoriasListado() {
   )
 
   // Las mismas acciones se usan en todas las tarjetas, para no duplicar la
-  // lógica de permisos. "Ver detalle" es la principal y va a todo el ancho;
-  // "Editar" y el cierre son secundarias y comparten una segunda fila.
+  // lógica de permisos. "Ver detalle" va a todo el ancho y es navegación (contorno, sin icono);
+  // "Editar" y el cierre comparten una fila encima.
   const renderAcciones = (c) => {
     const paso = pasoDeEstado(c.estado?.codigo)
     const editable = c.estado?.codigo === 'borrador' || c.estado?.codigo === 'publicada'
@@ -386,14 +386,16 @@ export default function ConvocatoriasListado() {
     // incluso si la convocatoria ya no está publicada: el detalle absorbe el 404.
     if (esAspirante) {
       return (
+        // «Ver información» abre una pantalla: es navegación (contorno) y un enlace de verdad, para que la barra de
+        // carga del marco y «abrir en otra pestaña» funcionen.
         <Boton
-          variante="primario"
+          as={Link}
+          to={`/convocatorias/${c.id}`}
+          variante="contorno"
           tamano="flexible"
           className={CLASE_BOTON_ACCION}
-          onClick={() => navigate(`/convocatorias/${c.id}`)}
           aria-label={`Ver información de ${c.nombre}`}
         >
-          <Icono nombre="ojo" className={ICONO_BOTON} />
           <span className={TEXTO_BOTON}>Ver información</span>
         </Boton>
       )
@@ -418,13 +420,13 @@ export default function ConvocatoriasListado() {
           >
             {mostrarEditar && (
               <Boton
+                as={Link}
+                to={`/convocatorias/${c.id}/editar`}
                 variante="contorno"
                 tamano="flexible"
                 className={`${CLASE_BOTON_ACCION} ${comparten ? '@min-[320px]:flex-none' : ''}`}
-                onClick={() => navigate(`/convocatorias/${c.id}/editar`)}
                 aria-label={`Editar ${c.nombre}`}
               >
-                <Icono nombre="lapiz" className={ICONO_BOTON} />
                 <span className={TEXTO_BOTON}>Editar</span>
               </Boton>
             )}
@@ -440,7 +442,6 @@ export default function ConvocatoriasListado() {
                 onClick={() => avanzarEstado(c, paso)}
                 aria-label={`${paso.etiqueta} ${c.nombre}`}
               >
-                <Icono nombre="candado" className={ICONO_BOTON} />
                 <span className={TEXTO_BOTON}>{paso.etiqueta}</span>
               </Boton>
             )}
@@ -448,13 +449,13 @@ export default function ConvocatoriasListado() {
         )}
 
         <Boton
-          variante="primario"
+          as={Link}
+          to={`/convocatorias/${c.id}`}
+          variante="contorno"
           tamano="flexible"
           className={CLASE_BOTON_ACCION}
-          onClick={() => navigate(`/convocatorias/${c.id}`)}
           aria-label={`Ver detalle de ${c.nombre}`}
         >
-          <Icono nombre="ojo" className={ICONO_BOTON} />
           <span className={TEXTO_BOTON}>Ver detalle</span>
         </Boton>
       </>
@@ -479,7 +480,7 @@ export default function ConvocatoriasListado() {
           <Boton
             tamano="flexible"
             onClick={() => navigate('/convocatorias/nueva')}
-            className="self-start sm:self-auto lg:min-h-10"
+            className="self-start sm:self-auto"
           >
             <Icono nombre="mas" className={ICONO_BOTON} />
             Nueva convocatoria
@@ -612,7 +613,7 @@ export default function ConvocatoriasListado() {
             )}
 
             {hayFiltros && (
-              <Boton variante="contorno" tamano="flexible" onClick={limpiarFiltros} className="sm:shrink-0 lg:min-h-10">
+              <Boton variante="contorno" tamano="flexible" onClick={limpiarFiltros} className="sm:shrink-0">
                 <Icono nombre="cerrar" className={ICONO_BOTON} />
                 Limpiar filtros
               </Boton>

@@ -11,11 +11,6 @@
 // Base de los campos de formulario (input, select, textarea). El tamaño y el
 // peso se añaden en cada variante: así nunca conviven dos utilidades en
 // conflicto dentro de la misma clase (p. ej. text-sm junto a text-2xl).
-const BASE_INPUT =
-  'rounded-md border border-sena-azul/20 p-2 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto dark:disabled:bg-sena-noche/40'
-
-// Campo normal.
-export const CLASE_INPUT = `font-normal text-sm text-slate-700 ${BASE_INPUT}`
 
 // Etiqueta de un campo: texto en columna con su control debajo.
 export const CLASE_LABEL = 'flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto'
@@ -77,6 +72,10 @@ const BASE_CAMPO =
   'min-h-11 w-full rounded-md border border-sena-azul/60 bg-white px-3 text-slate-700 placeholder:text-slate-500 aria-invalid:border-peligro disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-texto-suave/70 dark:bg-sena-noche dark:text-sena-texto dark:placeholder:text-sena-texto-suave dark:aria-invalid:border-peligro'
 
 export const CLASE_CAMPO = `text-sm font-normal ${BASE_CAMPO}`
+
+// Campo de los formularios antiguos (Usuarios, Fichas, Convocatorias...): es el mismo campo estándar, de 44 px y con
+// el borde de contraste. Antes medía 35-38 px y su borde quedaba en 1.5:1.
+export const CLASE_INPUT = CLASE_CAMPO
 
 // Código de un solo uso (OTP) y código de ficha: centrados y más grandes. Cada
 // variante lleva su propio tamaño de texto para no mezclar dos en una clase. El

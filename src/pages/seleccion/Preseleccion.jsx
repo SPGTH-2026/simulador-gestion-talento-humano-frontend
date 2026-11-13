@@ -1,9 +1,12 @@
 import { useCallback, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
+import useConvocatoriaDeUrl from '../../hooks/useConvocatoriaDeUrl'
 import ListaConvocatorias from '../../components/seleccion/ListaConvocatorias'
 import PanelCandidatos from '../../components/seleccion/PanelCandidatos'
 import PanelConfiguracion from '../../components/seleccion/PanelConfiguracion'
+import Boton from '../../components/ui/Boton'
+import { MensajeError } from '../../components/ui/Mensaje'
 import Pestanas from '../../components/ui/Pestanas'
 import useFiltrosUrl from '../../hooks/useFiltrosUrl'
 import {
@@ -14,10 +17,10 @@ import {
   CLASE_TEXTO_SUAVE,
   CLASE_TITULO_PAGINA,
 } from '../../lib/estilos'
-import { tituloConvocatoria } from '../../lib/seleccion'
+import { estadoFiltroValido, tituloConvocatoria } from '../../lib/seleccion'
 
 // La convocatoria y la pestaña viven en la URL: sobreviven a recargar y se pueden compartir.
-const CLAVES = ['convocatoria', 'pestana']
+const CLAVES = ['convocatoria', 'pestana', 'estado']
 
 export default function Preseleccion() {
   const { can } = useAuth()
@@ -29,18 +32,19 @@ export default function Preseleccion() {
   const pestana = valores.pestana === 'configuracion' ? 'configuracion' : 'candidatos'
 
   const elegir = useCallback(
-    (convocatoria, { silencioso = false } = {}) => {
+    (convocatoria) => {
       setDatos(convocatoria)
-      // El llenado silencioso solo completa los datos de la convocatoria que ya está en la URL.
-      if (!silencioso) setValores({ convocatoria: convocatoria.id, pestana: '' }, { reemplazar: false })
+      setValores({ convocatoria: convocatoria.id, pestana: '' }, { reemplazar: false })
     },
     [setValores],
   )
 
   const cambiarPestana = (id) => setValores({ pestana: id === 'candidatos' ? '' : id })
 
-  // 'datos' puede ser de una convocatoria anterior mientras la URL ya apunta a otra.
-  const actual = datos && String(datos.id) === String(convocatoriaId) ? datos : null
+  // Los datos de la convocatoria siguen al ID de la URL: la fila tocada si es esa, o una consulta propia por ese ID
+  // (enlace directo, atrás/adelante) que no depende de la página del listado.
+  const resuelta = useConvocatoriaDeUrl(convocatoriaId, datos)
+  const actual = resuelta.datos
 
   return (
     <div className="flex flex-col gap-4">
@@ -54,6 +58,8 @@ export default function Preseleccion() {
             seleccionadaId={convocatoriaId}
             etiquetaSeleccionada={actual ? tituloConvocatoria(actual) : undefined}
             onElegir={elegir}
+            filtroEstado={estadoFiltroValido(valores.estado)}
+            onFiltroEstado={(estado) => setValores({ estado })}
             className="@min-[900px]:sticky @min-[900px]:top-2 @min-[900px]:max-h-[calc(100dvh-10rem)]"
           />
 
@@ -85,6 +91,15 @@ export default function Preseleccion() {
                   </p>
                 )}
               </header>
+
+              {resuelta.error && (
+                <div className="flex flex-col items-start gap-2">
+                  <MensajeError>No se pudieron cargar los datos de esta convocatoria. {resuelta.error}</MensajeError>
+                  <Boton variante="contorno" tamano="tactil" onClick={resuelta.reintentar}>
+                    Reintentar
+                  </Boton>
+                </div>
+              )}
 
               {/* key = convocatoria: al cambiar, cada panel nace de cero (página 1, sin datos
                   de la anterior) y sus respuestas tardías se descartan. */}

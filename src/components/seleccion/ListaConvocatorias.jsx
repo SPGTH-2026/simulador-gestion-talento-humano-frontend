@@ -2,12 +2,13 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { listaConvocatoriasSeleccion } from '../../api/seleccion'
 import { mensajeError } from '../../api/mensajeError'
 import Boton from '../ui/Boton'
+import Campo from '../ui/Campo'
 import Icono from '../ui/Icono'
 import { MensajeError } from '../ui/Mensaje'
 import Rueda from '../ui/Rueda'
 import Paginacion from '../ui/Paginacion'
-import { CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
-import { tituloConvocatoria } from '../../lib/seleccion'
+import { CLASE_CAMPO, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
+import { ESTADOS_FILTRO, textoCandidatos, tituloConvocatoria } from '../../lib/seleccion'
 
 // Navegación entre convocatorias. Cada fila dice lo que el listado ya trae: nombre (hasta dos líneas), estado y
 // vacantes; el código, cuando llega, va delante. Una página del servidor a la vez (nunca se bajan todas para armar un
@@ -17,27 +18,40 @@ import { tituloConvocatoria } from '../../lib/seleccion'
 // convocatoria activa: así el detalle queda a la vista y, al abrirlo, siguen disponibles todas las páginas.
 // La convocatoria activa se marca con aria-current y con el relleno sólido del botón de acción del sistema, y el foco
 // de teclado se dibuja por fuera con un contorno que se distingue también sobre ese relleno.
-// 'onPaginaCargada' (opcional) avisa que llegó una página del listado: quien la usa sabe entonces si la convocatoria
-// de la URL venía en ella y evita pedir sus datos aparte.
-export default function ListaConvocatorias({ seleccionadaId, etiquetaSeleccionada, onElegir, onPaginaCargada, className = '' }) {
+// 'onFiltroEstado' (opcional) activa el filtro de estado (siempre visible, también con la lista plegada en móvil), con el mismo patrón de los demás listados (un campo con su
+// etiqueta y un selector «Todos los estados»): 'filtroEstado' es '' o un código de ESTADOS_FILTRO y el padre lo guarda
+// (en la URL). Al cambiarlo se vuelve a la primera página y, hasta que llega la respuesta de ese filtro, no se muestran
+// las filas de la consulta anterior.
+export default function ListaConvocatorias({
+  seleccionadaId,
+  etiquetaSeleccionada,
+  onElegir,
+  filtroEstado = '',
+  onFiltroEstado,
+  className = '',
+}) {
   const idCuerpo = useId()
   const [pagina, setPagina] = useState(1)
-  const [estado, setEstado] = useState({ fase: 'cargando', filas: [], meta: null, error: '' })
+  // 'filtro' es el filtro con el que se pidieron las filas guardadas: si ya no coincide con el actual, esas filas son de
+  // otra consulta y no se muestran.
+  const [estado, setEstado] = useState({ fase: 'cargando', filas: [], meta: null, error: '', filtro: filtroEstado })
   const [intento, setIntento] = useState(0)
   // Solo cuenta en pantallas estrechas: sin convocatoria elegida la lista empieza abierta; con una, plegada.
   const [abierta, setAbierta] = useState(!seleccionadaId)
   const lista = useRef(null)
+  // Al cambiar el filtro (también desde la URL: atrás/adelante) se vuelve a la primera página.
+  const [filtroPrevio, setFiltroPrevio] = useState(filtroEstado)
+  if (filtroPrevio !== filtroEstado) {
+    setFiltroPrevio(filtroEstado)
+    setPagina(1)
+  }
 
   useEffect(() => {
     let vigente = true
-    listaConvocatoriasSeleccion({ page: pagina })
+    listaConvocatoriasSeleccion({ page: pagina, ...(filtroEstado && { estado: filtroEstado }) })
       .then((res) => {
         if (!vigente) return
-        setEstado({ fase: 'listo', filas: res.data, meta: res.meta, error: '' })
-        // Con una convocatoria en la URL, sus datos se completan en cuanto aparece en la página.
-        const elegida = res.data.find((c) => String(c.id) === String(seleccionadaId))
-        if (elegida) onElegir(elegida, { silencioso: true })
-        onPaginaCargada?.()
+        setEstado({ fase: 'listo', filas: res.data, meta: res.meta, error: '', filtro: filtroEstado })
       })
       .catch((e) => {
         if (vigente) setEstado((previo) => ({ ...previo, fase: 'error', error: mensajeError(e) }))
@@ -45,9 +59,7 @@ export default function ListaConvocatorias({ seleccionadaId, etiquetaSeleccionad
     return () => {
       vigente = false
     }
-    // 'seleccionadaId' y 'onElegir' solo se leen al llegar la respuesta; no deben repetir la consulta.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagina, intento])
+  }, [pagina, intento, filtroEstado])
 
   // La convocatoria activa debe quedar a la vista dentro de la lista (al entrar por URL o al cambiar de página).
   useEffect(() => {
@@ -67,8 +79,11 @@ export default function ListaConvocatorias({ seleccionadaId, etiquetaSeleccionad
     onElegir(c)
   }
 
-  const { fase, filas, meta, error } = estado
-  const cargando = fase === 'cargando'
+  const { fase, meta, error } = estado
+  // Las filas de otro filtro no se muestran como si fueran el resultado del actual: se espera la respuesta vigente.
+  const filtroVigente = estado.filtro === filtroEstado
+  const filas = filtroVigente ? estado.filas : []
+  const cargando = fase === 'cargando' || !filtroVigente
   const hayFilas = filas.length > 0
 
   return (
@@ -83,6 +98,28 @@ export default function ListaConvocatorias({ seleccionadaId, etiquetaSeleccionad
       >
         Convocatorias
       </h2>
+
+      {/* El filtro va fuera de la parte plegable: en pantallas estrechas se ve sin desplegar la lista. */}
+      {onFiltroEstado && (
+        <Campo etiqueta="Estado" className="px-1">
+          <select
+            value={filtroEstado}
+            onChange={(e) => {
+              // En móvil la lista puede estar plegada: al filtrar se abre para ver el resultado.
+              setAbierta(true)
+              onFiltroEstado(e.target.value)
+            }}
+            className={CLASE_CAMPO}
+          >
+            <option value="">Todos los estados</option>
+            {ESTADOS_FILTRO.map((e) => (
+              <option key={e.codigo} value={e.codigo}>
+                {e.nombre}
+              </option>
+            ))}
+          </select>
+        </Campo>
+      )}
 
       {/* Solo en pantallas estrechas: un botón con la convocatoria activa que despliega la lista. */}
       <button
@@ -111,16 +148,22 @@ export default function ListaConvocatorias({ seleccionadaId, etiquetaSeleccionad
           </div>
         )}
 
-        {cargando && !hayFilas && (
+        {cargando && !hayFilas && fase !== 'error' && (
           <p role="status" className={`flex items-center gap-2 px-3 py-4 text-sm ${CLASE_TEXTO_SUAVE}`}>
             <Rueda /> Cargando convocatorias…
           </p>
         )}
 
-        {fase === 'listo' && !hayFilas && (
+        {fase === 'listo' && filtroVigente && !hayFilas && (
           <div className="flex flex-col gap-1 px-3 py-4">
-            <p className={`text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>Aún no hay convocatorias</p>
-            <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>Aparecerán cuando haya convocatorias en tus fichas.</p>
+            <p className={`text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>
+              {filtroEstado ? 'Ninguna convocatoria con ese estado' : 'Aún no hay convocatorias'}
+            </p>
+            <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
+              {filtroEstado
+                ? 'Elige «Todos los estados» para ver todas las de tus fichas.'
+                : 'Aparecerán cuando haya convocatorias en tus fichas.'}
+            </p>
           </div>
         )}
 
@@ -158,6 +201,7 @@ export default function ListaConvocatorias({ seleccionadaId, etiquetaSeleccionad
                     >
                       {c.codigo ? `${c.codigo} · ` : ''}
                       {c.estado?.nombre ?? c.estado?.codigo} · {vacantes}
+                      {c.candidatos != null && ` · ${textoCandidatos(c.candidatos)}`}
                     </span>
                   </button>
                 </li>

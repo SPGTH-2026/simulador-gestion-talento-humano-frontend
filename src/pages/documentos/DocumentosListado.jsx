@@ -2,11 +2,15 @@ import { useState, useEffect, useCallback } from 'react'
 import { listaFichas } from '../../api/fichas'
 import { listaAspirantes } from '../../api/portafolios'
 import Mensaje from '../../components/ui/Mensaje'
+import Boton from '../../components/ui/Boton'
+import Tarjeta from '../../components/ui/Tarjeta'
+import Campo from '../../components/ui/Campo'
 import Paginacion from '../../components/ui/Paginacion'
 import Cargando from '../../components/ui/Cargando'
 import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import { Link } from 'react-router-dom'
+import { CLASE_CAMPO, CLASE_FILA, CLASE_TABLA, CLASE_TBODY, CLASE_TD, CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE, CLASE_TH, CLASE_THEAD, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 
 export default function DocumentosListado() {
   const [fichas, setFichas] = useState([])
@@ -61,41 +65,39 @@ export default function DocumentosListado() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Portafolios Documentales</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {meta?.total ?? 0} aspirante(s) con postulaciones
-        </p>
+    <div className="flex flex-col gap-5">
+      <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+        <h1 className={CLASE_TITULO_PAGINA}>Portafolios Documentales</h1>
+        <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>{meta?.total ?? 0} aspirante(s) con postulaciones</p>
       </header>
 
-      <section className="flex flex-col sm:flex-row gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex-1 min-w-[200px]">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Buscar
-          </label>
+      {/* Mismo bloque de filtros de Convocatorias y Usuarios: campos con etiqueta sobre el lienzo, sin tarjeta gris. */}
+      <div role="search" aria-label="Filtrar portafolios" className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <Campo etiqueta="Buscar por nombre o correo" className="sm:flex-1">
           <CampoBusqueda
-            placeholder="Nombre o correo…"
+            placeholder="Escribe para buscar…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
-        </div>
-        <div className="w-full sm:w-64">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Ficha
-          </label>
+        </Campo>
+        <Campo etiqueta="Ficha" className="sm:w-72 sm:shrink-0">
           <select
             value={fichaId}
-            onChange={(e) => { setFichaId(e.target.value); setPagina(1); }}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sena-azul focus:border-transparent"
+            onChange={(e) => {
+              setFichaId(e.target.value)
+              setPagina(1)
+            }}
+            className={CLASE_CAMPO}
           >
             <option value="">Todas las fichas</option>
-            {fichas.map(f => (
-              <option key={f.id} value={f.id}>{f.codigo} - {f.nombre_programa}</option>
+            {fichas.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.codigo} · {f.nombre_programa}
+              </option>
             ))}
           </select>
-        </div>
-      </section>
+        </Campo>
+      </div>
 
       {error && <Mensaje tipo="error">{error}</Mensaje>}
 
@@ -108,51 +110,46 @@ export default function DocumentosListado() {
           descripcion="No hay aspirantes con postulaciones en los filtros actuales."
         />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
-                <th className="pb-2 pr-4">Aspirante</th>
-                <th className="pb-2 pr-4">Ficha</th>
-                <th className="pb-2 pr-4">Postulaciones</th>
-                <th className="pb-2 pr-4">Última actividad</th>
-                <th className="pb-2">Acciones</th>
+        <Tarjeta className="overflow-x-auto">
+          <table className={`${CLASE_TABLA} min-w-175`}>
+            <thead className={CLASE_THEAD}>
+              <tr>
+                <th className={CLASE_TH}>Aspirante</th>
+                <th className={CLASE_TH}>Ficha</th>
+                <th className={CLASE_TH}>Postulaciones</th>
+                <th className={CLASE_TH}>Última actividad</th>
+                <th className={`${CLASE_TH} text-right`}>Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {aspirantes.map(a => (
-                <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <td className="py-3 pr-4">
-                    <div className="font-medium text-slate-900 dark:text-white">{a.name}</div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400">{a.email}</div>
+            <tbody className={CLASE_TBODY}>
+              {aspirantes.map((a) => (
+                <tr key={a.id} className={CLASE_FILA}>
+                  <td className={CLASE_TD}>
+                    <div className={`font-semibold ${CLASE_TEXTO_FUERTE}`}>{a.name}</div>
+                    <div className={`text-xs ${CLASE_TEXTO_SUAVE}`}>{a.email}</div>
                   </td>
-                  <td className="py-3 pr-4">
-                    {/* Texto plano, como en Usuarios: el código de ficha no necesita chip. */}
-                    {a.ficha ? (
-                      <span className="text-slate-700 dark:text-slate-300">{a.ficha.codigo}</span>
-                    ) : (
-                      <span className="text-slate-500 dark:text-slate-400">—</span>
-                    )}
-                  </td>
-                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
-                    {a.postulaciones_count}
-                  </td>
-                  <td className="py-3 pr-4 text-xs text-slate-500 dark:text-slate-400">
+                  <td className={`${CLASE_TD} ${CLASE_TEXTO_FUERTE}`}>{a.ficha ? a.ficha.codigo : '—'}</td>
+                  <td className={`${CLASE_TD} ${CLASE_TEXTO_FUERTE}`}>{a.postulaciones_count}</td>
+                  <td className={`${CLASE_TD} ${CLASE_TEXTO_SUAVE}`}>
                     {a.updated_at ? new Date(a.updated_at).toLocaleDateString('es-CO') : '—'}
                   </td>
-                  <td className="py-3">
-                    <Link
+                  <td className={`${CLASE_TD} text-right`}>
+                    {/* Misma acción de fila que «Ver detalle» en Preselección: botón con contorno, sin relleno. */}
+                    <Boton
+                      as={Link}
                       to={`/documentos/${a.id}`}
-                      className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
+                      variante="contorno"
+                      tamano="tactil"
+                      aria-label={`Ver el portafolio de ${a.name}`}
                     >
                       Ver portafolio
-                    </Link>
+                    </Boton>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </Tarjeta>
       )}
 
       {meta && aspirantes.length > 0 && (

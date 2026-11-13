@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CLASE_TARJETA } from '../../lib/estilos'
 import Icono from '../ui/Icono'
-import cafeteria640 from '../../assets/inicio/inicio-cafeteria-640.webp'
-import cafeteria1280 from '../../assets/inicio/inicio-cafeteria-1280.webp'
+import instalaciones640 from '../../assets/inicio/inicio-instalaciones-640.webp'
+import instalaciones1280 from '../../assets/inicio/inicio-instalaciones-1280.webp'
 import edificioHd640 from '../../assets/inicio/inicio-edificio-hd-640.webp'
 import edificioHd1280 from '../../assets/inicio/inicio-edificio-hd-1280.webp'
 import edificio640 from '../../assets/inicio/inicio-edificio-640.webp'
@@ -15,10 +15,10 @@ import edificio1280 from '../../assets/inicio/inicio-edificio-1280.webp'
 // no cortar rostros ni el letrero.
 const FOTOS = [
   {
-    id: 'cafeteria',
-    alt: 'Vista aérea de un edificio de varios pisos con fachada de vidrio y, al frente, un letrero blanco con el logosímbolo rojo del SENA y la leyenda «Servicio Nacional de Aprendizaje», bajo un cielo nublado.',
-    pequena: cafeteria640,
-    grande: cafeteria1280,
+    id: 'instalaciones',
+    alt: 'Edificio de tres pisos con una gran fachada de vidrio, franjas de paneles metálicos grises y una marquesina blanca sostenida por columnas en forma de «Y», bajo un cielo azul con nubes.',
+    pequena: instalaciones640,
+    grande: instalaciones1280,
     posicion: 'object-center',
   },
   {

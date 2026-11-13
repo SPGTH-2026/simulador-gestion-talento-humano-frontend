@@ -527,7 +527,7 @@ function BarraInferior({ accion }) {
           )}
           <Boton
             variante="primario"
-            tamano="sm"
+            tamano="tactil"
             disabled={accion.deshabilitado}
             title={accion.motivo || undefined}
             onClick={accion.onClick}

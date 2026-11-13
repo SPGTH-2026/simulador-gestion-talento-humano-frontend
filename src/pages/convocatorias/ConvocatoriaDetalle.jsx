@@ -19,9 +19,8 @@ import {
   textoVentana,
 } from '../../lib/ventanaPostulacion'
 import { CLASE_TARJETA } from '../../lib/estilos'
+import Icono from '../../components/ui/Icono'
 
-const CLASE_BOTON =
-  'rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
 
 // Vista de solo lectura propia (componente DetalleConvocatoria.jsx). El wizard
 // queda únicamente para Nueva/Editar y no se toca aquí.
@@ -186,16 +185,14 @@ function ContenidoDetalle({ id }) {
         </div>
 
         <div className="flex gap-2">
-          <button type="button" onClick={() => navigate('/convocatorias')} className={CLASE_BOTON}>
-            ← Convocatorias
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/mis-postulaciones')}
-            className={CLASE_BOTON}
-          >
+          <Boton variante="fantasma" tamano="tactil" onClick={() => navigate('/convocatorias')}>
+            <Icono nombre="flechaIzquierda" className="size-4" />
+          Convocatorias
+          </Boton>
+          <Boton variante="contorno" tamano="tactil"
+            onClick={() => navigate('/mis-postulaciones')}>
             Ver mis postulaciones
-          </button>
+          </Boton>
         </div>
       </div>
     )
@@ -215,13 +212,11 @@ function ContenidoDetalle({ id }) {
         <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           {error || 'No se encontró la convocatoria.'}
         </p>
-        <button
-          type="button"
-          onClick={() => navigate('/convocatorias')}
-          className="self-start rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-        >
-          ← Volver
-        </button>
+        <Boton variante="fantasma" tamano="tactil" className="self-start"
+          onClick={() => navigate('/convocatorias')}>
+          <Icono nombre="flechaIzquierda" className="size-4" />
+          Volver
+        </Boton>
       </div>
     )
   }
@@ -322,8 +317,8 @@ function ContenidoDetalle({ id }) {
 
       {editable && (
         <Boton
-          variante="secundario"
-          tamano="sm"
+          variante="contorno"
+          tamano="tactil"
           className="shrink-0"
           onClick={() => navigate(`/convocatorias/${detalle.id}/editar`)}
         >
@@ -335,7 +330,7 @@ function ContenidoDetalle({ id }) {
       {paso && (
         <Boton
           variante="peligroSuave"
-          tamano="sm"
+          tamano="tactil"
           className="ml-1 shrink-0"
           disabled={accionando}
           onClick={avanzarEstado}

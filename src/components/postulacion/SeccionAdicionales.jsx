@@ -15,13 +15,12 @@ import {
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import BarraProgreso from '../ui/BarraProgreso'
+import Boton from '../ui/Boton'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
 const ESTILO_TITULO = CLASE_TITULO_SECCION
 
-const CLASE_BOTON =
-  'rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
 
 // Documentos adicionales ("tipo otro"): título obligatorio, nota opcional y
 // archivo. Máximo 5; no bloquean la completitud del paso. La primera acción de
@@ -201,25 +200,19 @@ export default function SeccionAdicionales({
 
                 <div className="flex flex-wrap items-center gap-2">
                   {adicional.archivo && (
-                    <button
-                      type="button"
+                    <Boton variante="contorno" tamano="tactil"
                       disabled={enProceso}
-                      onClick={() => ver(adicional)}
-                      className={CLASE_BOTON}
-                    >
+                      onClick={() => ver(adicional)}>
                       Ver
-                    </button>
+                    </Boton>
                   )}
 
                   {editable && (
-                    <button
-                      type="button"
+                    <Boton variante="peligroSuave" tamano="tactil"
                       disabled={enProceso}
-                      onClick={() => eliminar(adicional)}
-                      className="rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
-                    >
+                      onClick={() => eliminar(adicional)}>
                       Eliminar
-                    </button>
+                    </Boton>
                   )}
                 </div>
               </div>
@@ -296,9 +289,9 @@ export default function SeccionAdicionales({
           {enviando && <BarraProgreso valor={progresoEnvio} etiqueta="Subiendo documento adicional" />}
 
           <div>
-            <button type="submit" disabled={enviando} className="rounded bg-sena px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-oscuro disabled:cursor-not-allowed disabled:opacity-50">
+            <Boton variante="primario" tamano="tactil" type="submit" disabled={enviando}>
               {enviando ? 'Agregando...' : 'Agregar documento adicional'}
-            </button>
+            </Boton>
           </div>
         </form>
       )}

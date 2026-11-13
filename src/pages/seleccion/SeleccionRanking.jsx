@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
-import { obtenerConfiguracion } from '../../api/seleccion'
+import { useCallback, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
+import useConvocatoriaDeUrl from '../../hooks/useConvocatoriaDeUrl'
 import ListaConvocatorias from '../../components/seleccion/ListaConvocatorias'
 import PanelFinalistas from '../../components/seleccion/PanelFinalistas'
 import PanelRanking from '../../components/seleccion/PanelRanking'
+import Boton from '../../components/ui/Boton'
+import { MensajeError } from '../../components/ui/Mensaje'
 import Pestanas from '../../components/ui/Pestanas'
 import useFiltrosUrl from '../../hooks/useFiltrosUrl'
 import {
@@ -32,35 +34,21 @@ export default function SeleccionRanking() {
   const pestana = valores.pestana === 'finalistas' ? 'finalistas' : 'ranking'
 
   const elegir = useCallback(
-    (convocatoria, { silencioso = false } = {}) => {
+    (convocatoria) => {
       setDatos(convocatoria)
-      if (!silencioso) setValores({ convocatoria: convocatoria.id, pestana: '' }, { reemplazar: false })
+      setValores({ convocatoria: convocatoria.id, pestana: '' }, { reemplazar: false })
     },
     [setValores],
   )
 
   const cambiarPestana = (id) => setValores({ pestana: id === 'ranking' ? '' : id })
 
-  const actual = datos && String(datos.id) === String(convocatoriaId) ? datos : null
-
-  // El estado de la convocatoria decide si se puede elegir. Normalmente llega con el listado; solo si la
-  // convocatoria entró por URL y su página aún no se cargó, se toma de su configuración (que lo trae siempre).
-  const estadoDelListado = actual?.estado?.codigo ?? null
-  const [estadoConsultado, setEstadoConsultado] = useState({ id: null, codigo: null })
-  const [listaCargada, setListaCargada] = useState(false)
-  useEffect(() => {
-    if (!convocatoriaId || estadoDelListado || !listaCargada) return undefined
-    let vigente = true
-    obtenerConfiguracion(convocatoriaId)
-      .then((res) => {
-        if (vigente) setEstadoConsultado({ id: convocatoriaId, codigo: res.data.estado_convocatoria })
-      })
-      .catch(() => {})
-    return () => {
-      vigente = false
-    }
-  }, [convocatoriaId, estadoDelListado, listaCargada])
-  const codigoEstado = estadoDelListado ?? (estadoConsultado.id === convocatoriaId ? estadoConsultado.codigo : null)
+  // Los datos de la convocatoria (y su estado, que decide si se puede elegir) siguen al ID de la URL: la fila tocada si es
+  // esa, o una consulta propia por ese ID que no depende de la página del listado. Ya no hace falta pedir la
+  // configuración solo para conocer el estado.
+  const resuelta = useConvocatoriaDeUrl(convocatoriaId, datos)
+  const actual = resuelta.datos
+  const codigoEstado = actual?.estado?.codigo ?? null
   // null = aún se desconoce: no se afirma nada hasta saberlo.
   const enProceso = codigoEstado == null ? null : codigoEstado === 'en_proceso'
 
@@ -74,7 +62,6 @@ export default function SeleccionRanking() {
             seleccionadaId={convocatoriaId}
             etiquetaSeleccionada={actual ? tituloConvocatoria(actual) : undefined}
             onElegir={elegir}
-            onPaginaCargada={() => setListaCargada(true)}
             className="@min-[900px]:sticky @min-[900px]:top-2 @min-[900px]:max-h-[calc(100dvh-10rem)]"
           />
 
@@ -105,6 +92,15 @@ export default function SeleccionRanking() {
                   </p>
                 )}
               </header>
+
+              {resuelta.error && (
+                <div className="flex flex-col items-start gap-2">
+                  <MensajeError>No se pudieron cargar los datos de esta convocatoria. {resuelta.error}</MensajeError>
+                  <Boton variante="contorno" tamano="tactil" onClick={resuelta.reintentar}>
+                    Reintentar
+                  </Boton>
+                </div>
+              )}
 
               {/* Cada panel pide sus datos cuando su pestaña está a la vista (prop 'activo'); Pestanas los deja
                   montados para no perder lo elegido al cambiar de pestaña. */}

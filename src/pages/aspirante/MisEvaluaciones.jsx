@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import { misEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
 import client from '../../api/client'
-import { IconoOjo, IconoX } from '../../components/convocatorias/Iconos'
+import { IconoX } from '../../components/convocatorias/Iconos'
 import {
   DatosAspirante,
   EtiquetaConIcono,
@@ -81,7 +81,6 @@ function TarjetaEvaluacion({ evaluacion, onVerDetalle }) {
       </dl>
 
       <Boton variante="contorno" tamano="tactil" onClick={onVerDetalle} className="mt-auto w-full">
-        <IconoOjo className="h-4 w-4" />
         Ver detalle
       </Boton>
     </li>

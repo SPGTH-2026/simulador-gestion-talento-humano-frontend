@@ -1,4 +1,3 @@
-import { IconoOjo } from '../convocatorias/Iconos'
 import Boton from '../ui/Boton'
 import Icono from '../ui/Icono'
 import { CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
@@ -57,7 +56,6 @@ export default function RequisitoEvaluacion({
           aria-label={`Ver documento: ${documento.nombre}`}
           className="col-span-2 @min-[36rem]:col-auto"
         >
-          <IconoOjo className="h-4 w-4" />
           {abriendo ? 'Abriendo…' : 'Ver documento'}
         </Boton>
         <RespuestaSiNo

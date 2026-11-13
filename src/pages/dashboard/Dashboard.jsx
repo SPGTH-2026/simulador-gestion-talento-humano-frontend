@@ -14,6 +14,7 @@ import {
   BloqueAccesos,
   BloqueConvocatoriasGestion,
   BloqueConvocatoriasSeleccion,
+  BloqueRequiereAtencionSeleccion,
   BloqueEvaluacionesEnProceso,
   BloqueRecorridoSeleccion,
 } from '../../components/inicio/BloquesGestion'
@@ -46,6 +47,11 @@ function Inicio() {
     () => listaConvocatoriasSeleccion({ page: 1 }),
     perfil.convocatoriasSeleccion,
   )
+  // Pendientes del seleccionador: el backend aplica el criterio antes de limitar (no depende de la primera página).
+  const atencionSeleccion = useCarga(
+    () => listaConvocatoriasSeleccion({ atencion: 1 }),
+    perfil.convocatoriasSeleccion,
+  )
   // Resultados (aspirante) y evaluaciones en proceso (aprendiz) comparten
   // endpoint, pero nunca el mismo usuario.
   const evaluaciones = useCarga(() => misEvaluaciones(), perfil.resultados || perfil.evaluando)
@@ -63,6 +69,7 @@ function Inicio() {
     principales.push(<BloqueConvocatoriasGestion key="conv-ges" recurso={convocatorias} />)
   }
   if (perfil.convocatoriasSeleccion) {
+    principales.push(<BloqueRequiereAtencionSeleccion key="atencion-sel" recurso={atencionSeleccion} />)
     principales.push(<BloqueConvocatoriasSeleccion key="conv-sel" recurso={convocatoriasSeleccion} />)
   }
   if (perfil.evaluando) {

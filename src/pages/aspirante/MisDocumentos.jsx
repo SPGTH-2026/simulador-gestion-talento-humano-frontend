@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { listaMisPostulaciones } from '../../api/postulaciones'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
-import { CLASE_CAJA_SUAVE, CLASE_TARJETA } from '../../lib/estilos'
+import { CLASE_CAJA_SUAVE, CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 import { Link } from 'react-router-dom'
+import Boton from '../../components/ui/Boton'
 
 export default function MisDocumentos() {
   const [postulaciones, setPostulaciones] = useState([])
@@ -55,7 +56,7 @@ export default function MisDocumentos() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-sena-texto">Mis documentos</h1>
+        <h1 className={CLASE_TITULO_PAGINA}>Mis documentos</h1>
         <p className="text-sm text-slate-500 dark:text-sena-texto-suave mt-1">
           Gestiona los documentos de cada postulación. Cada convocatoria tiene sus propios requisitos.
         </p>
@@ -78,12 +79,9 @@ export default function MisDocumentos() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Link
-                  to={`/postulaciones/${p.id}/documentos`}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap"
-                >
+                <Boton as={Link} to={`/postulaciones/${p.id}/documentos`}>
                   Gestionar documentos
-                </Link>
+                </Boton>
               </div>
             </div>
 

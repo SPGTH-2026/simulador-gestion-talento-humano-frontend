@@ -45,7 +45,7 @@ export default function Paginacion({ meta, singular, plural, etiqueta, ocupado =
           <Boton
             variante="contorno"
             tamano="flexible"
-            className="@min-[480px]:min-w-28 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 lg:min-h-10"
+            className="@min-[480px]:min-w-28 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
             aria-label="Página anterior"
             aria-disabled={ocupado || enPrimera}
             onClick={ir(meta.current_page - 1, ocupado || enPrimera)}
@@ -56,7 +56,7 @@ export default function Paginacion({ meta, singular, plural, etiqueta, ocupado =
           <Boton
             variante="contorno"
             tamano="flexible"
-            className="@min-[480px]:min-w-28 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 lg:min-h-10"
+            className="@min-[480px]:min-w-28 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
             aria-label="Página siguiente"
             aria-disabled={ocupado || enUltima}
             onClick={ir(meta.current_page + 1, ocupado || enUltima)}

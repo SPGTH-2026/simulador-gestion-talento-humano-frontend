@@ -11,7 +11,8 @@ import {
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import BarraProgreso from '../ui/BarraProgreso'
-import { IconoSubir } from '../convocatorias/Iconos'
+import RespuestaSiNo from '../evaluacion/RespuestaSiNo'
+import Boton from '../ui/Boton'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
@@ -20,8 +21,6 @@ const ESTILO_TITULO = CLASE_TITULO_SECCION
 const ESTILO_GRUPO =
   'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave'
 
-const CLASE_BOTON =
-  'rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
 
 const CLASE_ETIQUETA =
   'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
@@ -85,80 +84,48 @@ function FilaSkill({
 
         <div className="flex flex-wrap items-center gap-2">
           {!sinSiNo && (
-            <div className="inline-flex overflow-hidden rounded border border-slate-200 dark:border-sena-borde">
-              <button
-                type="button"
-                aria-pressed={activa}
-                onClick={onActivar}
-                disabled={!editable || Boolean(enVuelo) || (tope && !activa)}
-                className={`px-3 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                  activa
-                    ? 'bg-sena-oscuro text-white'
-                    : 'bg-white text-slate-600 dark:bg-sena-noche dark:text-sena-texto-suave'
-                }`}
-              >
-                Sí
-              </button>
-              <button
-                type="button"
-                aria-pressed={!activa}
-                onClick={onDesactivar}
-                disabled={!editable || Boolean(enVuelo) || !activa}
-                className={`border-l border-slate-200 px-3 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde ${
-                  !activa
-                    ? 'bg-sena-oscuro text-white'
-                    : 'bg-white text-slate-600 dark:bg-sena-noche dark:text-sena-texto-suave'
-                }`}
-              >
-                No
-              </button>
-            </div>
+            <RespuestaSiNo
+              pregunta={`¿Declaras «${nombre}»?`}
+              valor={activa}
+              onChange={(declarar) => (declarar ? onActivar() : onDesactivar())}
+              deshabilitadoSi={!editable || Boolean(enVuelo) || Boolean(tope && !activa)}
+              deshabilitadoNo={!editable || Boolean(enVuelo) || !activa}
+            />
           )}
 
           {activa && (
             certificado ? (
               <>
-                <button type="button" disabled={ocupada} onClick={onDescargar} className={CLASE_BOTON}>
+                <Boton variante="contorno" tamano="tactil" disabled={ocupada} onClick={onDescargar}>
                   Ver
-                </button>
+                </Boton>
                 {editable && !sinSiNo && (
-                  <button
-                    type="button"
+                  <Boton variante="contorno" tamano="tactil"
                     disabled={Boolean(enVuelo)}
-                    onClick={onAdjuntar}
-                    className="px-3 py-1.5 text-xs font-semibold text-sena-azul border border-sena-azul/25 rounded hover:bg-sena-cielo/30 transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-                  >
+                    onClick={onAdjuntar}>
                     <span className="inline-flex items-center gap-1.5">
-                      <IconoSubir className="h-3.5 w-3.5" />
                       Reemplazar
                     </span>
-                  </button>
+                  </Boton>
                 )}
                 {editable && !sinSiNo && (
-                  <button
-                    type="button"
+                  <Boton variante="peligroSuave" tamano="tactil"
                     disabled={ocupada}
-                    onClick={onQuitarCertificado}
-                    className="rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
-                  >
+                    onClick={onQuitarCertificado}>
                     Quitar certificado
-                  </button>
+                  </Boton>
                 )}
               </>
             ) : (
               editable &&
               !sinSiNo && (
-                <button
-                  type="button"
+                <Boton variante="contorno" tamano="tactil"
                   disabled={Boolean(enVuelo)}
-                  onClick={onAdjuntar}
-                  className="rounded border border-sena-azul/25 px-3 py-1.5 text-xs font-semibold text-sena-azul transition-colors hover:bg-sena-cielo/30 disabled:cursor-not-allowed disabled:opacity-40 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-                >
+                  onClick={onAdjuntar}>
                   <span className="inline-flex items-center gap-1.5">
-                    <IconoSubir className="h-3.5 w-3.5" />
                     {ocupada ? 'Subiendo...' : 'Adjuntar certificado'}
                   </span>
-                </button>
+                </Boton>
               )
             ))}
         </div>

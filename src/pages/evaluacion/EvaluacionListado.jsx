@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { listaEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
 import {
-  IconoOjo,
   IconoX,
 } from '../../components/convocatorias/Iconos'
 import {
@@ -190,7 +189,6 @@ function TarjetaAspirante({ fila }) {
       </dl>
 
       <EnlaceRevisar fila={fila} variante="primario" className="mt-auto w-full">
-        <IconoOjo className="h-4 w-4" />
         Revisar
       </EnlaceRevisar>
     </li>

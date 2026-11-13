@@ -17,6 +17,7 @@ import SeccionDocumentosRequeridos from './SeccionDocumentosRequeridos'
 import SeccionSkills from './SeccionSkills'
 import SeccionAdicionales from './SeccionAdicionales'
 import SeccionEnviarPostulacion from './SeccionEnviarPostulacion'
+import Boton from '../ui/Boton'
 
 // Panel reutilizable del paso único "llenar todo en la convocatoria" (doc 33).
 //
@@ -349,23 +350,17 @@ export default function PanelDocumentosPostulacion({
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {onVerDocumentos && (
-              <button
-                type="button"
-                onClick={() => onVerDocumentos(vista.postulacion.id)}
-                className="rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie"
-              >
+              <Boton variante="contorno" tamano="tactil"
+                onClick={() => onVerDocumentos(vista.postulacion.id)}>
                 Ver documentos
-              </button>
+              </Boton>
             )}
-            <button
-              type="button"
+            <Boton variante="primario" tamano="tactil"
               disabled={!puedeVolver || reactivando}
               title={puedeVolver ? undefined : motivoVolver}
-              onClick={volverAPostularme}
-              className="rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:cursor-not-allowed disabled:opacity-50"
-            >
+              onClick={volverAPostularme}>
               {reactivando ? 'Postulando...' : 'Volver a postularme'}
-            </button>
+            </Boton>
           </div>
         </div>
       )}

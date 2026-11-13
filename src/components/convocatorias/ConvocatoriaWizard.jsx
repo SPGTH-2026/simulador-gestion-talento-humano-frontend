@@ -13,7 +13,8 @@ import Campo from '../ui/Campo'
 import Etiqueta from '../ui/Etiqueta'
 import { MensajeAviso, MensajeError } from '../ui/Mensaje'
 import Tarjeta from '../ui/Tarjeta'
-import { CLASE_INPUT } from '../../lib/estilos'
+import { CLASE_INPUT, CLASE_TITULO_PAGINA } from '../../lib/estilos'
+import Icono from '../ui/Icono'
 
 const ETAPAS = [
   { numero: 1, nombre: 'Información general' },
@@ -676,10 +677,11 @@ export default function ConvocatoriaWizard({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Boton variante="secundario" tamano="sm" onClick={onVolver}>
-            ← Volver
+          <Boton variante="fantasma" tamano="tactil" onClick={onVolver}>
+            <Icono nombre="flechaIzquierda" className="size-4" />
+            Volver
           </Boton>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">{titulo}</h1>
+          <h1 className={CLASE_TITULO_PAGINA}>{titulo}</h1>
         </div>
         {valoresIniciales?.estado && (
           <EtiquetaEstado
@@ -1047,8 +1049,8 @@ export default function ConvocatoriaWizard({
               </div>
               {!documentosBloqueados && (
                 <Boton
-                  variante="secundario"
-                  tamano="sm"
+                  variante="contorno"
+                  tamano="tactil"
                   onClick={() => {
                     setMostrarNuevoDocumento((v) => !v)
                     setErrorDocumento('')
@@ -1084,12 +1086,12 @@ export default function ConvocatoriaWizard({
                     placeholder="Nombre del documento (ej. Especialización en SST)"
                     className="min-w-56 flex-1 rounded border border-slate-300 bg-white p-2 text-sm text-slate-800 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
                   />
-                  <Boton tamano="sm" onClick={agregarDocumentoCatalogo} disabled={guardandoDocumento}>
+                  <Boton tamano="tactil" onClick={agregarDocumentoCatalogo} disabled={guardandoDocumento}>
                     {guardandoDocumento ? 'Guardando…' : 'Agregar'}
                   </Boton>
                   <Boton
-                    variante="secundario"
-                    tamano="sm"
+                    variante="contorno"
+                    tamano="tactil"
                     onClick={() => {
                       setMostrarNuevoDocumento(false)
                       setNuevoDocumento('')
@@ -1128,7 +1130,7 @@ export default function ConvocatoriaWizard({
                     Suma: {Math.round(sumaPonderaciones() * 100) / 100}%
                   </span>
                   {!documentosBloqueados && (
-                    <Boton variante="secundario" tamano="sm" onClick={repartirPonderaciones}>
+                    <Boton variante="contorno" tamano="tactil" onClick={repartirPonderaciones}>
                       Repartir en partes iguales
                     </Boton>
                   )}
@@ -1171,8 +1173,9 @@ export default function ConvocatoriaWizard({
       </Tarjeta>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Boton variante="secundario" onClick={anterior} disabled={etapa === 1}>
-          ← Anterior
+        <Boton variante="contorno" onClick={anterior} disabled={etapa === 1}>
+          <Icono nombre="flechaIzquierda" className="size-4" />
+          Anterior
         </Boton>
 
         {!soloLectura && (
@@ -1180,11 +1183,16 @@ export default function ConvocatoriaWizard({
             {/* Al CREAR se guarda un borrador (la convocatoria nace en
                 borrador); al EDITAR se guardan cambios sobre una convocatoria
                 que ya existe. */}
-            <Boton variante="secundario" onClick={guardar} disabled={guardando || publicando}>
+            <Boton variante="contorno" onClick={guardar} disabled={guardando || publicando}>
               {guardando ? 'Guardando...' : esNueva ? 'Guardar borrador' : 'Guardar cambios'}
             </Boton>
 
-            {etapa < ULTIMA_ETAPA && <Boton onClick={siguiente}>Siguiente →</Boton>}
+            {etapa < ULTIMA_ETAPA && (
+              <Boton onClick={siguiente}>
+                Siguiente
+                <Icono nombre="flechaDerecha" className="size-4" />
+              </Boton>
+            )}
 
             {etapa === ULTIMA_ETAPA && puedePublicar && (
               <Boton onClick={publicar} disabled={guardando || publicando}>
