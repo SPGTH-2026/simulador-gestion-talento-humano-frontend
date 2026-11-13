@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../auth/useAuth'
 import { listaEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
 import AvatarIniciales from '../../components/evaluacion/AvatarIniciales'
@@ -12,6 +13,12 @@ const CLASE_INPUT =
   'rounded border border-sena-azul/20 p-2 font-normal text-sena-azul focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto'
 
 export default function EvaluacionListado() {
+  const { user } = useAuth()
+  // El filtro por ficha solo tiene sentido para quienes tienen alcance sobre
+  // varias fichas: super admin e instructor. Los aprendices (general/evaluador)
+  // solo ven su propia ficha, asi que no se les muestra el selector.
+  const puedeFiltrarPorFicha = user?.role === 'super_admin' || user?.role === 'instructor'
+
   const [filas, setFilas] = useState([])
   const [convocatorias, setConvocatorias] = useState([])
   const [fichas, setFichas] = useState([])
@@ -93,8 +100,9 @@ export default function EvaluacionListado() {
             className={CLASE_INPUT + ' min-w-56'}
           />
 
-          <select
-            value={filtroFicha}
+          {puedeFiltrarPorFicha && (
+            <select
+              value={filtroFicha}
             onChange={(e) => {
               setFiltroFicha(e.target.value)
               setPagina(1)
@@ -108,7 +116,8 @@ export default function EvaluacionListado() {
                 {f.nombre_programa ? ` · ${f.nombre_programa}` : ''}
               </option>
             ))}
-          </select>
+            </select>
+          )}
 
           <select
             value={filtroConvocatoria}
