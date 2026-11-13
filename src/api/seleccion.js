@@ -118,3 +118,37 @@ export const confirmarFinalistas = (convocatoriaId, datos) =>
   client
     .post(`/seleccion/convocatorias/${convocatoriaId}/finalistas`, datos)
     .then((res) => ({ data: res.data.data, creada: res.status === 201 }))
+
+// GET .../decisiones?page=  (seleccion:ver)
+//   -> { data: [{ postulacion_id, aspirante, posicion, en_lista, estado: pendiente|seleccionado|no_seleccionado,
+//          decision: null | { resultado, motivo, lista_version, decidida_por, decidida_en },
+//          requiere_revision, motivo_revision: null | fuera_de_lista | ya_no_elegible | cambio_resultado }],
+//        meta: { current_page, last_page, per_page, total, estado_convocatoria, pendientes,
+//          cupos: { vacantes_totales, cupos_ocupados, cupos_disponibles },
+//          lista: null | { version, total, requiere_revision } } }
+// Son los finalistas de la lista vigente MÁS las personas con decisión que ya salieron de ella (en_lista: false,
+// posicion: null). Ordenadas por posición; las de fuera de lista van al final. Los cupos son los de la convocatoria
+// entera, no los de la página.
+export const decisionesConvocatoria = (convocatoriaId, params) =>
+  client.get(`/seleccion/convocatorias/${convocatoriaId}/decisiones`, { params }).then((res) => res.data)
+
+// PUT .../decisiones/{p} (seleccion:decidir) body { resultado: seleccionado|no_seleccionado, justificacion (10-500),
+//   lista_version }. 'lista_version' es la de meta.lista que se consultó y es OBLIGATORIA salvo al liberar un cupo
+//   (rectificar seleccionado -> no_seleccionado), donde el servidor la ignora y usa la vigente. Solo con la convocatoria
+//   en proceso. 201 si crea y 200 si rectifica o reenvía lo mismo (sin evento nuevo).
+//   -> { data: { postulacion_id, aspirante, estado, decision, cupos } }
+//   409 con { message, codigo }: sin_cupos (+ cupos), lista_no_confirmada, lista_reemplazada (+ lista_version_actual),
+//   lista_requiere_revision (+ revisar). 422 por campo (justificacion, lista_version, postulacion, convocatoria,
+//   resultado). Un 409 deja todo sin guardar: se refresca y se revisa antes de volver a confirmar.
+export const guardarDecision = (convocatoriaId, postulacionId, datos) =>
+  client
+    .put(`/seleccion/convocatorias/${convocatoriaId}/decisiones/${postulacionId}`, datos)
+    .then((res) => ({ data: res.data.data, creada: res.status === 201 }))
+
+// GET .../decisiones/{p}/historial?page=  (seleccion:ver). Del evento más reciente al más antiguo.
+//   -> { data: [{ resultado_anterior: null | seleccionado | no_seleccionado, resultado_nuevo, motivo, lista_version,
+//          registrado_por, registrado_en }], meta: { current_page, last_page, per_page, total } }
+export const historialDecision = (convocatoriaId, postulacionId, params) =>
+  client
+    .get(`/seleccion/convocatorias/${convocatoriaId}/decisiones/${postulacionId}/historial`, { params })
+    .then((res) => res.data)

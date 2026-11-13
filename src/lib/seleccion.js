@@ -110,3 +110,52 @@ export const textoResultado = (valor) => (valor == null ? null : String(valor))
 
 export const formatoFechaHora = (iso) =>
   iso ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(iso)) : ''
+
+// Decisiones (etapa 6). Los estados y las reglas los decide el servidor; aquí solo se rotulan y se anticipa qué
+// acciones tiene sentido ofrecer en cada fila (el servidor sigue validando todo).
+export const ESTADO_DECISION = {
+  pendiente: { texto: 'Pendiente', tono: 'neutral', icono: 'reloj' },
+  seleccionado: { texto: 'Seleccionado', tono: 'exito', icono: 'check' },
+  no_seleccionado: { texto: 'No seleccionado', tono: 'azul', icono: 'cerrar' },
+}
+
+export const RESULTADO_DECISION = {
+  seleccionado: 'Seleccionado',
+  no_seleccionado: 'No seleccionado',
+}
+
+export const MOTIVO_REVISION_DECISION = {
+  fuera_de_lista: 'Ya no está en la lista vigente.',
+  ...MOTIVO_REVISION,
+}
+
+// Acciones que ofrece una fila, con las mismas condiciones que aplica el servidor:
+//  - Un «seleccionado» siempre se puede liberar (pasar a no seleccionado) con la convocatoria en proceso, aunque haya
+//    salido de la lista o la lista requiera revisión; no lleva lista_version.
+//  - Cualquier otra escritura exige lista vigente, sin revisión pendiente y con el candidato dentro de ella.
+//  - Seleccionar a quien no lo está exige un cupo disponible.
+// Devuelve { puede, razon, etiqueta, liberacion, resultados: [{ id, bloqueado, razon }] }.
+export function accionesDeFila({ fila, puedeDecidir, enProceso, cupos, lista }) {
+  const nada = (razon) => ({ puede: false, razon, etiqueta: null, liberacion: false, resultados: [] })
+  if (!puedeDecidir) return nada('Tu perfil solo puede consultar las decisiones.')
+  if (enProceso !== true) return nada(enProceso === false ? 'La convocatoria ya no está en proceso.' : '')
+  if (fila.estado === 'seleccionado') {
+    return { puede: true, razon: '', etiqueta: 'Rectificar', liberacion: true, resultados: [{ id: 'no_seleccionado' }] }
+  }
+  if (!lista) return nada('Primero hay que confirmar los finalistas.')
+  if (lista.requiere_revision) return nada('La lista requiere revisión: no se pueden registrar decisiones nuevas.')
+  if (!fila.en_lista) return nada('Ya no está en la lista vigente.')
+  const sinCupos = (cupos?.cupos_disponibles ?? 0) <= 0
+  return {
+    puede: true,
+    razon: '',
+    etiqueta: fila.estado === 'pendiente' ? 'Decidir' : 'Rectificar',
+    liberacion: false,
+    resultados: [
+      { id: 'seleccionado', bloqueado: sinCupos, razon: sinCupos ? 'No quedan cupos disponibles.' : '' },
+      { id: 'no_seleccionado' },
+    ],
+  }
+}
+
+export const CODIGOS_CONFLICTO_DECISION = ['sin_cupos', 'lista_no_confirmada', 'lista_reemplazada', 'lista_requiere_revision']
