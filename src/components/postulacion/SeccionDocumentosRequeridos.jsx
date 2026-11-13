@@ -190,8 +190,8 @@ export default function SeccionDocumentosRequeridos({
 
                   {(estadoDoc === 'subido' || archivosSubidos[clave]) && archivoMostrar && (
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
-                      {archivoMostrar.nombre_original} �� {formatearTamano(archivoMostrar.tamano_bytes)}
-                      {archivoMostrar.subido_en && <> �� Subido el {formatearFechaHora(archivoMostrar.subido_en)}</>}
+                      {archivoMostrar.nombre_original} · {formatearTamano(archivoMostrar.tamano_bytes)}
+                      {archivoMostrar.subido_en && <> · Subido el {formatearFechaHora(archivoMostrar.subido_en)}</>}
                     </p>
                   )}
                   {estadoDoc === 'pendiente' && !bloqueoLibreta && (

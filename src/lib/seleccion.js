@@ -3,7 +3,7 @@
 
 // Estado documental de un candidato (lo calcula el servidor a partir de las
 // evaluaciones y de la referencia que designó el instructor).
-export const ESTADO_DOCUMENTAL = {
+const ESTADO_DOCUMENTAL = {
   pendiente: { texto: 'Pendiente', tono: 'neutral', icono: 'reloj' },
   habilitado: { texto: 'Habilitado', tono: 'exito', icono: 'check' },
   no_habilitado: { texto: 'No habilitado', tono: 'peligro', icono: 'cerrar' },

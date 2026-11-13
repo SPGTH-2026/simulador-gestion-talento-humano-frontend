@@ -7,7 +7,7 @@
 
 // "Hoy" en America/Bogota como cadena AAAA-MM-DD. 'en-CA' produce justo ese
 // orden. El timeZone fijo evita que un navegador en otra zona cambie el día.
-export function hoyEnBogota() {
+function hoyEnBogota() {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Bogota',
     year: 'numeric',
@@ -61,10 +61,6 @@ export function estadoVentana(convocatoria) {
   return 'abierta'
 }
 
-export function puedePostular(convocatoria) {
-  return estadoVentana(convocatoria) === 'abierta'
-}
-
 // Días que faltan para la fecha de cierre (hoy = 0). Devuelve null si no hay
 // fecha de cierre, si la fecha ya pasó o si la fecha no se entiende.
 //
@@ -72,7 +68,7 @@ export function puedePostular(convocatoria) {
 // medianoche UTC: al ser los dos operandos del mismo tipo (día calendario,
 // sin hora), no hay desfase de zona horaria. El "hoy" sí es el de Bogotá
 // (hoyEnBogota), igual que en el resto del módulo.
-export function diasParaCierre(fechaCierre) {
+function diasParaCierre(fechaCierre) {
   const cierre = soloFecha(fechaCierre)
 
   if (!cierre) return null

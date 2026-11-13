@@ -95,7 +95,6 @@ export const CLASE_TBODY = 'divide-y divide-sena-hundido dark:divide-sena-borde'
 export const CLASE_TH = 'p-3'
 export const CLASE_TD = 'p-3'
 export const CLASE_FILA = 'hover:bg-sena-hundido dark:hover:bg-sena-superficie-alta/40'
-export const CLASE_TABLA_ESTADO = 'p-8 text-center text-sm text-slate-500 dark:text-sena-texto-suave'
 
 // Enlace de título dentro de una lista o tarjeta (convocatoria, postulación).
 // Mide al menos 44 px de alto aunque el título sea corto, para que se pueda

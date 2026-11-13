@@ -3,6 +3,7 @@ import EtiquetaEstado from './EtiquetaEstado'
 import EtiquetaPostulacion from './EtiquetaPostulacion'
 import EtiquetaDocumento from '../ui/EtiquetaDocumento'
 import Boton from '../ui/Boton'
+import Icono from '../ui/Icono'
 import Pestanas from '../ui/Pestanas'
 import { useAuth } from '../../auth/useAuth'
 import {
@@ -394,13 +395,10 @@ export default function DetalleConvocatoria({
   const contenidoDocumentos = (
     <div className="flex flex-col gap-5">
       <div>
-        <button
-          type="button"
-          onClick={() => setPestanaActiva('descripcion')}
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-        >
-          <span aria-hidden="true">←</span> Volver a descripción
-        </button>
+        <Boton variante="fantasma" tamano="tactil" onClick={() => setPestanaActiva('descripcion')} className="-ml-4">
+          <Icono nombre="flechaIzquierda" className="size-4" />
+          Volver a descripción
+        </Boton>
       </div>
       {panelDocumentos}
     </div>
@@ -432,13 +430,10 @@ export default function DetalleConvocatoria({
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
       {/* Volver arriba a la izquierda, fuera de la cabecera. */}
-      <button
-        type="button"
-        onClick={onVolver}
-        className="inline-flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-      >
-        <span aria-hidden="true">←</span> Volver
-      </button>
+      <Boton variante="fantasma" tamano="tactil" onClick={onVolver} className="-ml-4 self-start">
+        <Icono nombre="flechaIzquierda" className="size-4" />
+        Volver
+      </Boton>
 
       {/* Cabecera: icono en cuadro azul claro, cargo como título, código y
           subtítulo, y el estado real a la derecha. */}

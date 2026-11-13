@@ -7,7 +7,7 @@ const CSRF_URL = import.meta.env.VITE_CSRF_URL ?? '/sanctum/csrf-cookie'
 
 const MUTADORES = new Set(['post', 'put', 'patch', 'delete'])
 
-export function leerCookie(nombre) {
+function leerCookie(nombre) {
   // Los navegadores serializan los pares separados por ';' o por '; ', y el
   // valor puede venir URL-encoded. Nos quedamos con el primero que coincida.
   for (const fila of document.cookie.split(';')) {

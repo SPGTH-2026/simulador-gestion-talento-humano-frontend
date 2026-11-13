@@ -7,7 +7,6 @@ import { useAuth } from '../../auth/useAuth'
 import DetalleConvocatoria from '../../components/convocatorias/DetalleConvocatoria'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
-import { IconoCandado, IconoLapiz } from '../../components/convocatorias/Iconos'
 import PanelDocumentosPostulacion from '../../components/postulacion/PanelDocumentosPostulacion'
 import Boton from '../../components/ui/Boton'
 import { MensajeError } from '../../components/ui/Mensaje'
@@ -322,7 +321,6 @@ function ContenidoDetalle({ id }) {
           className="shrink-0"
           onClick={() => navigate(`/convocatorias/${detalle.id}/editar`)}
         >
-          <IconoLapiz className="h-4 w-4" />
           Editar
         </Boton>
       )}
@@ -335,7 +333,6 @@ function ContenidoDetalle({ id }) {
           disabled={accionando}
           onClick={avanzarEstado}
         >
-          <IconoCandado className="h-4 w-4" />
           {paso.etiqueta}
         </Boton>
       )}
