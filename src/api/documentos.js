@@ -4,7 +4,10 @@ import client from './client'
 //   -> { data: { documentos: [ { parametro, obligatorio, estado, archivo } ],
 //                skills: [ { id, nombre, origen, certificado } ],
 //                ... } }
-// 'estado': 'subido' | 'pendiente' | 'no_aplica'
+// 'estado': 'subido' | 'pendiente' | 'no_aplica'. 'subido' solo indica que el
+// aspirante cargó un archivo; el contrato no trae ninguna validación.
+// 'archivo' ({ id, nombre_original, mime, ... } o null) permite abrir el archivo
+// real con GET /revision/postulaciones/{id}/documentos/{archivo.id}/archivo.
 export const listaDocumentos = (postulacionId) =>
   client.get(`/revision/postulaciones/${postulacionId}/documentos`).then((res) => {
     const payload = res.data?.data ?? res.data ?? {}
@@ -17,20 +20,12 @@ export const listaDocumentos = (postulacionId) =>
           id: `doc-${d.parametro.id}`,
           nombre: d.parametro.nombre,
           tipo: 'documento',
-          // Solo los obligatorios y aplicables pesan en el 60 %. El backend
-          // aplica la misma regla; aquí se refleja para que la vista previa
-          // coincida con lo que se guarda.
-          obligatorio: Boolean(d.obligatorio),
           // Peso (%) configurado para este documento en la convocatoria.
           // null = la convocatoria no configuró porcentajes.
           ponderacion: d.ponderacion != null ? Number(d.ponderacion) : null,
+          obligatorio: Boolean(d.obligatorio),
+          estado: d.estado,
           archivo: d.archivo ?? null,
-          estado:
-            d.estado === 'subido'
-              ? 'validado'
-              : d.estado === 'no_aplica'
-                ? 'no_aplica'
-                : 'cargado',
         })),
       skills: skills.map((s) => ({
         id: `skill-${s.id}`,

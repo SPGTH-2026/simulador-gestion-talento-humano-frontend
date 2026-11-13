@@ -1,24 +1,20 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import PantallaCarga from '../components/ui/PantallaCarga'
 import { useAuth } from './useAuth'
 
 export default function ProtectedRoute() {
   const { user, authResolved, errorRed } = useAuth()
   const location = useLocation()
 
+  // Mientras GET /auth/me no responde no se sabe quién es el usuario: esa es
+  // la espera, y es lo que la pantalla dice. El error del servidor no se oculta
+  // detrás de la animación: tiene su propia versión con el mensaje y un botón.
   if (!authResolved) {
-    return (
-      <p className="p-6 text-center text-slate-700 dark:text-sena-texto">
-        Cargando...
-      </p>
-    )
+    return <PantallaCarga operacion="sesion" />
   }
 
   if (errorRed) {
-    return (
-      <p className="p-6 text-center text-red-700 dark:text-red-400">
-        {errorRed}
-      </p>
-    )
+    return <PantallaCarga error={errorRed} />
   }
 
   if (!user) {

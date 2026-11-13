@@ -197,6 +197,10 @@ export default function ConvocatoriaWizard({
   const [etapa, setEtapa] = useState(1)
   const [form, setForm] = useState(() => formInicial(valoresIniciales))
   const [catalogos, setCatalogos] = useState(null)
+  // Si el catálogo no carga, el motivo se muestra con la opción de reintentar:
+  // sin él los selectores quedarían vacíos sin explicación.
+  const [errorCatalogo, setErrorCatalogo] = useState('')
+  const [intentoCatalogo, setIntentoCatalogo] = useState(0)
   const [fichas, setFichas] = useState([])
   const [erroresLocales, setErroresLocales] = useState({})
   const [nuevaSkill, setNuevaSkill] = useState('')
@@ -217,16 +221,21 @@ export default function ConvocatoriaWizard({
     let activo = true
     listaParametros()
       .then((res) => {
-        if (activo) setCatalogos(indexarCatalogos(res.data))
+        if (!activo) return
+        setCatalogos(indexarCatalogos(res.data))
+        setErrorCatalogo('')
       })
-      .catch(() => {
-        // Sin catálogos el formulario igual se muestra; el backend valida.
-        if (activo) setCatalogos({})
+      .catch((e) => {
+        // El formulario igual se muestra (el backend valida), pero se avisa del
+        // fallo con su motivo real y se permite reintentar.
+        if (!activo) return
+        setCatalogos((previo) => previo ?? {})
+        setErrorCatalogo(mensajeError(e))
       })
     return () => {
       activo = false
     }
-  }, [])
+  }, [intentoCatalogo])
 
   // Fichas del alcance del usuario. Solo se piden al crear: si tiene una sola,
   // el backend la hereda de la sesión; si tiene varias, hay que elegir en cuál
@@ -681,6 +690,22 @@ export default function ConvocatoriaWizard({
       </div>
 
       {error && <MensajeError>{error}</MensajeError>}
+
+      {errorCatalogo && (
+        <MensajeError className="flex flex-wrap items-center justify-between gap-2">
+          <span>No se pudieron cargar las listas del formulario. {errorCatalogo}</span>
+          <Boton
+            type="button"
+            variante="contorno"
+            onClick={() => {
+              setErrorCatalogo('')
+              setIntentoCatalogo((n) => n + 1)
+            }}
+          >
+            Reintentar
+          </Boton>
+        </MensajeError>
+      )}
 
       {soloLectura && (
         <MensajeAviso>

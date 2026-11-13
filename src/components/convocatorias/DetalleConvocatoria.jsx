@@ -217,9 +217,9 @@ export default function DetalleConvocatoria({
     lineasFunciones.length > 0 || lineasResponsabilidades.length > 0
   const hayPerfil = bloquesPerfil.length > 0 || skills.length > 0
 
-  // Documentos que pide la convocatoria, en modo lectura. Se comparte entre las
-  // dos pestañas: en Descripción va como referencia y en Documentos acompaña al
-  // panel del aspirante.
+  // Documentos que pide la convocatoria, en modo lectura (tarjeta de la
+  // descripción). El nombre se parte en varias líneas en lugar de cortarse con
+  // puntos suspensivos: un documento largo se lee completo.
   const listaDocumentos =
     documentos.length === 0 ? (
       <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
@@ -235,7 +235,7 @@ export default function DetalleConvocatoria({
             <span className="shrink-0 text-sena" aria-hidden="true">
               <IconoDocumento className="h-4 w-4" />
             </span>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700 dark:text-sena-texto">
+            <span className="min-w-0 flex-1 text-sm font-medium text-slate-700 [overflow-wrap:anywhere] dark:text-sena-texto">
               {documento.nombre}
             </span>
             {/* Peso del documento en la evaluación de esta convocatoria. Solo
@@ -259,16 +259,15 @@ export default function DetalleConvocatoria({
       </ul>
     )
 
-  // Escala de espacios única para toda la pestaña: gap-3 entre tarjetas, p-4
-  // dentro, mt-2 tras el subtítulo. Compacto se logra con espacios y alturas,
-  // nunca bajando la tipografía (contenido 14 px, etiquetas 12 px).
+  // Escala de espacios única: gap-3 entre tarjetas, p-4 dentro, mt-2 tras el
+  // subtítulo. Compacto se logra con espacios y alturas, nunca bajando la
+  // tipografía (contenido 14 px, etiquetas 12 px).
   const contenidoDescripcion = (
     <div className="flex flex-col gap-3">
       {/* a) Condiciones de la convocatoria: UNA sola tarjeta, primera de la
           pestaña. Arriba la banda de fechas (una fila baja); debajo la lista de
-          datos en rejilla de 3 columnas. La tarjeta usa p-3 (más baja que el
-          resto) para ocupar menos alto. */}
-      <section className={`${CLASE_TARJETA_PLANA} p-3`}>
+          datos en rejilla de 3 columnas. */}
+      <section className={`${CLASE_TARJETA_PLANA} p-4`}>
         <TituloSeccion>Condiciones de la convocatoria</TituloSeccion>
 
         {/* Banda de fechas: un solo contenedor dividido en celdas del MISMO
@@ -388,44 +387,27 @@ export default function DetalleConvocatoria({
   )
 
   // ── Pestaña Documentos ────────────────────────────────────────────────
-  // El panel real (si la página lo inyecta) es la vista operativa. La lista de
-  // solo lectura ya vive en la pestaña Descripción ("Documentos que pide la
-  // convocatoria"), así que aquí NO se repite. Si no hay panel (roles que no
-  // postulan), se deja la lista como referencia.
+  // Solo existe cuando la página inyecta el panel de postulación (el aspirante
+  // que puede postularse): ahí se suben los archivos y se envía. Para quien no
+  // postula no hay pestañas: la lista de documentos ya está en la descripción,
+  // y una segunda pestaña solo la repetiría.
   const contenidoDocumentos = (
     <div className="flex flex-col gap-5">
-      {panelDocumentos ? (
-        <>
-          <div>
-            <button
-              type="button"
-              onClick={() => setPestanaActiva('descripcion')}
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-            >
-              <span aria-hidden="true">←</span> Volver a descripción
-            </button>
-          </div>
-          {panelDocumentos}
-        </>
-      ) : (
-        <section className={`${CLASE_TARJETA_PLANA} p-4`}>
-          <TituloSeccion>
-            {esGestion ? 'Documentos requeridos' : 'Documentos requeridos para postularte'}
-          </TituloSeccion>
-          <p className="mt-2 text-sm text-slate-600 dark:text-sena-texto-suave">
-            {esGestion
-              ? 'Documentos que debe entregar el postulante.'
-              : 'Debes adjuntar cada documento obligatorio en PDF para enviar tu postulación.'}
-          </p>
-          {listaDocumentos}
-        </section>
-      )}
+      <div>
+        <button
+          type="button"
+          onClick={() => setPestanaActiva('descripcion')}
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
+        >
+          <span aria-hidden="true">←</span> Volver a descripción
+        </button>
+      </div>
+      {panelDocumentos}
     </div>
   )
 
-  // Solo se ofrecen las pestañas con contenido real: sin secciones vacías. Orden
-  // fijado: Descripción y Documentos. Sin iconos: las dos pestañas compartían el
-  // mismo icono decorativo, que no ayudaba a distinguirlas.
+  // Orden fijado: Descripción y Documentos. Sin iconos: las dos pestañas
+  // compartían el mismo icono decorativo, que no ayudaba a distinguirlas.
   const pestanas = [
     {
       id: 'descripcion',
@@ -439,10 +421,13 @@ export default function DetalleConvocatoria({
     },
   ]
 
-  const titulo = c?.cargo || c?.nombre || 'Convocatoria'
-  // Subtítulo "cargo · área": el cargo ya encabeza, así que este refuerza el
-  // contexto de área sin repetirlo en el título.
-  const subtitulo = [c?.cargo, c?.area].filter(hay).join(' · ')
+  // Mismo criterio que la tarjeta del listado: el nombre de la convocatoria
+  // encabeza y el subtítulo es "cargo · área". Sin repetir: si el nombre es el
+  // cargo, el subtítulo solo lleva lo que añade.
+  const titulo = c?.nombre || c?.cargo || 'Convocatoria'
+  const subtitulo = [c?.cargo, c?.area]
+    .filter((parte) => hay(parte) && String(parte).trim() !== titulo.trim())
+    .join(' · ')
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
@@ -482,7 +467,7 @@ export default function DetalleConvocatoria({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {/* Dato de gestión: solo llega a quien puede gestionar. El aspirante no
               debe ver cuántas personas se han postulado. */}
           {c?.postulantes != null && esGestion && (
@@ -494,22 +479,27 @@ export default function DetalleConvocatoria({
         </div>
       </header>
 
-      {/* Pestañas: todos los paneles quedan montados (Pestanas los oculta con
-          'hidden'), para no perder archivos ni estado en vuelo al cambiar de
-          sección. */}
-      <Pestanas
-        pestanas={pestanas}
-        etiquetaAccesible="Secciones de la convocatoria"
-        activaId={pestanaActiva}
-        onCambiar={setPestanaActiva}
-      />
+      {/* Con panel de postulación hay dos pestañas, con todos los paneles
+          montados (Pestanas los oculta con 'hidden') para no perder archivos
+          ni estado en vuelo al cambiar de sección. Sin panel, solo la
+          descripción: sin barra de pestañas. */}
+      {panelDocumentos ? (
+        <Pestanas
+          pestanas={pestanas}
+          etiquetaAccesible="Secciones de la convocatoria"
+          activaId={pestanaActiva}
+          onCambiar={setPestanaActiva}
+        />
+      ) : (
+        contenidoDescripcion
+      )}
 
       {/* Barra inferior: una sola línea y UNA sola acción principal. Se muestra
           SOLO en la pestaña Descripción: en Documentos ya estás donde la acción
           te llevaría, así que ahí no aporta. La arma la página, que decide si
           hay algo que hacer para el rol (aspirante publicado). */}
       {pestanaActiva === 'descripcion' && (
-        <BarraInferior pestanas={pestanas} accion={accionInferior} />
+        <BarraInferior accion={accionInferior} />
       )}
     </div>
   )
@@ -519,9 +509,10 @@ export default function DetalleConvocatoria({
 // principal (la que arma la página según el estado real del aspirante). El
 // detalle decide CUÁNDO mostrarla (solo en Descripción); esconderla en
 // Documentos evita repetir la acción que ya se cumplió. No hay "Siguiente":
-// haría lo mismo que la acción principal (ir a Documentos).
-function BarraInferior({ pestanas, accion }) {
-  if (pestanas.length < 2 && !accion) return null
+// haría lo mismo que la acción principal (ir a Documentos). Sin acción no hay
+// barra: una tarjeta vacía no dice nada.
+function BarraInferior({ accion }) {
+  if (!accion) return null
 
   return (
     <div className={`${CLASE_TARJETA} flex flex-wrap items-center justify-between gap-3 px-4 py-2.5`}>

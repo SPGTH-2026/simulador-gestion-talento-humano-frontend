@@ -33,6 +33,29 @@ export default function useFiltrosUrl(claves) {
     [setParams],
   )
 
+  // Cambia varios parámetros en UNA sola actualización de la URL (por ejemplo,
+  // la búsqueda y la página). Con dos llamadas seguidas a setValor la segunda
+  // parte de la URL antigua y pisa a la primera. 'reemplazar: false' añade una
+  // entrada al historial (se usa al paginar, para que "atrás" vuelva a la página
+  // anterior); los filtros siguen usando replace. 'state' se guarda con la entrada
+  // del historial y permite saber quién hizo el cambio.
+  const setValores = useCallback(
+    (cambios, { reemplazar = true, state } = {}) => {
+      setParams(
+        (previo) => {
+          const siguiente = new URLSearchParams(previo)
+          for (const [clave, valor] of Object.entries(cambios)) {
+            if (valor === '' || valor == null) siguiente.delete(clave)
+            else siguiente.set(clave, String(valor))
+          }
+          return siguiente
+        },
+        { replace: reemplazar, state },
+      )
+    },
+    [setParams],
+  )
+
   const limpiar = useCallback(() => {
     setParams(
       (previo) => {
@@ -45,5 +68,5 @@ export default function useFiltrosUrl(claves) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setParams, claves.join('|')])
 
-  return { valores, setValor, limpiar }
+  return { valores, setValor, setValores, limpiar }
 }

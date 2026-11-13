@@ -80,11 +80,13 @@ export default function Pestanas({
   return (
     <div className="flex flex-col gap-4">
       {/* La barra se desplaza dentro de su propio contenedor: en móvil las
-          pestañas se deslizan sin arrastrar la página entera. */}
+          pestañas se deslizan sin arrastrar la página entera. overflow-y-hidden
+          evita que el -mb-px de las pestañas genere una barra vertical de 1 px
+          de alto con sus flechas; por eso el foco se dibuja hacia adentro. */}
       <div
         role="tablist"
         aria-label={etiquetaAccesible}
-        className="flex gap-1 overflow-x-auto border-b border-sena-linea/80 dark:border-sena-borde/60"
+        className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-sena-linea/80 dark:border-sena-borde/60"
       >
         {pestanas.map((pestana, indice) => {
           const seleccionada = pestana.id === idActivo
@@ -102,7 +104,7 @@ export default function Pestanas({
               tabIndex={seleccionada ? 0 : -1}
               onClick={() => seleccionar(pestana.id)}
               onKeyDown={(e) => alTeclear(e, indice)}
-              className={`-mb-px flex shrink-0 items-center gap-2 rounded-t-md border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 ${
+              className={`-mb-px flex shrink-0 items-center gap-2 rounded-t-md border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sena/40 ${
                 seleccionada
                   ? 'border-sena text-sena-azul dark:border-sena dark:text-sena-texto'
                   : 'border-transparent text-slate-600 hover:border-sena-linea hover:text-sena-azul dark:text-sena-texto-suave dark:hover:border-sena-borde dark:hover:text-sena-texto'

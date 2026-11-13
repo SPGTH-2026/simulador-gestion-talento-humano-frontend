@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import PantallaCarga from '../components/ui/PantallaCarga'
 import TarjetaAuth from '../components/ui/TarjetaAuth'
 import { MensajeError } from '../components/ui/Mensaje'
 
@@ -7,7 +8,7 @@ export default function AuthLayout() {
   const { user, authResolved, errorRed } = useAuth()
 
   if (!authResolved) {
-    return <p className="p-6 text-center dark:text-sena-texto">Cargando...</p>
+    return <PantallaCarga operacion="sesion" />
   }
 
   // With the server down we can neither log in nor render the form

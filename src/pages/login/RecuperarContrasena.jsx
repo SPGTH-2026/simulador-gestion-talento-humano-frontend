@@ -13,8 +13,16 @@ import {
 import { useCuentaAtras } from '../../lib/useCuentaAtras'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
+import CampoClave from '../../components/ui/CampoClave'
 import { MensajeError } from '../../components/ui/Mensaje'
-import { CLASE_INPUT, CLASE_INPUT_CODIGO } from '../../lib/estilos'
+import { CLASE_CAMPO, CLASE_CAMPO_CODIGO } from '../../lib/estilos'
+import {
+  enfocarPrimerError,
+  mostrarAvisoGlobal,
+  soloConError,
+  validarCodigo,
+  validarCorreo,
+} from '../../lib/validacionAcceso'
 
 const PANTALLA = 'recuperar'
 
@@ -47,8 +55,14 @@ export default function RecuperarContrasena() {
   // mismo lote se cuela: el ref corta en seco, sin esperar a React.
   const enVuelo = useRef(false)
 
-  const pedirCodigo = async (correo) => {
+  const pedirCodigo = async (correo, formulario) => {
     if (enVuelo.current) return
+    const falta = validarCorreo(correo)
+    if (falta) {
+      setErrores({ email: falta })
+      formulario.elements.namedItem('email')?.focus()
+      return
+    }
     enVuelo.current = true
 
     setErrores({})
@@ -104,12 +118,19 @@ export default function RecuperarContrasena() {
 
     const codigoLimpio = codigo.replace(/\D/g, '').slice(0, 6)
 
-    if (!REGLA_PASSWORD.test(password)) {
-      setErrores({ password: 'Mínimo 8 caracteres, con letras y números.' })
-      return
-    }
-    if (password !== confirmacion) {
-      setErrores({ password: 'Las contraseñas no coinciden.' })
+    const encontrados = soloConError({
+      code: validarCodigo(codigoLimpio),
+      // Misma regla que el backend: Password::min(8)->letters()->numbers().
+      password: REGLA_PASSWORD.test(password) ? '' : 'Mínimo 8 caracteres, con letras y números.',
+      confirmacion: !confirmacion
+        ? 'Repite la contraseña.'
+        : password !== confirmacion
+          ? 'Las contraseñas no coinciden.'
+          : '',
+    })
+    if (Object.keys(encontrados).length > 0) {
+      setErrores(encontrados)
+      enfocarPrimerError(e.currentTarget, encontrados, ['code', 'password', 'confirmacion'])
       return
     }
 
@@ -151,36 +172,46 @@ export default function RecuperarContrasena() {
 
   return (
     <>
-      <h2 className="text-xl font-semibold text-sena-azul dark:text-sena-texto">
+      <h2 className="text-2xl font-bold text-sena-azul dark:text-sena-texto">
         Restablecer contraseña
       </h2>
 
-      {errorGlobal && <MensajeError className="mt-3">{errorGlobal}</MensajeError>}
+      {errorGlobal && mostrarAvisoGlobal(
+          errores,
+          paso === 1 ? ['email'] : ['code', 'password', 'confirmacion'],
+        ) && <MensajeError className="mt-4">{errorGlobal}</MensajeError>}
 
       {paso === 1 ? (
         <form
+          noValidate
           onSubmit={(e) => {
             e.preventDefault()
-            pedirCodigo(email)
+            pedirCodigo(email, e.currentTarget)
           }}
           className="mt-4 flex flex-col gap-4"
         >
-          <p className="text-sm text-sena-azul/80 dark:text-sena-texto-suave">
+          <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
             Escribe tu correo y te enviamos un código de 6 dígitos.
           </p>
 
           <Campo etiqueta="Correo" error={errores.email}>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+            {({ id, describedby, invalid }) => (
+              <input
+                id={id}
+                type="email"
+                name="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
               required
-              autoComplete="email"
-              className={CLASE_INPUT}
-            />
+            aria-describedby={describedby}
+                aria-invalid={invalid || undefined}
+                className={CLASE_CAMPO}
+              />
+            )}
           </Campo>
 
-          <Boton type="submit" disabled={enviando || bloqueado}>
+          <Boton type="submit" tamano="flexible" disabled={enviando || bloqueado}>
             {enviando
               ? 'Enviando...'
               : bloqueado
@@ -188,89 +219,80 @@ export default function RecuperarContrasena() {
                 : 'Enviar código'}
           </Boton>
 
-          <p className="text-center text-sm text-sena-azul/80 dark:text-sena-texto-suave">
-            <Link
-              to="/login"
-              className="text-sena-oscuro hover:text-sena hover:underline dark:text-sena-acento dark:hover:text-sena"
-            >
-              Volver a iniciar sesión
-            </Link>
-          </p>
+          <Boton as={Link} to="/login" variante="enlace" tamano="flexible">
+            Volver a iniciar sesión
+          </Boton>
         </form>
       ) : (
         <>
-          <p className="mt-2 text-sm text-sena-azul/80 dark:text-sena-texto-suave">
+          <p className="mt-2 text-sm text-slate-600 dark:text-sena-texto-suave">
             Enviamos un código a <strong>{enmascararEmail(email)}</strong>. Válido
             durante {MINUTOS_VALIDEZ} minutos.
           </p>
 
-          <form onSubmit={restablecer} className="mt-4 flex flex-col gap-4">
+          <form noValidate onSubmit={restablecer} className="mt-4 flex flex-col gap-4">
             <Campo etiqueta="Código" error={errores.code}>
-              <input
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                value={codigo}
-                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                required
-                className={CLASE_INPUT_CODIGO}
-              />
+              {({ id, describedby, invalid }) => (
+                <input
+                  id={id}
+                  type="text"
+                  name="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              required
+            aria-describedby={describedby}
+                  aria-invalid={invalid || undefined}
+                  className={CLASE_CAMPO_CODIGO}
+                />
+              )}
             </Campo>
 
-            <Campo etiqueta="Nueva contraseña" error={errores.password}>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-                className={CLASE_INPUT}
-              />
-              <span className="text-xs font-normal text-sena-azul/70 dark:text-sena-texto-suave">
-                Mínimo 8 caracteres, con letras y números.
-              </span>
-            </Campo>
+            <CampoClave
+              etiqueta="Nueva contraseña"
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              ayuda="Mínimo 8 caracteres, con letras y números."
+              error={errores.password}
+        required
+            />
 
-            <Campo etiqueta="Repetir contraseña">
-              <input
-                type="password"
-                value={confirmacion}
-                onChange={(e) => setConfirmacion(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-                className={CLASE_INPUT}
-              />
-            </Campo>
+            <CampoClave
+              etiqueta="Repetir contraseña"
+              name="confirmacion"
+              value={confirmacion}
+              onChange={(e) => setConfirmacion(e.target.value)}
+              autoComplete="new-password"
+              error={errores.confirmacion}
+        required
+            />
 
-            <Boton type="submit" disabled={enviando || bloqueado}>
+            <Boton type="submit" tamano="flexible" disabled={enviando || bloqueado}>
               {enviando ? 'Guardando...' : 'Restablecer contraseña'}
             </Boton>
           </form>
 
-          <div className="mt-4 flex flex-col items-center gap-2 text-sm">
-            <button
-              type="button"
+          <div className="mt-4 flex flex-col items-stretch gap-1">
+            <Boton
+              variante="enlace"
+              tamano="flexible"
               onClick={reenviar}
               disabled={reenviando || bloqueado}
-              className="text-sena-oscuro hover:text-sena hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-sena-acento dark:hover:text-sena"
             >
               {reenviando
                 ? 'Enviando...'
                 : bloqueado
                   ? `Reenviar código (${segundos} s)`
                   : 'Reenviar código'}
-            </button>
+            </Boton>
 
-            <button
-              type="button"
-              onClick={volverAlPaso1}
-              className="text-sena-azul/70 hover:text-sena hover:underline dark:text-sena-texto-suave dark:hover:text-sena"
-            >
+            <Boton variante="enlace" tamano="flexible" onClick={volverAlPaso1}>
               Cambiar correo
-            </button>
+            </Boton>
           </div>
         </>
       )}
