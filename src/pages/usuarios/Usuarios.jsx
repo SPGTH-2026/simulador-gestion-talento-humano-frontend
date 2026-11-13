@@ -66,6 +66,9 @@ export default function Usuarios() {
 
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [errorLista, setErrorLista] = useState('') // fallo al cargar la tabla (se puede reintentar)
+  const [errorFichas, setErrorFichas] = useState('')
+  const [intento, setIntento] = useState(0)
   const [exito, setExito] = useState('')
 
   const [editandoId, setEditandoId] = useState(null)
@@ -74,10 +77,21 @@ export default function Usuarios() {
   const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
+    let activo = true
     listaFichas()
-      .then((res) => setFichas(res.data))
-      .catch(() => {}) // sin fichas la lista sigue sirviendo; el error lo da la tabla
-  }, [])
+      .then((res) => {
+        if (!activo) return
+        setFichas(res.data)
+        setErrorFichas('')
+      })
+      .catch((e) => {
+        // La lista sigue sirviendo sin fichas, pero el fallo se avisa con su motivo.
+        if (activo) setErrorFichas(mensajeError(e))
+      })
+    return () => {
+      activo = false
+    }
+  }, [intento])
 
   // El texto se aplaza 300 ms para no martillar el backend letra a letra.
   useEffect(() => {
@@ -101,15 +115,15 @@ export default function Usuarios() {
       .then((res) => {
         setUsuarios(res.data)
         setMeta(res.meta)
-        setError('')
+        setErrorLista('')
       })
       .catch((e) => {
-        if (e.name !== 'CanceledError') setError(mensajeError(e))
+        if (e.name !== 'CanceledError') setErrorLista(mensajeError(e))
       })
       .finally(() => setCargando(false))
 
     return () => control.abort()
-  }, [pagina, busqueda, filtroFicha])
+  }, [pagina, busqueda, filtroFicha, intento])
 
   // El instructor no gestiona instructores ni super admins (matriz del backend).
   const rolesPermitidos = esInstructor
@@ -232,6 +246,17 @@ export default function Usuarios() {
       </div>
 
       {error && <MensajeError>{error}</MensajeError>}
+      {errorLista && <MensajeError>{errorLista}</MensajeError>}
+      {errorFichas && (
+        <MensajeError>No se pudieron cargar las fichas del filtro. {errorFichas}</MensajeError>
+      )}
+      {(errorLista || errorFichas) && (
+        <div>
+          <Boton variante="contorno" onClick={() => setIntento((n) => n + 1)}>
+            Reintentar
+          </Boton>
+        </div>
+      )}
       {exito && <MensajeExito>{exito}</MensajeExito>}
 
       <Tarjeta className="overflow-x-auto">
