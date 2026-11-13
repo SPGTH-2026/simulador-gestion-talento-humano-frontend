@@ -1,5 +1,5 @@
-import Icono from '../ui/Icono'
-import Boton from '../ui/Boton'
+import Icono from './Icono'
+import Boton from './Boton'
 import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 
 // Paginación del servidor para las listas de Selección.

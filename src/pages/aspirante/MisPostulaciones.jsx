@@ -6,6 +6,7 @@ import { useConfirmacion } from '../../hooks/useConfirmacion'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
 import EtiquetaVentana from '../../components/convocatorias/EtiquetaVentana'
 import Boton from '../../components/ui/Boton'
+import Paginacion from '../../components/ui/Paginacion'
 import { estadoVentana, formatearFechaHora, textoVentana } from '../../lib/ventanaPostulacion'
 import { CLASE_META_DT, CLASE_TARJETA } from '../../lib/estilos'
 
@@ -427,35 +428,15 @@ export default function MisPostulaciones() {
         </>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 dark:text-sena-texto-suave">
-        <span>
-          Página {meta.current_page ?? 1} de {totalPaginas} · {total} postulación(es)
-        </span>
-
-        {/* Anterior/Siguiente solo cuando hay más de una página. */}
-        {totalPaginas > 1 && (
-          <div className="flex gap-2">
-            <Boton
-              variante="secundario"
-              tamano="sm"
-              className="min-h-10"
-              disabled={(meta.current_page ?? 1) <= 1}
-              onClick={() => setPagina((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </Boton>
-            <Boton
-              variante="secundario"
-              tamano="sm"
-              className="min-h-10"
-              disabled={(meta.current_page ?? 1) >= totalPaginas}
-              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-            >
-              Siguiente
-            </Boton>
-          </div>
-        )}
-      </div>
+      {/* Con una sola página solo se dice el total; Anterior/Siguiente aparecen si hay más. */}
+      <Paginacion
+        meta={{ ...meta, total, last_page: totalPaginas, current_page: meta.current_page ?? 1 }}
+        singular="postulación"
+        plural="postulaciones"
+        etiqueta="Paginación de postulaciones"
+        onPagina={setPagina}
+        className="px-1"
+      />
     </div>
   )
 }

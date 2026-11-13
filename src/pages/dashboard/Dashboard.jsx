@@ -1,6 +1,7 @@
 import { useAuth } from '../../auth/useAuth'
 import { listaConvocatorias } from '../../api/convocatorias'
 import { misEvaluaciones } from '../../api/evaluaciones'
+import { listaConvocatoriasSeleccion } from '../../api/seleccion'
 import { listaMisPostulaciones } from '../../api/postulaciones'
 import Carrusel from '../../components/inicio/Carrusel'
 import {
@@ -12,7 +13,9 @@ import {
 import {
   BloqueAccesos,
   BloqueConvocatoriasGestion,
+  BloqueConvocatoriasSeleccion,
   BloqueEvaluacionesEnProceso,
+  BloqueRecorridoSeleccion,
 } from '../../components/inicio/BloquesGestion'
 import { useCarga } from '../../hooks/useCarga'
 import { CLASE_SUBTITULO_PAGINA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
@@ -21,7 +24,7 @@ import { MAX_ELEMENTOS, destinosDelMenu, perfilInicio } from '../../lib/inicio'
 // Línea de apoyo bajo el título, según lo que el perfil encuentra en la página.
 function subtituloDe(perfil) {
   if (perfil.postulaciones) return 'Tus postulaciones y las convocatorias disponibles.'
-  if (perfil.gestion || perfil.evaluando) return 'Convocatorias y accesos a tus módulos.'
+  if (perfil.gestion || perfil.evaluando || perfil.convocatoriasSeleccion) return 'Convocatorias y accesos a tus módulos.'
   return 'Accesos a los módulos que puedes usar.'
 }
 
@@ -37,6 +40,11 @@ function Inicio() {
   const convocatorias = useCarga(
     () => listaConvocatorias({ per_page: MAX_ELEMENTOS }),
     aspiranteVeConvocatorias || perfil.gestion,
+  )
+  // Convocatorias de Selección: solo para quien no tiene otro bloque de convocatorias.
+  const convocatoriasSeleccion = useCarga(
+    () => listaConvocatoriasSeleccion({ page: 1 }),
+    perfil.convocatoriasSeleccion,
   )
   // Resultados (aspirante) y evaluaciones en proceso (aprendiz) comparten
   // endpoint, pero nunca el mismo usuario.
@@ -54,6 +62,9 @@ function Inicio() {
   if (perfil.gestion) {
     principales.push(<BloqueConvocatoriasGestion key="conv-ges" recurso={convocatorias} />)
   }
+  if (perfil.convocatoriasSeleccion) {
+    principales.push(<BloqueConvocatoriasSeleccion key="conv-sel" recurso={convocatoriasSeleccion} />)
+  }
   if (perfil.evaluando) {
     principales.push(<BloqueEvaluacionesEnProceso key="eval" recurso={evaluaciones} />)
   }
@@ -61,17 +72,14 @@ function Inicio() {
   if (perfil.resultados) laterales.push(<BloqueResultados key="res" recurso={evaluaciones} />)
   if (perfil.postulaciones) laterales.push(<BloqueRecorrido key="rec" />)
 
-  // Sin bloques de datos (p. ej. seleccionador) los accesos van en la columna
-  // principal; si no, a un lado.
-  if (destinos.length > 0) {
-    const accesos = (
-      <BloqueAccesos key="acc" destinos={destinos} dosColumnas={principales.length === 0} />
-    )
-    if (principales.length === 0) principales.push(accesos)
-    else laterales.push(accesos)
-  }
+  // Los accesos van siempre a un lado: todos los roles comparten la misma composición (columna principal ancha y
+  // columna lateral), también quien no tiene bloques de datos (p. ej. el seleccionador).
+  if (destinos.length > 0) laterales.push(<BloqueAccesos key="acc" destinos={destinos} />)
+  // Orientación del recorrido, como «Cómo avanza el proceso» del aspirante (va tras los accesos).
+  if (perfil.convocatoriasSeleccion) laterales.push(<BloqueRecorridoSeleccion key="rec-sel" />)
 
   const conLateral = laterales.length > 0
+  const estirar = conLateral && perfil.convocatoriasSeleccion
 
   return (
     <div className="flex flex-col gap-5">
@@ -83,15 +91,19 @@ function Inicio() {
       <div
         className={
           conLateral
-            ? 'grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start'
-            : 'flex flex-col gap-5 lg:max-w-4xl'
+            ? `grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] ${estirar ? 'lg:items-stretch' : 'lg:items-start'}`
+            : 'flex flex-col gap-5'
         }
       >
-        <div className="flex min-w-0 flex-col gap-5">
+        {/* Selección (seleccionador): sus dos columnas tienen casi la misma altura, así que el último bloque de cada una
+            crece y terminan parejas, sin hueco en la esquina. Los demás perfiles conservan su composición. */}
+        <div className={`flex min-w-0 flex-col gap-5 ${estirar ? 'lg:[&>:last-child]:flex-1' : ''}`}>
           <Carrusel />
           {principales}
         </div>
-        {conLateral && <div className="flex min-w-0 flex-col gap-5">{laterales}</div>}
+        {conLateral && (
+          <div className={`flex min-w-0 flex-col gap-5 ${estirar ? 'lg:[&>:last-child]:flex-1' : ''}`}>{laterales}</div>
+        )}
       </div>
     </div>
   )

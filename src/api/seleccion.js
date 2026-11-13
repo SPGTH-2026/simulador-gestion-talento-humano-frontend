@@ -74,3 +74,42 @@ export const guardarCalificacion = (convocatoriaId, postulacionId, actividad, da
   client
     .put(`/seleccion/convocatorias/${convocatoriaId}/candidatos/${postulacionId}/calificaciones/${actividad}`, datos)
     .then((res) => res.data)
+
+// GET /api/seleccion/convocatorias/{c}/ranking?page=
+//   -> { data: [{ postulacion_id, aspirante, posicion, resultado_adicional, cumplimiento_documental,
+//        sugerencia, finalista }],
+//        meta: { current_page, last_page, per_page, total, modo, version, vacantes, postuladas, listos,
+//          no_listos, objetivo: { valor, configurado, efectivo }, sugeridos, empate_en_corte,
+//          lista_confirmada } }
+// Solo llegan los candidatos listos, ya ordenados y con su posición: el servidor decide el orden, los
+// empates (misma posición) y la sugerencia. modo: pendiente_de_configurar | sin_actividades |
+// con_actividades. Sin actividades 'posicion', 'resultado_adicional' y 'sugerencia' llegan en null.
+// sugerencia: sugerido | empate_en_corte | no_sugerido | null. 'version' identifica este ranking.
+// empate_en_corte: null | { posicion, resultado, postulaciones: [ids] }.
+// lista_confirmada: null | { version, confirmada_en, total, requiere_revision }.
+export const rankingConvocatoria = (convocatoriaId, params) =>
+  client.get(`/seleccion/convocatorias/${convocatoriaId}/ranking`, { params }).then((res) => res.data)
+
+// PUT .../ranking/objetivo body { objetivo: entero 1-500 | null (vuelve a 2 x vacantes) }
+//   -> { data: { objetivo, configurado, efectivo, vacantes, version } }. 422 si no está en proceso.
+export const fijarObjetivoFinalistas = (convocatoriaId, objetivo) =>
+  client.put(`/seleccion/convocatorias/${convocatoriaId}/ranking/objetivo`, { objetivo }).then((res) => res.data)
+
+// GET .../finalistas?page=  (la página pagina el historial de versiones)
+//   -> { data: { actual: null | { version, modo, objetivo, motivo, confirmada_por, confirmada_en,
+//          requiere_revision, revisar: [{ postulacion_id, motivo: ya_no_elegible|cambio_resultado }],
+//          finalistas: [{ postulacion_id, aspirante, posicion, resultado_adicional }] },
+//        versiones: [{ version, modo, total, motivo, confirmada_por, confirmada_en }] },
+//        meta: { current_page, last_page, per_page, total } }
+export const finalistasConvocatoria = (convocatoriaId, params) =>
+  client.get(`/seleccion/convocatorias/${convocatoriaId}/finalistas`, { params }).then((res) => res.data)
+
+// POST .../finalistas body { version (la del ranking leído), postulacion_ids, justificacion? (10-500) }.
+//   201 crea una versión nueva; 200 devuelve la vigente si es idéntica. Misma forma que 'actual'.
+//   409 { codigo: 'ranking_desactualizado' } si el ranking cambió; 422 por campo (justificacion,
+//   postulacion_ids, convocatoria). La justificación es obligatoria sin actividades, con empate en el
+//   corte o si la lista difiere de la sugerida. Devuelve { data, creada } (creada = 201).
+export const confirmarFinalistas = (convocatoriaId, datos) =>
+  client
+    .post(`/seleccion/convocatorias/${convocatoriaId}/finalistas`, datos)
+    .then((res) => ({ data: res.data.data, creada: res.status === 201 }))

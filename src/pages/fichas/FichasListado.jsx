@@ -14,6 +14,7 @@ import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
 import Cargando from '../../components/ui/Cargando'
 import EstadoVacio from '../../components/ui/EstadoVacio'
+import Icono from '../../components/ui/Icono'
 import Etiqueta from '../../components/ui/Etiqueta'
 import { MensajeError, MensajeExito } from '../../components/ui/Mensaje'
 import Tarjeta from '../../components/ui/Tarjeta'
@@ -204,7 +205,10 @@ export default function FichasListado() {
         </div>
 
         {editandoId !== NUEVA && (
-          <Boton onClick={empezarAlta}>Nueva ficha</Boton>
+          <Boton onClick={empezarAlta}>
+            <Icono nombre="mas" className="size-5 shrink-0" />
+            Nueva ficha
+          </Boton>
         )}
       </div>
 

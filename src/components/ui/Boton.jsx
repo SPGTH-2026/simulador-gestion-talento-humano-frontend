@@ -17,28 +17,28 @@ const VARIANTES = {
   // Acción principal: verde oscuro institucional. El verde puro (#39A900) no
   // alcanza 4.5:1 con texto blanco; #007832 sí (5.6:1). El hover pasa al azul
   // institucional, que mantiene el contraste.
-  primario: 'bg-sena-oscuro text-white hover:bg-sena-azul',
+  primario: 'bg-sena-oscuro text-white libre:hover:bg-sena-azul',
   secundario:
-    'border border-sena-azul/25 text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta',
+    'border border-sena-azul/25 text-sena-azul libre:hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:libre:hover:bg-sena-superficie-alta',
   // Como 'secundario', con el borde de contraste (4.0:1) que exige WCAG para
   // identificar el control. 'secundario' conserva su borde suave por ahora: se
   // revisará junto con los formularios de cada módulo.
   contorno:
-    'border border-sena-azul/60 text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-texto-suave/70 dark:text-sena-texto dark:hover:bg-sena-superficie-alta',
-  peligro: 'bg-peligro text-white hover:bg-red-700 dark:hover:bg-red-600',
+    'border border-sena-azul/60 text-sena-azul libre:hover:bg-sena-cielo/30 dark:border-sena-texto-suave/70 dark:text-sena-texto dark:libre:hover:bg-sena-superficie-alta',
+  peligro: 'bg-peligro text-white libre:hover:bg-red-700 dark:libre:hover:bg-red-600',
   // Acción destructiva secundaria: se distingue del resto sin llenar la tarjeta
   // de rojo. Se usa para cerrar la recepción o la convocatoria.
   peligroSuave:
-    'border border-peligro/30 text-peligro hover:bg-peligro/10 dark:border-peligro/40 dark:hover:bg-peligro/10',
+    'border border-peligro/30 text-peligro libre:hover:bg-peligro/10 dark:border-peligro/40 dark:libre:hover:bg-peligro/10',
   fantasma:
-    'text-sena-azul hover:bg-sena-cielo/30 dark:text-sena-texto dark:hover:bg-sena-superficie-alta',
+    'text-sena-azul libre:hover:bg-sena-cielo/30 dark:text-sena-texto dark:libre:hover:bg-sena-superficie-alta',
   // Control secundario con aspecto de enlace: sin fondo ni contorno; al pasar el
   // puntero se subraya. Es el mismo estilo de los enlaces de texto de las
   // pantallas de acceso (verde institucional, acento en oscuro).
   enlace:
-    'text-sena-oscuro underline-offset-4 hover:underline disabled:hover:no-underline dark:text-sena-acento',
+    'text-sena-oscuro underline-offset-4 libre:hover:underline disabled:hover:no-underline dark:text-sena-acento',
   // Para controles sobre superficies azules oscuras (topbar y sidebar).
-  sobreOscuro: 'text-white hover:bg-white/10',
+  sobreOscuro: 'text-white libre:hover:bg-white/10',
 }
 
 const TAMANOS = {

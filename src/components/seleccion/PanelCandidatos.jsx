@@ -9,7 +9,7 @@ import Icono from '../ui/Icono'
 import { MensajeError } from '../ui/Mensaje'
 import Rueda from '../ui/Rueda'
 import DetalleCandidato from './DetalleCandidato'
-import Paginacion from './Paginacion'
+import Paginacion from '../ui/Paginacion'
 import {
   CLASE_TARJETA_PLANA,
   CLASE_TBODY,
@@ -20,8 +20,11 @@ import {
 } from '../../lib/estilos'
 import { estadoDocumental, puedeDesignarReferencia, textoCumplimiento } from '../../lib/seleccion'
 
-const CLASE_TH = 'whitespace-nowrap px-3 py-3 first:pl-4 last:pr-4'
-const CLASE_TD = 'px-3 py-3.5 align-middle first:pl-4 last:pr-4'
+const CLASE_TH = 'whitespace-nowrap px-3 py-2.5 first:pl-4 last:pr-4'
+const CLASE_TD = 'px-3 py-2.5 align-middle first:pl-4 last:pr-4'
+// Columnas que solo caben desde ~520 px de panel; por debajo sus datos pasan bajo el nombre.
+const ANCHA_TH = `hidden @min-[520px]:table-cell ${CLASE_TH}`
+const ANCHA_TD = `hidden @min-[520px]:table-cell ${CLASE_TD}`
 
 function EtiquetaEstadoDocumental({ codigo }) {
   const e = estadoDocumental(codigo)
@@ -46,11 +49,11 @@ function Cumplimiento({ valor }) {
   return <span className={`font-medium tabular-nums ${CLASE_TEXTO_FUERTE}`}>{texto}</span>
 }
 
-// Candidatos (postulaciones enviadas) de UNA convocatoria. El padre lo monta con
-// 'key' = id de la convocatoria: al cambiar de convocatoria el panel nace de cero
-// (página 1, sin filas, sin detalle abierto) y la respuesta tardía de la anterior se
-// descarta porque su efecto ya fue limpiado.
-export default function PanelCandidatos({ convocatoriaId }) {
+// Candidatos (postulaciones enviadas) de UNA convocatoria. El padre lo monta con 'key' = id de la
+// convocatoria: al cambiar de convocatoria el panel nace de cero (página 1, sin filas, sin detalle abierto) y la
+// respuesta tardía de la anterior se descarta porque su efecto ya fue limpiado.
+// 'activo': la pestaña está a la vista. Los datos se piden la primera vez que se abre y no se repiten al volver.
+export default function PanelCandidatos({ convocatoriaId, activo = true }) {
   const { user, can } = useAuth()
   const puedeDecidir = can('seleccion:decidir')
   const puedeDesignar = puedeDesignarReferencia(user, can)
@@ -58,10 +61,14 @@ export default function PanelCandidatos({ convocatoriaId }) {
   const [pagina, setPagina] = useState(1)
   const [estado, setEstado] = useState({ fase: 'cargando', filas: [], meta: null, error: '' })
   const [intento, setIntento] = useState(0)
+  // La pestaña se abrió al menos una vez: desde ahí los datos se piden.
+  const [abierta, setAbierta] = useState(activo)
+  if (activo && !abierta) setAbierta(true)
   // Candidato cuyo detalle está abierto (id de la postulación). El detalle se pide solo al abrirlo.
   const [abierto, setAbierto] = useState(null)
 
   useEffect(() => {
+    if (!abierta) return undefined
     let vigente = true
     candidatosConvocatoria(convocatoriaId, { page: pagina })
       .then((res) => {
@@ -73,7 +80,7 @@ export default function PanelCandidatos({ convocatoriaId }) {
     return () => {
       vigente = false
     }
-  }, [convocatoriaId, pagina, intento])
+  }, [abierta, convocatoriaId, pagina, intento])
 
   const cambiarPagina = (n) => {
     setAbierto(null)
@@ -107,19 +114,6 @@ export default function PanelCandidatos({ convocatoriaId }) {
   const hayFilas = filas.length > 0
   const filaAbierta = filas.find((f) => f.id === abierto) ?? null
 
-  // Función (no componente): el botón conserva su identidad entre renders y el foco puede volver a él al cerrar el detalle.
-  const botonDetalle = (fila, className = '') => (
-    <Boton
-      variante="contorno"
-      tamano="tactil"
-      className={className}
-      aria-label={`Abrir el detalle de ${fila.aspirante}`}
-      onClick={() => setAbierto(fila.id)}
-    >
-      Ver detalle
-    </Boton>
-  )
-
   return (
     <div className="@container flex flex-col gap-3" aria-busy={cargando}>
       {fase === 'error' && (
@@ -147,75 +141,68 @@ export default function PanelCandidatos({ convocatoriaId }) {
       )}
 
       {hayFilas && (
-        <div className={cargando ? 'opacity-60' : ''}>
-          <div className="hidden @min-[560px]:block">
-            <div className={`${CLASE_TARJETA_PLANA} overflow-hidden`}>
-              <table className="w-full table-fixed text-left text-sm">
-                <caption className="sr-only">Candidatos de la convocatoria</caption>
-                <colgroup>
-                  <col />
-                  <col className="w-48" />
-                  <col className="w-32" />
-                  <col className="w-36" />
-                </colgroup>
-                <thead className={CLASE_THEAD}>
-                  <tr>
-                    <th scope="col" className={CLASE_TH}>Aspirante</th>
-                    <th scope="col" className={CLASE_TH}>Estado documental</th>
-                    <th scope="col" className={`${CLASE_TH} text-right`}>Cumplimiento</th>
-                    <th scope="col" className={`${CLASE_TH} text-right`}>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className={CLASE_TBODY}>
-                  {filas.map((c) => (
-                    <tr key={c.id} className="hover:bg-sena-fondo/60 dark:hover:bg-sena-superficie-alta/40">
-                      <td className={CLASE_TD}>
-                        <div className="flex min-w-0 items-center gap-3">
-                          <AvatarIniciales nombre={c.aspirante} />
-                          <span className={`font-medium ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>{c.aspirante}</span>
-                        </div>
-                      </td>
-                      <td className={CLASE_TD}>
-                        <EtiquetaEstadoDocumental codigo={c.estado_documental} />
-                      </td>
-                      <td className={`${CLASE_TD} text-right`}>
-                        <Cumplimiento valor={c.cumplimiento} />
-                      </td>
-                      <td className={`${CLASE_TD} text-right`}>
-                        {botonDetalle(c)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <ul className="grid gap-3 @min-[560px]:hidden">
-            {filas.map((c) => (
-              <li key={c.id} className={`${CLASE_TARJETA_PLANA} flex min-w-0 flex-col gap-3 p-4`}>
-                <div className="flex min-w-0 items-center gap-3">
-                  <AvatarIniciales nombre={c.aspirante} />
-                  <span className={`font-medium ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>{c.aspirante}</span>
-                </div>
-                <dl className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-sena-linea/70 pt-3 dark:border-sena-borde/50">
-                  <div>
-                    <dt className="sr-only">Estado documental</dt>
-                    <dd>
-                      <EtiquetaEstadoDocumental codigo={c.estado_documental} />
-                    </dd>
-                  </div>
-                  <div className="text-right">
-                    <dt className={`text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Cumplimiento</dt>
-                    <dd>
-                      <Cumplimiento valor={c.cumplimiento} />
-                    </dd>
-                  </div>
-                </dl>
-                {botonDetalle(c, 'w-full')}
-              </li>
-            ))}
-          </ul>
+        <div className={`${CLASE_TARJETA_PLANA} overflow-hidden ${cargando ? 'opacity-60' : ''}`}>
+          <table className="w-full table-fixed text-left text-sm">
+            <caption className="sr-only">Candidatos de la convocatoria</caption>
+            <colgroup>
+              <col />
+              <col className="hidden w-40 @min-[520px]:table-column" />
+              <col className="hidden w-24 @min-[520px]:table-column" />
+              <col className="w-36" />
+            </colgroup>
+            <thead className={CLASE_THEAD}>
+              <tr>
+                <th scope="col" className={CLASE_TH}>Aspirante</th>
+                <th scope="col" className={ANCHA_TH}>Estado documental</th>
+                <th scope="col" className={`${ANCHA_TH} text-right`}>Cumplimiento</th>
+                <th scope="col" className={`${CLASE_TH} text-right`}>
+                  <span className="sr-only">Acciones</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className={CLASE_TBODY}>
+              {filas.map((c) => (
+                <tr key={c.id} className="hover:bg-sena-fondo/60 dark:hover:bg-sena-superficie-alta/40">
+                  <td className={CLASE_TD}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="hidden shrink-0 @min-[520px]:block"><AvatarIniciales nombre={c.aspirante} /></span>
+                      <div className="flex min-w-0 flex-col items-start gap-1">
+                        {/* Dos líneas como máximo; el nombre completo también va en el title y en el botón del detalle. */}
+                        <span
+                          title={c.aspirante}
+                          className={`line-clamp-2 font-medium ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}
+                        >
+                          {c.aspirante}
+                        </span>
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 @min-[520px]:hidden">
+                          <EtiquetaEstadoDocumental codigo={c.estado_documental} />
+                          <span className="text-xs">
+                            <Cumplimiento valor={c.cumplimiento} />
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className={ANCHA_TD}>
+                    <EtiquetaEstadoDocumental codigo={c.estado_documental} />
+                  </td>
+                  <td className={`${ANCHA_TD} text-right`}>
+                    <Cumplimiento valor={c.cumplimiento} />
+                  </td>
+                  <td className={`${CLASE_TD} text-right`}>
+                    <Boton
+                      variante="contorno"
+                      tamano="tactil"
+                      aria-label={`Abrir el detalle de ${c.aspirante}`}
+                      onClick={() => setAbierto(c.id)}
+                    >
+                      Ver detalle
+                    </Boton>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

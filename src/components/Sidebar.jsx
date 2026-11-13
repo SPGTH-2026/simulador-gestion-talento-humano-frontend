@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { menu } from '../config/menu'
 import { CLASE_TEXTO_SUAVE } from '../lib/estilos'
@@ -98,13 +99,21 @@ export default function Sidebar({ abierto = false, onCerrar, onNavegar }) {
             el logosímbolo y no se deforma su geometría. En claro va en verde
             institucional; en oscuro, en su versión negativa (blanca). */}
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-sena-linea px-4 dark:border-sena-borde/40">
-          <LogoSena className="size-[50px] shrink-0 text-sena dark:text-white" />
-          <div className="min-w-0">
-            <p className="text-base font-bold leading-tight text-sena-azul dark:text-white">SPGTH</p>
-            <p className={`text-xs leading-snug ${CLASE_TEXTO_SUAVE}`}>
-              Simulador de gestión de talento humano
-            </p>
-          </div>
+          {/* El logo y el nombre llevan al inicio. */}
+          <Link
+            to="/"
+            onClick={onNavegar}
+            aria-label="Ir al inicio"
+            className="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sena"
+          >
+            <LogoSena className="size-[50px] shrink-0 text-sena dark:text-white" />
+            <div className="min-w-0">
+              <p className="text-base font-bold leading-tight text-sena-azul dark:text-white">SPGTH</p>
+              <p className={`text-xs leading-snug ${CLASE_TEXTO_SUAVE}`}>
+                Simulador de gestión de talento humano
+              </p>
+            </div>
+          </Link>
           <button
             type="button"
             onClick={onCerrar}

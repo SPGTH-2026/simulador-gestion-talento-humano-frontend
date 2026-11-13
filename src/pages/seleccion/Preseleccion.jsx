@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
 import ListaConvocatorias from '../../components/seleccion/ListaConvocatorias'
 import PanelCandidatos from '../../components/seleccion/PanelCandidatos'
 import PanelConfiguracion from '../../components/seleccion/PanelConfiguracion'
-import Boton from '../../components/ui/Boton'
-import Icono from '../../components/ui/Icono'
 import Pestanas from '../../components/ui/Pestanas'
 import useFiltrosUrl from '../../hooks/useFiltrosUrl'
 import {
@@ -30,39 +28,14 @@ export default function Preseleccion() {
   const convocatoriaId = valores.convocatoria
   const pestana = valores.pestana === 'configuracion' ? 'configuracion' : 'candidatos'
 
-  // Solo se desplaza la vista cuando la persona elige una convocatoria (no al cargar ni al pasar por la URL).
-  const desplazar = useRef(false)
-
   const elegir = useCallback(
     (convocatoria, { silencioso = false } = {}) => {
       setDatos(convocatoria)
       // El llenado silencioso solo completa los datos de la convocatoria que ya está en la URL.
-      if (!silencioso) {
-        desplazar.current = true
-        setValores({ convocatoria: convocatoria.id, pestana: '' }, { reemplazar: false })
-      }
+      if (!silencioso) setValores({ convocatoria: convocatoria.id, pestana: '' }, { reemplazar: false })
     },
     [setValores],
   )
-
-  // En pantallas estrechas el detalle queda debajo de toda la lista: al elegir se lleva a la vista.
-  useEffect(() => {
-    if (!desplazar.current || !convocatoriaId) return
-    desplazar.current = false
-    const detalle = document.getElementById('detalle-convocatoria')
-    const lista = document.getElementById('lista-convocatorias')
-    if (!detalle || !lista || detalle.getBoundingClientRect().top < lista.getBoundingClientRect().bottom) return
-    // Inmediato: no hay animación que atender con movimiento reducido y el encabezado queda a la vista al instante.
-    detalle.scrollIntoView({ behavior: 'auto', block: 'start' })
-  }, [convocatoriaId])
-
-  // Solo en pantallas apiladas: vuelve a la lista, sobre la convocatoria activa, para elegir otra sin perder el sitio.
-  const volverALaLista = () => {
-    const activa = document.querySelector('#lista-convocatorias [aria-current="true"]')
-    if (!activa) return
-    activa.scrollIntoView({ behavior: 'auto', block: 'center' })
-    activa.focus()
-  }
 
   const cambiarPestana = (id) => setValores({ pestana: id === 'candidatos' ? '' : id })
 
@@ -74,10 +47,12 @@ export default function Preseleccion() {
       <h1 className={`${CLASE_TITULO_PAGINA} text-balance`}>Preselección</h1>
 
       <div className="@container">
-        {/* Lista de navegación de 280 a 320 px y el detalle con todo el ancho restante. */}
+        {/* Lista de navegación de 280 a 320 px y el detalle con todo el ancho restante. En pantallas estrechas la
+            lista se pliega en un botón sobre el detalle. */}
         <div className="grid items-start gap-x-6 gap-y-4 @min-[900px]:grid-cols-[minmax(17.5rem,20rem)_minmax(0,1fr)]">
           <ListaConvocatorias
             seleccionadaId={convocatoriaId}
+            etiquetaSeleccionada={actual ? tituloConvocatoria(actual) : undefined}
             onElegir={elegir}
             className="@min-[900px]:sticky @min-[900px]:top-2 @min-[900px]:max-h-[calc(100dvh-10rem)]"
           />
@@ -85,29 +60,13 @@ export default function Preseleccion() {
           {!convocatoriaId ? (
             <section
               aria-label="Detalle de la convocatoria"
-              className={`${CLASE_TARJETA_PLANA} flex flex-col items-center gap-2 px-6 py-14 text-center`}
+              className={`${CLASE_TARJETA_PLANA} flex flex-col items-center gap-1 px-6 py-8 text-center`}
             >
-              <h2 className={`text-lg font-semibold ${CLASE_TEXTO_FUERTE}`}>Elige una convocatoria</h2>
-              <p className={`max-w-md text-sm ${CLASE_TEXTO_SUAVE}`}>
-                Al elegirla verás sus candidatos y podrás abrir la configuración de actividades.
-              </p>
+              <h2 className={`text-base font-semibold ${CLASE_TEXTO_FUERTE}`}>Elige una convocatoria</h2>
+              <p className={`max-w-md text-sm ${CLASE_TEXTO_SUAVE}`}>Verás sus candidatos y su configuración de actividades.</p>
             </section>
           ) : (
-            <section
-              id="detalle-convocatoria"
-              aria-labelledby="titulo-detalle"
-              className="flex min-w-0 scroll-mt-20 flex-col gap-3 @max-[899px]:min-h-[75dvh]"
-            >
-              <Boton
-                variante="enlace"
-                tamano="flexible"
-                onClick={volverALaLista}
-                className="-mb-1 self-start px-0 @min-[900px]:hidden"
-              >
-                <Icono nombre="flechaIzquierda" className="size-4" />
-                Elegir otra convocatoria
-              </Boton>
-
+            <section id="detalle-convocatoria" aria-labelledby="titulo-detalle" className="flex min-w-0 flex-col gap-3">
               {/* Encabezado compacto: nombre, y debajo estado, código y vacantes en una sola línea. */}
               <header className="flex flex-col gap-1.5">
                 <h2
@@ -139,7 +98,13 @@ export default function Preseleccion() {
                   {
                     id: 'candidatos',
                     etiqueta: 'Candidatos',
-                    contenido: <PanelCandidatos key={convocatoriaId} convocatoriaId={convocatoriaId} />,
+                    contenido: (
+                      <PanelCandidatos
+                        key={convocatoriaId}
+                        convocatoriaId={convocatoriaId}
+                        activo={pestana === 'candidatos'}
+                      />
+                    ),
                   },
                   {
                     id: 'configuracion',

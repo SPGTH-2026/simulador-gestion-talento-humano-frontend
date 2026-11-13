@@ -207,7 +207,7 @@ function Historial({ correcciones }) {
   )
 }
 
-function TarjetaActividad({ actividad, info, puedeEscribir, editando, onEditar, onCerrar, onGuardar }) {
+function TarjetaActividad({ actividad, info, puedeEscribir, editando, algunaEditando, onEditar, onCerrar, onGuardar }) {
   const [verHistorial, setVerHistorial] = useState(false)
   const botonRef = useRef(null)
   const nota = info.calificacion
@@ -221,7 +221,7 @@ function TarjetaActividad({ actividad, info, puedeEscribir, editando, onEditar, 
   }, [editando])
 
   return (
-    <li className={`${CLASE_TARJETA_PLANA} flex min-w-0 flex-col gap-3 p-4 ${editando ? '@min-[620px]:col-span-2' : ''}`}>
+    <li className={`${CLASE_TARJETA_PLANA} flex min-w-0 flex-col gap-3 p-4 ${algunaEditando ? '@min-[620px]:col-span-2' : ''}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 className={`text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>
           {actividad.etiqueta}
@@ -431,6 +431,7 @@ export default function PanelCalificaciones({ convocatoriaId, postulacionId, pue
               info={datos.actividades[actividad.id]}
               puedeEscribir={puedeEscribir}
               editando={editando === actividad.id}
+              algunaEditando={editando != null}
               onEditar={() => setEditando(actividad.id)}
               onCerrar={() => setEditando(null)}
               onGuardar={guardar}

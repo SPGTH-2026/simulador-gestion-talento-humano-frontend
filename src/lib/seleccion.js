@@ -81,3 +81,21 @@ export const traducirError = (mensaje) => {
 
 export const traducirErrores = (errores) =>
   Object.fromEntries(Object.entries(errores).map(([campo, mensaje]) => [campo, traducirError(mensaje)]))
+
+// Ranking y finalistas. El orden, las posiciones y la sugerencia los decide el servidor: aquí solo se rotulan.
+export const SUGERENCIA = {
+  sugerido: { texto: 'Sugerido', tono: 'exito', icono: 'check' },
+  empate_en_corte: { texto: 'Empate en el corte', tono: 'aviso', icono: 'alerta' },
+  no_sugerido: { texto: 'No sugerido', tono: 'neutral', icono: null },
+}
+
+export const MOTIVO_REVISION = {
+  ya_no_elegible: 'Ya no es elegible: dejó de estar listo.',
+  cambio_resultado: 'Cambió su resultado, sus notas o su habilitación.',
+}
+
+// Resultado adicional: texto con dos decimales ("8.50"); null es ausencia de nota.
+export const textoResultado = (valor) => (valor == null ? null : String(valor))
+
+export const formatoFechaHora = (iso) =>
+  iso ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' }).format(new Date(iso)) : ''

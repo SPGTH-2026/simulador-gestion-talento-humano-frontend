@@ -100,6 +100,10 @@ html.dark {
    mientras el sistema no cambiara. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Estados de pasar el puntero solo en controles disponibles: un botón deshabilitado
+   (disabled o aria-disabled) no debe cambiar de color al pasar por encima. */
+@custom-variant libre (&:not(:disabled, [aria-disabled="true"]));
+
 /* Barras de desplazamiento.
    Pista transparente, 6px y pulgar redondeado. El hover cambia opacidad, no
    grosor: el ancho forma parte del cálculo del layout y no se puede animar.

@@ -3,9 +3,6 @@ import { Link } from 'react-router-dom'
 import { listaEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
 import {
-  IconoFlechaDerecha,
-  IconoFlechaIzquierda,
-  IconoLupa,
   IconoOjo,
   IconoX,
 } from '../../components/convocatorias/Iconos'
@@ -16,6 +13,8 @@ import {
   Resultado,
 } from '../../components/evaluacion/PresentacionEvaluacion'
 import Boton from '../../components/ui/Boton'
+import CampoBusqueda from '../../components/ui/CampoBusqueda'
+import Paginacion from '../../components/ui/Paginacion'
 import Campo from '../../components/ui/Campo'
 import Etiqueta from '../../components/ui/Etiqueta'
 import Icono from '../../components/ui/Icono'
@@ -505,18 +504,11 @@ export default function EvaluacionListado() {
               etiqueta="Buscar aspirante"
               className="@min-[520px]:col-span-2 @min-[860px]:col-span-1"
             >
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500 dark:text-sena-texto-suave">
-                  <IconoLupa />
-                </span>
-                <input
-                  type="search"
-                  placeholder="Nombre o correo..."
-                  value={termino}
-                  onChange={(e) => setTermino(e.target.value)}
-                  className={`${CLASE_CAMPO} pl-10`}
-                />
-              </div>
+              <CampoBusqueda
+                placeholder="Nombre o correo…"
+                value={termino}
+                onChange={(e) => setTermino(e.target.value)}
+              />
             </Campo>
 
             <Boton
@@ -669,38 +661,15 @@ export default function EvaluacionListado() {
               ))}
             </ul>
 
-            <nav
-              aria-label="Paginación de aspirantes"
-              className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-            >
-              <p className={CLASE_TEXTO_SUAVE}>
-                Página <span className="tabular-nums">{meta.current_page}</span> de{' '}
-                <span className="tabular-nums">{Math.max(meta.last_page, 1)}</span> ·{' '}
-                <span className="tabular-nums">{meta.total}</span> aspirante(s)
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Boton
-                  variante="contorno"
-                  tamano="tactil"
-                  className="min-w-32 flex-1 sm:flex-none"
-                  onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                  disabled={meta.current_page <= 1}
-                >
-                  <IconoFlechaIzquierda className="h-4 w-4" />
-                  Anterior
-                </Boton>
-                <Boton
-                  variante="contorno"
-                  tamano="tactil"
-                  className="min-w-32 flex-1 sm:flex-none"
-                  onClick={() => setPagina((p) => Math.min(meta.last_page, p + 1))}
-                  disabled={meta.current_page >= meta.last_page}
-                >
-                  Siguiente
-                  <IconoFlechaDerecha className="h-4 w-4" />
-                </Boton>
-              </div>
-            </nav>
+            <Paginacion
+              meta={meta}
+              singular="aspirante"
+              plural="aspirantes"
+              etiqueta="Paginación de aspirantes"
+              ocupado={actualizando}
+              onPagina={setPagina}
+              className="px-1"
+            />
           </>
         )}
       </div>

@@ -14,7 +14,10 @@ import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulac
 import EtiquetaVentana from '../../components/convocatorias/EtiquetaVentana'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
+import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import Icono from '../../components/ui/Icono'
+import Paginacion from '../../components/ui/Paginacion'
+import Rueda from '../../components/ui/Rueda'
 import { MensajeError } from '../../components/ui/Mensaje'
 import Tarjeta from '../../components/ui/Tarjeta'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
@@ -27,7 +30,6 @@ import {
   CLASE_META_DT,
   CLASE_SUBTITULO_PAGINA,
   CLASE_TARJETA_PLANA,
-  CLASE_TEXTO_SUAVE,
   CLASE_TITULO_PAGINA,
 } from '../../lib/estilos'
 
@@ -278,7 +280,6 @@ export default function ConvocatoriasListado() {
   // "Buscando" incluye la consulta en curso y los 300 ms de espera mientras se
   // escribe: durante ese tiempo no se puede afirmar que no hay resultados.
   const buscando = cargando || numero !== resuelta || termino !== busqueda
-  const actualizando = buscando && !cargando
 
   const hayConvocatorias = convocatorias.length > 0
   const datosVigentes =
@@ -406,17 +407,9 @@ export default function ConvocatoriasListado() {
 
     return (
       <>
-        <Boton
-          variante="primario"
-          tamano="flexible"
-          className={CLASE_BOTON_ACCION}
-          onClick={() => navigate(`/convocatorias/${c.id}`)}
-          aria-label={`Ver detalle de ${c.nombre}`}
-        >
-          <Icono nombre="ojo" className={ICONO_BOTON} />
-          <span className={TEXTO_BOTON}>Ver detalle</span>
-        </Boton>
-
+        {/* Las acciones secundarias van ARRIBA y "Ver detalle" siempre al final: el pie de la tarjeta
+            va pegado al fondo, así "Ver detalle" queda a la misma altura en todas las tarjetas de una
+            fila aunque unas tengan Editar/Cerrar y otras no. */}
         {(mostrarEditar || mostrarCerrar) && (
           <div
             className={
@@ -453,6 +446,17 @@ export default function ConvocatoriasListado() {
             )}
           </div>
         )}
+
+        <Boton
+          variante="primario"
+          tamano="flexible"
+          className={CLASE_BOTON_ACCION}
+          onClick={() => navigate(`/convocatorias/${c.id}`)}
+          aria-label={`Ver detalle de ${c.nombre}`}
+        >
+          <Icono nombre="ojo" className={ICONO_BOTON} />
+          <span className={TEXTO_BOTON}>Ver detalle</span>
+        </Boton>
       </>
     )
   }
@@ -498,20 +502,13 @@ export default function ConvocatoriasListado() {
               etiqueta={gestionaEstricto ? 'Buscar por nombre, código o cargo' : 'Buscar por nombre o cargo'}
             >
               {({ id, describedby }) => (
-                <div className="relative">
-                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500 dark:text-sena-texto-suave">
-                    <Icono nombre="lupa" />
-                  </span>
-                  <input
-                    id={id}
-                    type="search"
-                    placeholder="Escribe para buscar…"
-                    value={termino}
-                    onChange={(e) => setTermino(e.target.value)}
-                    aria-describedby={describedby}
-                    className={`${CLASE_CAMPO} pl-10`}
-                  />
-                </div>
+                <CampoBusqueda
+                  id={id}
+                  placeholder="Escribe para buscar…"
+                  value={termino}
+                  onChange={(e) => setTermino(e.target.value)}
+                  aria-describedby={describedby}
+                />
               )}
             </Campo>
 
@@ -622,30 +619,6 @@ export default function ConvocatoriasListado() {
             )}
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <p className={`text-sm ${CLASE_TEXTO_SUAVE}`} aria-live="polite">
-              {cargando ? 'Cargando convocatorias…' : mostrarTotal ? totalTexto : ''}
-            </p>
-
-            {/* Indicador discreto de actualización. El aviso para lectores de
-                pantalla existe siempre (sr-only) para que el cambio se anuncie;
-                a la vista solo aparece mientras hay una consulta pendiente. */}
-            <p
-              role="status"
-              className={actualizando ? `inline-flex items-center gap-2 text-xs ${CLASE_TEXTO_SUAVE}` : 'sr-only'}
-            >
-              {actualizando && (
-                <>
-                  <span
-                    className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin"
-                    aria-hidden="true"
-                  />
-                  Actualizando resultados...
-                </>
-              )}
-            </p>
-          </div>
         </div>
       </Tarjeta>
 
@@ -662,9 +635,26 @@ export default function ConvocatoriasListado() {
       )}
 
       {/* Inicio de los resultados: a donde se lleva la pantalla al paginar. */}
-      <div ref={refResultados} className="scroll-mt-4" aria-busy={actualizando}>
+      <div ref={refResultados} className="flex scroll-mt-4 flex-col gap-4" aria-busy={buscando}>
+        {/* Una sola línea de estado sobre los resultados, siempre con el mismo estilo: carga, actualización o total. */}
+        {(buscando || (hayLista && mostrarTotal)) && (
+          <p
+            role="status"
+            className="flex min-h-6 items-center gap-2.5 text-base font-medium text-sena-azul dark:text-sena-texto"
+          >
+            {buscando ? (
+              <>
+                <Rueda /> {verEsqueleto ? 'Cargando convocatorias…' : 'Actualizando convocatorias…'}
+              </>
+            ) : (
+              totalTexto
+            )}
+          </p>
+        )}
+
         {verEsqueleto && (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+          <div className="flex flex-col gap-4" aria-busy="true">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <Tarjeta key={i} className="p-5">
                 <div className="flex items-center justify-between gap-3">
@@ -686,7 +676,7 @@ export default function ConvocatoriasListado() {
                 <div className={`${CLASE_ESQUELETO} mt-5 h-11 w-full`} />
               </Tarjeta>
             ))}
-            <span className="sr-only">Cargando convocatorias…</span>
+          </div>
           </div>
         )}
 
@@ -882,41 +872,14 @@ export default function ConvocatoriasListado() {
       </div>
 
       {hayLista && meta.total > 0 && meta.last_page > 1 && (
-        <Tarjeta
-          as="nav"
-          aria-label="Paginación de convocatorias"
-          className="flex flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-        >
-          <p className={CLASE_TEXTO_SUAVE} aria-live="polite">
-            Página <span className="tabular-nums">{meta.current_page}</span> de{' '}
-            <span className="tabular-nums">{Math.max(meta.last_page, 1)}</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {/* aria-disabled y no 'disabled': al llegar a un extremo el botón
-                que tiene el foco no debe perderlo. */}
-            <Boton
-              variante="contorno"
-              tamano="flexible"
-              className="min-w-32 flex-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 sm:flex-none lg:min-h-10"
-              onClick={() => irAPagina(pagina - 1)}
-              aria-disabled={meta.current_page <= 1}
-              aria-label="Página anterior"
-            >
-              <Icono nombre="flechaIzquierda" className={ICONO_BOTON} />
-              Anterior
-            </Boton>
-            <Boton
-              variante="contorno"
-              tamano="flexible"
-              className="min-w-32 flex-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 sm:flex-none lg:min-h-10"
-              onClick={() => irAPagina(pagina + 1)}
-              aria-disabled={meta.current_page >= meta.last_page}
-              aria-label="Página siguiente"
-            >
-              Siguiente
-              <Icono nombre="flechaDerecha" className={ICONO_BOTON} />
-            </Boton>
-          </div>
+        <Tarjeta className="px-4 py-3">
+          <Paginacion
+            meta={meta}
+            singular="convocatoria"
+            plural="convocatorias"
+            etiqueta="Paginación de convocatorias"
+            onPagina={irAPagina}
+          />
         </Tarjeta>
       )}
     </div>

@@ -1,5 +1,6 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
+import ErrorBoundary from '../components/ErrorBoundary'
 import IndicadorNavegacion from '../components/IndicadorNavegacion'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
@@ -54,8 +55,11 @@ export default function AppLayout() {
     setMenuAbierto(false)
   }
 
+  // "relative": los elementos sr-only (position:absolute) de cualquier lista quedan recortados por este marco. Sin
+  // esto escapaban al documento, que se volvía varios miles de px más alto que la ventana, y el scroll del touchpad
+  // desplazaba la página entera dejando blanco debajo.
   return (
-    <div className="flex h-screen overflow-hidden bg-sena-lienzo dark:bg-sena-noche">
+    <div className="relative flex h-screen overflow-hidden bg-sena-lienzo dark:bg-sena-noche">
       <IndicadorNavegacion />
 
       {/* Enlace para saltar el menú: solo se ve al enfocarlo con el teclado. */}
@@ -75,15 +79,17 @@ export default function AppLayout() {
         <main
           id="contenido"
           tabIndex={-1}
-          className="scroll-sena-contenido flex-1 overflow-y-auto px-4 py-5 focus:outline-none sm:px-6 lg:px-8 lg:py-7"
+          className="scroll-sena-contenido flex-1 overflow-y-auto overscroll-contain px-4 py-5 focus:outline-none sm:px-6 lg:px-8 lg:py-7"
         >
           <div className="mx-auto w-full max-w-[1440px]">
             {/* El Suspense vive AQUÍ y no solo en el router: mientras llega el
                 código de una pantalla el marco (menú y barra) sigue en su sitio
                 y solo el contenido muestra la espera. */}
-            <Suspense fallback={<PantallaCarga operacion="pantalla" id={pathname} />}>
-              <Outlet />
-            </Suspense>
+            <ErrorBoundary nivel="pantalla" resetKey={pathname}>
+              <Suspense fallback={<PantallaCarga operacion="pantalla" id={pathname} />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>

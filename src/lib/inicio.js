@@ -8,6 +8,7 @@ import { menu } from '../config/menu'
 export function perfilInicio(user, can) {
   const rol = user?.role
   const aspirante = rol === 'aspirante'
+  const evaluando = rol === 'aprendiz' && can('evaluacion:evaluar') && can('propio:evaluaciones')
 
   return {
     // Aspirante: sus postulaciones, las convocatorias que puede ver y sus
@@ -21,7 +22,10 @@ export function perfilInicio(user, can) {
     // GET /mis-evaluaciones devuelve SOLO las evaluaciones que hizo el propio
     // aprendiz. Para el instructor y el super admin devuelve las de todo su
     // alcance (no se pueden separar las suyas), así que ahí no se usa.
-    evaluando: rol === 'aprendiz' && can('evaluacion:evaluar') && can('propio:evaluaciones'),
+    evaluando,
+    // Selección sin otro bloque de convocatorias (p. ej. el seleccionador): sus convocatorias con acceso directo a
+    // Preselección y Ranking. GET /seleccion/convocatorias respeta el alcance de fichas.
+    convocatoriasSeleccion: !aspirante && can('seleccion:ver') && !can('convocatorias:gestionar') && !evaluando,
     // Los aspirantes ya tienen sus enlaces dentro de cada bloque.
     accesos: !aspirante,
   }

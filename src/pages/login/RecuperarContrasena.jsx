@@ -14,6 +14,7 @@ import { useCuentaAtras } from '../../lib/useCuentaAtras'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
 import CampoClave from '../../components/ui/CampoClave'
+import Icono from '../../components/ui/Icono'
 import { MensajeError } from '../../components/ui/Mensaje'
 import { CLASE_CAMPO, CLASE_CAMPO_CODIGO } from '../../lib/estilos'
 import {
@@ -172,6 +173,20 @@ export default function RecuperarContrasena() {
 
   return (
     <>
+      {/* Flecha para volver un paso: del primer paso al inicio de sesión; del segundo, a pedir el código. */}
+      <div className="-mt-2 mb-3">
+        {paso === 1 ? (
+          <Boton as={Link} to="/login" variante="enlace" tamano="flexible" className="-ml-2 !justify-start">
+            <Icono nombre="flechaIzquierda" className="size-5 shrink-0" />
+            Volver
+          </Boton>
+        ) : (
+          <Boton variante="enlace" tamano="flexible" className="-ml-2 !justify-start" onClick={volverAlPaso1}>
+            <Icono nombre="flechaIzquierda" className="size-5 shrink-0" />
+            Volver
+          </Boton>
+        )}
+      </div>
       <h2 className="text-2xl font-bold text-sena-azul dark:text-sena-texto">
         Restablecer contraseña
       </h2>

@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { listaFichas } from '../../api/fichas'
 import { listaAspirantes } from '../../api/portafolios'
 import Mensaje from '../../components/ui/Mensaje'
-import Boton from '../../components/ui/Boton'
+import Paginacion from '../../components/ui/Paginacion'
 import Cargando from '../../components/ui/Cargando'
+import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import { Link } from 'react-router-dom'
 
@@ -11,7 +12,7 @@ export default function DocumentosListado() {
   const [fichas, setFichas] = useState([])
   const [fichaId, setFichaId] = useState('')
   const [busqueda, setBusqueda] = useState('')
-  const [pagina, setPagina] = useState(1)
+  const [, setPagina] = useState(1)
   const [aspirantes, setAspirantes] = useState([])
   const [meta, setMeta] = useState({})
   const [cargando, setCargando] = useState(false)
@@ -73,12 +74,10 @@ export default function DocumentosListado() {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
             Buscar
           </label>
-          <input
-            type="text"
-            placeholder="Nombre, email..."
+          <CampoBusqueda
+            placeholder="Nombre o correo…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sena-azul focus:border-transparent"
           />
         </div>
         <div className="w-full sm:w-64">
@@ -128,12 +127,11 @@ export default function DocumentosListado() {
                     <div className="text-xs text-slate-500 dark:text-slate-400">{a.email}</div>
                   </td>
                   <td className="py-3 pr-4">
+                    {/* Texto plano, como en Usuarios: el código de ficha no necesita chip. */}
                     {a.ficha ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-sena-azul/10 text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
-                        {a.ficha.codigo}
-                      </span>
+                      <span className="text-slate-700 dark:text-slate-300">{a.ficha.codigo}</span>
                     ) : (
-                      <span className="text-xs text-slate-500 dark:text-slate-400">Sin ficha</span>
+                      <span className="text-slate-500 dark:text-slate-400">—</span>
                     )}
                   </td>
                   <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">
@@ -157,28 +155,16 @@ export default function DocumentosListado() {
         </div>
       )}
 
-      {meta?.last_page > 1 && (
-        <nav className="flex items-center justify-center gap-2" aria-label="Paginación">
-          <Boton
-            variant="outline"
-            size="sm"
-            onClick={() => cambiarPagina(pagina - 1)}
-            disabled={pagina <= 1}
-          >
-            Anterior
-          </Boton>
-          <span className="text-sm text-slate-600 dark:text-slate-400">
-            Página {pagina} de {meta?.last_page}
-          </span>
-          <Boton
-            variant="outline"
-            size="sm"
-            onClick={() => cambiarPagina(pagina + 1)}
-            disabled={pagina >= (meta?.last_page ?? 1)}
-          >
-            Siguiente
-          </Boton>
-        </nav>
+      {meta && aspirantes.length > 0 && (
+        <Paginacion
+          meta={meta}
+          singular="aspirante"
+          plural="aspirantes"
+          etiqueta="Paginación de portafolios"
+          ocupado={cargando}
+          onPagina={cambiarPagina}
+          className="px-1"
+        />
       )}
     </div>
   )
