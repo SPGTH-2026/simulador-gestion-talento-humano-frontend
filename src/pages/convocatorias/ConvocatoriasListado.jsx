@@ -767,6 +767,18 @@ export default function ConvocatoriasListado() {
                       de convocatoria. Cada uno dice qué es (title y aria-label),
                       porque el chip solo lleva el valor. */}
                   <div className="mt-4 flex flex-wrap gap-2">
+                    {/* La ficha solo se dice cuando el usuario tiene más de una en su alcance (la lista de fichas es
+                        el alcance completo, no el resultado filtrado: al filtrar por una sola sigue visible) y la API
+                        la entrega (solo Instructor y Superadministrador). */}
+                    {fichas.length > 1 && c.ficha?.codigo && (
+                      <span
+                        title={`Ficha ${c.ficha.codigo}${c.ficha.nombre_programa ? ` · ${c.ficha.nombre_programa}` : ''}`}
+                        aria-label={`Ficha ${c.ficha.codigo}${c.ficha.nombre_programa ? `, programa ${c.ficha.nombre_programa}` : ''}`}
+                        className={CLASE_CHIP}
+                      >
+                        Ficha {c.ficha.codigo}
+                      </span>
+                    )}
                     {c.modalidad?.nombre && (
                       <span
                         title={`Modalidad: ${c.modalidad.nombre}`}
