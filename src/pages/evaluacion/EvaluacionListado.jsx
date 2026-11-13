@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../auth/useAuth'
 import { listaEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
 import {
@@ -299,6 +300,12 @@ function ChipFiltro({ tipo, texto, onQuitar }) {
 }
 
 export default function EvaluacionListado() {
+  const { user } = useAuth()
+  // El filtro por ficha solo tiene sentido para quienes tienen alcance sobre
+  // varias fichas: super admin e instructor. Los aprendices (general/evaluador)
+  // solo ven su propia ficha, asi que no se les muestra el selector.
+  const puedeFiltrarPorFicha = user?.role === 'super_admin' || user?.role === 'instructor'
+
   const [filas, setFilas] = useState([])
   const [convocatorias, setConvocatorias] = useState([])
   const [fichas, setFichas] = useState([])
@@ -556,13 +563,15 @@ export default function EvaluacionListado() {
               id="evaluacion-filtros"
               className={`${filtrosAbiertos ? 'grid' : 'hidden'} col-span-full gap-3 @min-[520px]:grid-cols-2 md:contents`}
             >
-              <FiltroSelect
-                etiqueta="Ficha"
-                valor={filtroFicha}
-                onElegir={elegirFicha}
-                todas="Todas las fichas"
-                opciones={opcionesFicha}
-              />
+              {puedeFiltrarPorFicha && (
+                <FiltroSelect
+                  etiqueta="Ficha"
+                  valor={filtroFicha}
+                  onElegir={elegirFicha}
+                  todas="Todas las fichas"
+                  opciones={opcionesFicha}
+                />
+              )}
               <FiltroSelect
                 etiqueta="Convocatoria"
                 valor={filtroConvocatoria}
