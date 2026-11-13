@@ -611,13 +611,6 @@ export default function ConvocatoriasListado() {
                 )}
               </Campo>
             )}
-
-            {hayFiltros && (
-              <Boton variante="contorno" tamano="flexible" onClick={limpiarFiltros} className="sm:shrink-0">
-                <Icono nombre="cerrar" className={ICONO_BOTON} />
-                Limpiar filtros
-              </Boton>
-            )}
             </div>
           </div>
         </div>
@@ -639,18 +632,28 @@ export default function ConvocatoriasListado() {
       <div ref={refResultados} className="flex scroll-mt-4 flex-col gap-4" aria-busy={buscando}>
         {/* Una sola línea de estado sobre los resultados, siempre con el mismo estilo: carga, actualización o total. */}
         {(buscando || (hayLista && mostrarTotal)) && (
-          <p
-            role="status"
-            className="flex min-h-6 items-center gap-2.5 text-base font-medium text-sena-azul dark:text-sena-texto"
-          >
-            {buscando ? (
-              <>
-                <Rueda /> {verEsqueleto ? 'Cargando convocatorias…' : 'Actualizando convocatorias…'}
-              </>
-            ) : (
-              totalTexto
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <p
+              role="status"
+              className="flex min-h-6 items-center gap-2.5 text-base font-medium text-sena-azul dark:text-sena-texto"
+            >
+              {buscando ? (
+                <>
+                  <Rueda /> {verEsqueleto ? 'Cargando convocatorias…' : 'Actualizando convocatorias…'}
+                </>
+              ) : (
+                totalTexto
+              )}
+            </p>
+            {/* «Limpiar filtros» vive aquí, junto al total que los filtros acaban de cambiar: así no ocupa un lugar en la
+                tarjeta de filtros ni hace que el campo Ficha se parta cuando aparece. */}
+            {hayFiltros && (
+              <Boton variante="enlace" tamano="tactil" onClick={limpiarFiltros} className="-mr-2">
+                <Icono nombre="cerrar" className={ICONO_BOTON} />
+                Limpiar filtros
+              </Boton>
             )}
-          </p>
+          </div>
         )}
 
         {verEsqueleto && (
@@ -734,6 +737,20 @@ export default function ConvocatoriasListado() {
                   <div className="flex items-start justify-between gap-3">
                     <span className="min-w-0 truncate pt-0.5 font-mono text-xs font-medium tracking-wide text-slate-600 dark:text-sena-texto-suave">
                       {gestionaEstricto ? c.codigo : null}
+                      {/* La ficha va como texto plano junto al código, y solo cuando el usuario tiene más de una en su
+                          alcance (la lista de fichas es el alcance completo, no el resultado filtrado: al filtrar por una
+                          sola sigue visible) y la API la entrega (solo Instructor y Superadministrador). */}
+                      {fichas.length > 1 && c.ficha?.codigo && (
+                        <>
+                          {gestionaEstricto ? ' ' : null}
+                          <span
+                            title={`Ficha ${c.ficha.codigo}${c.ficha.nombre_programa ? ` · ${c.ficha.nombre_programa}` : ''}`}
+                            className={gestionaEstricto ? 'ml-3 uppercase' : 'uppercase'}
+                          >
+                            Ficha {c.ficha.codigo}
+                          </span>
+                        </>
+                      )}
                     </span>
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                       {esAspirante && <EtiquetaVentana convocatoria={c} />}
@@ -767,18 +784,6 @@ export default function ConvocatoriasListado() {
                       de convocatoria. Cada uno dice qué es (title y aria-label),
                       porque el chip solo lleva el valor. */}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {/* La ficha solo se dice cuando el usuario tiene más de una en su alcance (la lista de fichas es
-                        el alcance completo, no el resultado filtrado: al filtrar por una sola sigue visible) y la API
-                        la entrega (solo Instructor y Superadministrador). */}
-                    {fichas.length > 1 && c.ficha?.codigo && (
-                      <span
-                        title={`Ficha ${c.ficha.codigo}${c.ficha.nombre_programa ? ` · ${c.ficha.nombre_programa}` : ''}`}
-                        aria-label={`Ficha ${c.ficha.codigo}${c.ficha.nombre_programa ? `, programa ${c.ficha.nombre_programa}` : ''}`}
-                        className={CLASE_CHIP}
-                      >
-                        Ficha {c.ficha.codigo}
-                      </span>
-                    )}
                     {c.modalidad?.nombre && (
                       <span
                         title={`Modalidad: ${c.modalidad.nombre}`}

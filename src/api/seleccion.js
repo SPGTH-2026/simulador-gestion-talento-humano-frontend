@@ -122,13 +122,25 @@ export const confirmarFinalistas = (convocatoriaId, datos) =>
 // GET .../decisiones?page=  (seleccion:ver)
 //   -> { data: [{ postulacion_id, aspirante, posicion, en_lista, estado: pendiente|seleccionado|no_seleccionado,
 //          decision: null | { resultado, motivo, lista_version, decidida_por, decidida_en },
-//          requiere_revision, motivo_revision: null | fuera_de_lista | ya_no_elegible | cambio_resultado }],
+//          requiere_revision, motivo_revision: null | fuera_de_lista | ya_no_elegible | cambio_resultado,
+//          confirmada: null | { lista_version, posicion, resultado },
+//          actual: null | { listo, posicion, resultado, estado_documental, cumplimiento_documental },
+//          sustento: null | { lista_version, confirmada_en, pertenece, posicion, resultado } }],
 //        meta: { current_page, last_page, per_page, total, estado_convocatoria, pendientes,
 //          cupos: { vacantes_totales, cupos_ocupados, cupos_disponibles },
-//          lista: null | { version, total, requiere_revision } } }
+//          lista: null | { version, total, requiere_revision, modo, confirmada_por, confirmada_en } } }
 // Son los finalistas de la lista vigente MÁS las personas con decisión que ya salieron de ella (en_lista: false,
 // posicion: null). Ordenadas por posición; las de fuera de lista van al final. Los cupos son los de la convocatoria
 // entera, no los de la página.
+// Evidencia de cada fila (tres cosas distintas, no mezclarlas):
+//  - 'confirmada': lo que CONSERVÓ la lista vigente al confirmarse (posición y resultado; null si la fila no está en ella).
+//    El desglose por actividad NO se congela: solo existen estos dos datos.
+//  - 'actual': cómo está HOY según el Ranking vivo (null si la postulación ya no está postulada). 'posicion' y 'resultado'
+//    son null sin actividades configuradas o si el candidato no está listo.
+//  - 'sustento': la fila de la lista cuya versión quedó registrada en la DECISIÓN (null sin decisión). 'pertenece' es false
+//    si esa versión no contiene al candidato: pasa al liberar un cupo, que registra la versión vigente aunque ya no lo
+//    incluya; entonces 'posicion' y 'resultado' son null y no hay nada que mostrar de esa versión.
+// 'resultado' llega como texto con dos decimales ("8.70") y 'posicion' como entero o null.
 export const decisionesConvocatoria = (convocatoriaId, params) =>
   client.get(`/seleccion/convocatorias/${convocatoriaId}/decisiones`, { params }).then((res) => res.data)
 

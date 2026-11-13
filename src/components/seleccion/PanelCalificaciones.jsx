@@ -290,7 +290,9 @@ function TarjetaActividad({ actividad, info, puedeEscribir, editando, algunaEdit
 // "vigentes" solo si se obtuvieron con la clave de ahora. Mientras se actualizan, o si la recarga falla, las notas
 // anteriores siguen visibles pero NO se puede escribir: serían decisiones sobre datos que ya pueden haber cambiado
 // (por ejemplo, el candidato dejó de estar habilitado). Una respuesta vencida nunca pisa a la actual.
-export default function PanelCalificaciones({ convocatoriaId, postulacionId, puedeDecidir, recarga, onCambio }) {
+// 'soloLectura': vista de consulta (p. ej. la evidencia al decidir en Decidir): muestra las notas, pesos y correcciones de
+// hoy sin ofrecer registrar ni corregir, y sin el aviso de rol (que sería falso para quien sí puede calificar).
+export default function PanelCalificaciones({ convocatoriaId, postulacionId, puedeDecidir, recarga, onCambio, soloLectura = false }) {
   const clave = `${convocatoriaId}|${postulacionId}|${recarga}`
   const [intento, setIntento] = useState(0)
   const clavePedida = `${clave}|${intento}`
@@ -347,21 +349,23 @@ export default function PanelCalificaciones({ convocatoriaId, postulacionId, pue
   const resultado = datos.resultado_adicional
   const sinConfigurar = !datos.configuracion.configurada
   const sinActividades = resultado.estado === 'sin_actividades'
-  const razon = razonSinEscritura(datos, puedeDecidir)
-  const puedeEscribir = puedeDecidir && datosVigentes && datos.calificable && !sinConfigurar && !sinActividades
+  const razon = soloLectura ? null : razonSinEscritura(datos, puedeDecidir)
+  const puedeEscribir = !soloLectura && puedeDecidir && datosVigentes && datos.calificable && !sinConfigurar && !sinActividades
 
   return (
     <div className="@container flex flex-col gap-4" aria-busy={actualizando}>
       {actualizando && (
         <p role="status" className={`flex items-center gap-2 text-sm ${CLASE_TEXTO_SUAVE}`}>
-          <Rueda /> Actualizando calificaciones… Las acciones de escritura están bloqueadas hasta tener datos vigentes.
+          <Rueda /> Actualizando calificaciones…
+          {soloLectura ? '' : ' Las acciones de escritura están bloqueadas hasta tener datos vigentes.'}
         </p>
       )}
       {fallo && (
         <div className="flex flex-col items-start gap-3">
           <MensajeError>{error}</MensajeError>
           <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
-            Estas son las últimas notas que se pudieron consultar. No se puede registrar ni corregir hasta recargar.
+            Estas son las últimas notas que se pudieron consultar.
+            {soloLectura ? '' : ' No se puede registrar ni corregir hasta recargar.'}
           </p>
           <Boton variante="contorno" tamano="tactil" onClick={reintentar}>
             Reintentar
@@ -386,7 +390,9 @@ export default function PanelCalificaciones({ convocatoriaId, postulacionId, pue
           </dd>
         </div>
         <div className={`${CLASE_CAJA_SUAVE} p-3 @min-[520px]:col-span-2`}>
-          <dt className={`text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Resultado adicional</dt>
+          <dt className={`text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>
+            {soloLectura ? 'Resultado adicional de hoy' : 'Resultado adicional'}
+          </dt>
           <dd className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             {resultado.valor != null ? (
               <span className={`text-2xl font-bold tabular-nums ${CLASE_TEXTO_FUERTE}`}>

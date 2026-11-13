@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { decisionesConvocatoria } from '../../api/seleccion'
 import { mensajeError } from '../../api/mensajeError'
+import useAvisoTransitorio from '../../hooks/useAvisoTransitorio'
 import { EtiquetaConIcono } from '../evaluacion/PresentacionEvaluacion'
 import AvatarIniciales from '../evaluacion/AvatarIniciales'
 import Boton from '../ui/Boton'
@@ -10,7 +11,7 @@ import { MensajeAviso, MensajeError, MensajeExito } from '../ui/Mensaje'
 import Paginacion from '../ui/Paginacion'
 import Rueda from '../ui/Rueda'
 import DialogoDecision from './DialogoDecision'
-import HistorialDecision from './HistorialDecision'
+import DetalleDecision from './DetalleDecision'
 import {
   CLASE_META_DD,
   CLASE_META_DT,
@@ -43,10 +44,12 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
   const [pagina, setPagina] = useState(1)
   const [estado, setEstado] = useState({ fase: 'cargando', filas: [], meta: null, error: '' })
   const [intento, setIntento] = useState(0)
-  // Fila con el diálogo de decisión abierto y fila con el historial abierto (id de la postulación).
+  // Fila con el diálogo de decisión abierto y fila con el detalle (evidencia e historial) abierto (id de la postulación).
   const [decidiendo, setDecidiendo] = useState(null)
-  const [historial, setHistorial] = useState(null)
-  const [guardada, setGuardada] = useState('')
+  const [detalle, setDetalle] = useState(null)
+  // Confirmación de la última decisión guardada ({ texto }); un objeto nuevo en cada guardado reinicia su plazo.
+  const [guardada, setGuardada] = useState(null)
+  const pausaGuardada = useAvisoTransitorio(guardada, () => setGuardada(null))
   // Los datos se piden con una "foto" de la página: una recarga silenciosa (tras guardar o un 409) no vacía la tabla.
   const solicitud = useRef(0)
 
@@ -87,8 +90,8 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
 
   const cambiarPagina = (n) => {
     setDecidiendo(null)
-    setHistorial(null)
-    setGuardada('')
+    setDetalle(null)
+    setGuardada(null)
     setEstado((previo) => ({ ...previo, fase: 'cargando', error: '' }))
     setPagina(n)
   }
@@ -106,13 +109,13 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
 
   const accionesDe = (fila) => accionesDeFila({ fila, puedeDecidir, enProceso: vigenteEnProceso, cupos, lista })
   const filaDecidiendo = decidiendo == null ? null : (filas.find((f) => f.postulacion_id === decidiendo) ?? null)
-  const filaHistorial = historial == null ? null : (filas.find((f) => f.postulacion_id === historial) ?? null)
+  const filaDetalle = detalle == null ? null : (filas.find((f) => f.postulacion_id === detalle) ?? null)
 
   // Tras guardar se aplica lo que devolvió el servidor y se vuelve a leer en silencio: fila, cupos y pendientes salen
   // siempre de la misma lectura.
   const alGuardar = (resultado) => {
     setDecidiendo(null)
-    setGuardada(`Decisión guardada: ${resultado.aspirante ?? 'el candidato'} quedó como ${ESTADO_DECISION[resultado.estado]?.texto.toLowerCase() ?? resultado.estado}.`)
+    setGuardada({ texto: `Decisión guardada: ${resultado.aspirante ?? 'el candidato'} quedó como ${ESTADO_DECISION[resultado.estado]?.texto.toLowerCase() ?? resultado.estado}.` })
     setEstado((previo) => ({
       ...previo,
       meta: previo.meta ? { ...previo.meta, cupos: resultado.cupos } : previo.meta,
@@ -174,7 +177,13 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
         </div>
       </dl>
 
-      {guardada && <MensajeExito>{guardada}</MensajeExito>}
+      {/* Confirmación breve: se retira sola a los pocos segundos (se detiene mientras se lee). La lista, los cupos y la fila
+          ya muestran el resultado, así que nada se pierde al desaparecer. */}
+      {guardada && (
+        <div {...pausaGuardada}>
+          <MensajeExito>{guardada.texto}</MensajeExito>
+        </div>
+      )}
 
       {lista == null ? (
         <MensajeAviso>
@@ -217,10 +226,12 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
         <div className={`${CLASE_TARJETA_PLANA} overflow-hidden ${cargando ? 'opacity-60' : ''}`}>
           <table className="w-full table-fixed text-left text-sm">
             <caption className="sr-only">Finalistas y decisiones de la convocatoria</caption>
+            {/* Aspirante no se queda con todo el ancho sobrante: desde 640 px ocupa un tercio, Decisión recibe el resto y
+                Acciones tiene lo justo para sus dos botones en fila (o apilados cuando el panel es más angosto). */}
             <colgroup>
-              <col />
-              <col className="hidden w-40 @min-[640px]:table-column" />
-              <col className="w-40 @min-[520px]:w-44" />
+              <col className="@min-[640px]:w-[34%]" />
+              <col className="hidden @min-[640px]:table-column" />
+              <col className="w-40 @min-[520px]:w-44 @min-[680px]:w-64" />
             </colgroup>
             <thead className={CLASE_THEAD}>
               <tr>
@@ -285,34 +296,35 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
                       </div>
                     </td>
                     <td className={`${CLASE_TD} text-right`}>
-                      <div className="flex flex-col items-end gap-2">
+                      <div className="flex flex-col items-end gap-2 @min-[680px]:flex-row @min-[680px]:items-center @min-[680px]:justify-end">
                         {acciones.puede && (
                           <Boton
                             variante="contorno"
                             tamano="tactil"
+                            className="w-full @min-[680px]:w-auto"
                             aria-label={
                               acciones.etiqueta === 'Decidir'
                                 ? `Decidir sobre ${f.aspirante}`
                                 : `${acciones.etiqueta} la decisión de ${f.aspirante}`
                             }
                             onClick={() => {
-                              setGuardada('')
+                              setGuardada(null)
                               setDecidiendo(f.postulacion_id)
                             }}
                           >
                             {acciones.etiqueta}
                           </Boton>
                         )}
-                        {f.decision && (
-                          <Boton
-                            variante="contorno"
-                            tamano="tactil"
-                            aria-label={`Ver el historial de la decisión de ${f.aspirante}`}
-                            onClick={() => setHistorial(f.postulacion_id)}
-                          >
-                            Historial
-                          </Boton>
-                        )}
+                        {/* Misma acción de fila que «Ver detalle» en Preselección: abre la evidencia (y el historial si ya hay decisión). */}
+                        <Boton
+                          variante="contorno"
+                          tamano="tactil"
+                          className="w-full @min-[680px]:w-auto"
+                          aria-label={`Ver el detalle de ${f.aspirante}`}
+                          onClick={() => setDetalle(f.postulacion_id)}
+                        >
+                          Ver detalle
+                        </Boton>
                         {/* Solo se explica en la fila lo que la página no dice ya con un aviso: el permiso. */}
                         {!acciones.puede && !puedeDecidir && acciones.razon && (
                           <span className={`text-xs ${CLASE_TEXTO_SUAVE}`}>{acciones.razon}</span>
@@ -352,12 +364,14 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
           onCerrar={() => setDecidiendo(null)}
         />
       )}
-      {filaHistorial && (
-        <HistorialDecision
-          key={filaHistorial.postulacion_id}
+      {filaDetalle && (
+        <DetalleDecision
+          key={filaDetalle.postulacion_id}
           convocatoriaId={convocatoriaId}
-          fila={filaHistorial}
-          onCerrar={() => setHistorial(null)}
+          fila={filaDetalle}
+          lista={lista}
+          puedeDecidir={puedeDecidir}
+          onCerrar={() => setDetalle(null)}
         />
       )}
     </div>

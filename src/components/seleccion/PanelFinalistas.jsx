@@ -17,7 +17,7 @@ import {
   CLASE_TEXTO_SUAVE,
   CLASE_THEAD,
 } from '../../lib/estilos'
-import { MOTIVO_REVISION, formatoFechaHora, textoResultado } from '../../lib/seleccion'
+import { MOTIVO_REVISION, formatoFechaHora, textoNota } from '../../lib/seleccion'
 
 const CLASE_TH = 'px-3 py-2.5 first:pl-4 last:pr-4'
 const CLASE_TD = 'px-3 py-2.5 align-middle first:pl-4 last:pr-4'
@@ -168,7 +168,7 @@ export default function PanelFinalistas({ convocatoriaId, activo = true, invalid
               <tbody className={CLASE_TBODY}>
                 {actual.finalistas.map((f) => {
                   const motivo = porRevisar.get(f.postulacion_id)
-                  const res = textoResultado(f.resultado_adicional)
+                  const res = textoNota(f.resultado_adicional)
                   const textoMotivo = motivo ? (MOTIVO_REVISION[motivo] ?? 'Requiere revisión.') : null
                   return (
                     <tr key={f.postulacion_id}>

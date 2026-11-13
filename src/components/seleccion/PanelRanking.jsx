@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { confirmarFinalistas, fijarObjetivoFinalistas, rankingConvocatoria } from '../../api/seleccion'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
+import useAvisoTransitorio from '../../hooks/useAvisoTransitorio'
 import { EtiquetaConIcono } from '../evaluacion/PresentacionEvaluacion'
 import AvatarIniciales from '../evaluacion/AvatarIniciales'
 import Boton from '../ui/Boton'
@@ -15,6 +16,8 @@ import Paginacion from '../ui/Paginacion'
 import {
   CLASE_CAJA_SUAVE,
   CLASE_CAMPO,
+  CLASE_META_DD,
+  CLASE_META_DT,
   CLASE_TARJETA_PLANA,
   CLASE_TBODY,
   CLASE_TEXTO_FUERTE,
@@ -22,7 +25,7 @@ import {
   CLASE_TEXTO_SUAVE,
   CLASE_THEAD,
 } from '../../lib/estilos'
-import { SUGERENCIA, textoCumplimiento, textoResultado } from '../../lib/seleccion'
+import { SUGERENCIA, textoCumplimiento, textoNota } from '../../lib/seleccion'
 
 const CLASE_TH = 'px-3 py-2.5 first:pl-4 last:pr-4'
 const CLASE_TD = 'px-3 py-2.5 align-middle first:pl-4 last:pr-4'
@@ -47,12 +50,6 @@ function SinDato({ lectura }) {
   )
 }
 
-const Cifra = ({ children }) => <span className={`font-semibold tabular-nums ${CLASE_TEXTO_FUERTE}`}>{children}</span>
-const Separador = () => (
-  <span aria-hidden="true" className={CLASE_TEXTO_SUAVE}>
-    ·
-  </span>
-)
 
 // Ranking de los candidatos listos de UNA convocatoria, objetivo de finalistas y confirmación de la lista.
 // El servidor ordena, asigna posiciones, sugiere y detecta empates; aquí solo se muestra y se elige.
@@ -80,7 +77,14 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
   const [objetivoTexto, setObjetivoTexto] = useState(null)
   const [guardandoObjetivo, setGuardandoObjetivo] = useState(false)
   const [errorObjetivo, setErrorObjetivo] = useState('')
-  const [avisoObjetivo, setAvisoObjetivo] = useState('')
+  // Confirmación del último cambio de objetivo ({ texto }); un objeto nuevo en cada cambio reinicia su plazo.
+  const [avisoObjetivo, setAvisoObjetivo] = useState(null)
+
+  // Las confirmaciones breves de éxito se retiran solas a los pocos segundos (el objetivo y la elección quedan igual).
+  // Los avisos que requieren atención y los errores NO: siguen visibles hasta la siguiente acción.
+  const avisoTransitorio = aviso && (aviso.tipo === 'exito' || aviso.tipo === 'info') ? aviso : null
+  const pausaAviso = useAvisoTransitorio(avisoTransitorio, () => setAviso(null))
+  const pausaObjetivo = useAvisoTransitorio(avisoObjetivo, () => setAvisoObjetivo(null))
 
   const montado = useRef(true)
   const versionVista = useRef(null)
@@ -156,6 +160,8 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
   const cargando = fase === 'cargando'
   const hayFilas = filas.length > 0
   const modo = meta?.modo
+  // Puesto y resultado solo existen con actividades configuradas: sin ellas el servidor no los calcula.
+  const conPuesto = modo === 'con_actividades'
   const puedeElegir = puedeDecidir && enProceso === true && (modo === 'con_actividades' || modo === 'sin_actividades')
   const puedeCambiarObjetivo = puedeDecidir && enProceso === true && modo !== 'pendiente_de_configurar'
   const empate = meta?.empate_en_corte ?? null
@@ -297,7 +303,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
   }
 
   const abrirObjetivo = () => {
-    setAvisoObjetivo('')
+    setAvisoObjetivo(null)
     setErrorObjetivo('')
     setObjetivoTexto(String(meta.objetivo.valor))
   }
@@ -315,7 +321,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
       await fijarObjetivoFinalistas(convocatoriaId, valor)
       if (!montado.current) return
       setObjetivoTexto(null)
-      setAvisoObjetivo(valor == null ? 'Objetivo restablecido a 2 × vacantes.' : `Objetivo actualizado a ${valor}.`)
+      setAvisoObjetivo({ texto: valor == null ? 'Objetivo restablecido a 2 × vacantes.' : `Objetivo actualizado a ${valor}.` })
       recargar()
       requestAnimationFrame(() => botonCambiar.current?.focus())
     } catch (e) {
@@ -381,7 +387,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
     avisos.push({ tono: 'aviso', texto: 'Solo se pueden confirmar finalistas con la convocatoria en proceso.' })
   }
   if (modo === 'sin_actividades') {
-    avisos.push({ tono: 'info', texto: 'Sin actividades: no hay notas ni sugerencia. Elige a mano e indica la justificación al confirmar.' })
+    avisos.push({ tono: 'info', texto: 'Sin actividades: no hay puesto, resultado ni sugerencia. Elige a mano e indica la justificación al confirmar.' })
   }
   if (empate) {
     avisos.push({
@@ -415,45 +421,47 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
         </div>
       )}
 
-      {/* Resumen en una línea: solo las cifras que ayudan a decidir según la configuración. */}
-      <section aria-label="Resumen del ranking" className="flex flex-col gap-2">
-        <p className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm ${CLASE_TEXTO_SUAVE}`}>
-          <span>
-            <Cifra>{meta.listos}</Cifra> {meta.listos === 1 ? 'listo' : 'listos'} de <span className="tabular-nums">{meta.postuladas}</span>
-          </span>
-          <Separador />
-          <span>
-            <Cifra>{meta.vacantes}</Cifra> {meta.vacantes === 1 ? 'vacante' : 'vacantes'}
-          </span>
+      {/* Resumen en una tarjeta, igual que la de Decidir: solo las cifras que ayudan a decidir según la configuración. */}
+      <section aria-label="Resumen del ranking" className="flex flex-col gap-3">
+        <dl className={`${CLASE_TARJETA_PLANA} grid grid-cols-2 gap-x-5 gap-y-3 p-4 @min-[520px]:grid-cols-4`}>
+          <div>
+            <dt className={CLASE_META_DT}>Candidatos listos</dt>
+            <dd className={`${CLASE_META_DD} tabular-nums`}>
+              {meta.listos}
+              <span className={`font-normal ${CLASE_TEXTO_SUAVE}`}> de {meta.postuladas}</span>
+            </dd>
+          </div>
+          <div>
+            <dt className={CLASE_META_DT}>Vacantes</dt>
+            <dd className={`${CLASE_META_DD} tabular-nums`}>{meta.vacantes}</dd>
+          </div>
           {modo !== 'pendiente_de_configurar' && (
-            <>
-              <Separador />
-              <span>
-                objetivo <Cifra>{meta.objetivo.valor}</Cifra>
+            <div>
+              <dt className={CLASE_META_DT}>Objetivo de finalistas</dt>
+              <dd className={`${CLASE_META_DD} flex flex-wrap items-center gap-x-2`}>
+                <span className="tabular-nums">{meta.objetivo.valor}</span>
                 {meta.objetivo.efectivo !== meta.objetivo.valor && (
-                  <span className="tabular-nums"> (alcanzan {meta.objetivo.efectivo})</span>
+                  <span className={`text-xs font-normal tabular-nums ${CLASE_TEXTO_SUAVE}`}>(alcanzan {meta.objetivo.efectivo})</span>
                 )}
-              </span>
-              {puedeCambiarObjetivo && objetivoTexto == null && (
-                <Boton ref={botonCambiar} variante="enlace" tamano="flexible" className="px-1" onClick={abrirObjetivo}>
-                  Cambiar
-                </Boton>
-              )}
-            </>
+                {puedeCambiarObjetivo && objetivoTexto == null && (
+                  <Boton ref={botonCambiar} variante="enlace" tamano="flexible" className="-my-3 px-1" onClick={abrirObjetivo}>
+                    Cambiar
+                  </Boton>
+                )}
+              </dd>
+            </div>
           )}
           {modo === 'con_actividades' && (
-            <>
-              <Separador />
-              <span>
-                <Cifra>{meta.sugeridos}</Cifra> {meta.sugeridos === 1 ? 'sugerido' : 'sugeridos'}
-              </span>
-            </>
+            <div>
+              <dt className={CLASE_META_DT}>Sugeridos</dt>
+              <dd className={`${CLASE_META_DD} tabular-nums`}>{meta.sugeridos}</dd>
+            </div>
           )}
-        </p>
+        </dl>
 
         {avisoObjetivo && objetivoTexto == null && (
-          <p role="status" className="text-sm font-medium text-exito">
-            {avisoObjetivo}
+          <p role="status" className="text-sm font-medium text-exito" {...pausaObjetivo}>
+            {avisoObjetivo.texto}
           </p>
         )}
 
@@ -559,11 +567,18 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
         <div className={`${CLASE_TARJETA_PLANA} overflow-hidden ${cargando ? 'opacity-60' : ''}`}>
           <table className="w-full table-fixed text-left text-sm">
             <caption className="sr-only">Ranking de candidatos listos</caption>
+            {/* Puesto y Resultado son columnas propias en escritorio y solo existen con actividades (sin ellas no hay nada que
+                mostrar). En móvil esos datos van bajo el nombre, con su etiqueta. 'Documental' tiene ancho de sobra para su
+                encabezado en mayúsculas con el relleno de la celda: antes se recortaba contra el borde de la tarjeta. */}
+            {/* Desde 640 px Aspirante ocupa poco más de un tercio (o el 60 % sin Puesto ni Resultado) y las demás columnas
+                se reparten el resto por igual, en vez de dejarle todo el ancho sobrante al nombre. Por debajo, anchos fijos
+                (el encabezado «Documental» necesita unos 115 px). */}
             <colgroup>
               {puedeElegir && <col className="w-12" />}
-              <col />
-              <col className="w-28 @min-[520px]:w-36" />
-              <col className="hidden w-24 @min-[520px]:table-column" />
+              <col className={conPuesto ? '@min-[640px]:w-[38%]' : '@min-[640px]:w-[60%]'} />
+              {conPuesto && <col className="hidden w-20 @min-[520px]:table-column @min-[640px]:w-auto" />}
+              {conPuesto && <col className="hidden w-28 @min-[520px]:table-column @min-[640px]:w-auto" />}
+              <col className="hidden w-32 @min-[520px]:table-column @min-[640px]:w-auto" />
             </colgroup>
             <thead className={CLASE_THEAD}>
               <tr>
@@ -573,13 +588,14 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
                   </th>
                 )}
                 <th scope="col" className={CLASE_TH}>Aspirante</th>
-                <th scope="col" className={`${CLASE_TH} text-right`}>Puesto · resultado</th>
+                {conPuesto && <th scope="col" className={`hidden @min-[520px]:table-cell ${CLASE_TH} text-right`}>Puesto</th>}
+                {conPuesto && <th scope="col" className={`hidden @min-[520px]:table-cell ${CLASE_TH} text-right`}>Resultado</th>}
                 <th scope="col" className={`hidden @min-[520px]:table-cell ${CLASE_TH} text-right`}>Documental</th>
               </tr>
             </thead>
             <tbody className={CLASE_TBODY}>
               {filas.map((f) => {
-                const res = textoResultado(f.resultado_adicional)
+                const res = textoNota(f.resultado_adicional)
                 const doc = textoCumplimiento(f.cumplimiento_documental)
                 return (
                   <tr
@@ -611,27 +627,39 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
                           </span>
                           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <EtiquetaSugerencia codigo={f.sugerencia} />
-                            {f.finalista && <Etiqueta tono="azul">En la lista vigente</Etiqueta>}
-                            {doc != null && (
-                              <span className={`text-xs tabular-nums @min-[520px]:hidden ${CLASE_TEXTO_SUAVE}`}>Doc. {doc}</span>
-                            )}
+                            {f.finalista && <Etiqueta tono="azul" className="whitespace-nowrap">En la lista vigente</Etiqueta>}
                           </span>
+                          {/* En móvil los datos van bajo el nombre y dicen qué son: «Puesto 1 · Resultado 10,00 · Documental 100 %». */}
+                          {(conPuesto || doc != null) && (
+                            <span className={`text-xs tabular-nums @min-[520px]:hidden ${CLASE_TEXTO_SUAVE}`}>
+                              {[
+                                conPuesto && `Puesto ${f.posicion ?? '—'}`,
+                                conPuesto && `Resultado ${res ?? '—'}`,
+                                doc != null && `Documental ${doc}`,
+                              ]
+                                .filter(Boolean)
+                                // Espacio duro dentro de cada dato: la línea se parte entre datos, nunca entre «100» y «%».
+                                .map((dato) => dato.replace(/ /g, ' '))
+                                .join(' · ')}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
-                    <td className={`${CLASE_TD} text-right`}>
-                      {f.posicion == null && res == null ? (
-                        <SinDato lectura="Sin posición ni nota: la convocatoria no tiene actividades" />
-                      ) : (
-                        <span className={`tabular-nums ${CLASE_TEXTO_FUERTE}`}>
-                          <span className="sr-only">Posición </span>
-                          <span className="font-semibold">{f.posicion ?? '—'}</span>
-                          <span aria-hidden="true" className={CLASE_TEXTO_SUAVE}> · </span>
-                          <span className="sr-only">, resultado </span>
-                          <span className="font-semibold">{res ?? '—'}</span>
-                        </span>
-                      )}
-                    </td>
+                    {conPuesto && (
+                      <td className={`hidden @min-[520px]:table-cell ${CLASE_TD} text-right`}>
+                        <span className={`font-semibold tabular-nums ${CLASE_TEXTO_FUERTE}`}>{f.posicion ?? '—'}</span>
+                      </td>
+                    )}
+                    {conPuesto && (
+                      <td className={`hidden @min-[520px]:table-cell ${CLASE_TD} text-right`}>
+                        {res == null ? (
+                          <SinDato lectura="Sin resultado" />
+                        ) : (
+                          <span className={`font-semibold tabular-nums ${CLASE_TEXTO_FUERTE}`}>{res}</span>
+                        )}
+                      </td>
+                    )}
                     <td className={`hidden @min-[520px]:table-cell ${CLASE_TD} text-right`}>
                       {doc == null ? (
                         <SinDato lectura="Sin dato de cumplimiento" />
@@ -662,34 +690,39 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
       {puedeElegir && hayFilas && (
         <section
           aria-label="Elección de finalistas"
-          className={`${CLASE_TARJETA_PLANA} z-10 flex flex-col gap-3 p-3 @min-[760px]:sticky @min-[760px]:bottom-2 @min-[760px]:shadow-md`}
+          className={`${CLASE_TARJETA_PLANA} flex flex-col gap-3 p-3`}
         >
           {/* El resultado de la última acción va aquí, pegado a los botones, también cuando la elección queda vacía. */}
           {aviso && (
-            <div ref={mensajeRef} tabIndex={-1} className="focus:outline-none">
+            <div ref={mensajeRef} tabIndex={-1} className="focus:outline-none" {...(avisoTransitorio ? pausaAviso : {})}>
               {(aviso.tipo === 'exito' || aviso.tipo === 'info') && <MensajeExito>{aviso.texto}</MensajeExito>}
               {aviso.tipo === 'aviso' && <MensajeAviso>{aviso.texto}</MensajeAviso>}
               {aviso.tipo === 'error' && <MensajeError>{aviso.texto}</MensajeError>}
             </div>
           )}
-          <div className="flex flex-col gap-3 @min-[560px]:flex-row @min-[560px]:items-center @min-[560px]:justify-between">
-            <p aria-live="polite" className={`text-sm ${CLASE_TEXTO_FUERTE}`}>
+          {/* Resumen a la izquierda y, a la derecha, el grupo de acciones que nunca se parte: «Revisar y confirmar» es la
+              acción principal y va última (en móvil, primera y a ancho completo); «Elegir la sugerencia» y «Vaciar elección»
+              son secundarias. Con poco ancho el resumen queda arriba y los botones debajo, como grupo. */}
+          <div className="flex flex-col gap-3 @min-[860px]:flex-row @min-[860px]:items-center @min-[860px]:justify-between">
+            <p aria-live="polite" className={`min-w-0 text-sm ${CLASE_TEXTO_FUERTE}`}>
               <span className="font-semibold tabular-nums">{seleccion.size}</span>{' '}
               {seleccion.size === 1 ? 'candidato elegido' : 'candidatos elegidos'} · objetivo{' '}
               <span className="tabular-nums">{meta.objetivo.efectivo}</span>
               {desactualizado && <span className="font-medium text-aviso"> · pendiente de revisar</span>}
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              {modo === 'con_actividades' && meta.sugeridos > 0 && (
-                <Boton variante="contorno" tamano="flexible" ocupado={buscando} onClick={usarSugerencia}>
-                  {buscando ? 'Buscando…' : 'Elegir la sugerencia'}
+            <div className="flex flex-col gap-2 @min-[560px]:flex-row @min-[560px]:items-center @min-[560px]:justify-between @min-[860px]:shrink-0 @min-[860px]:justify-end @min-[860px]:gap-4">
+              <div className="order-last flex flex-wrap items-center justify-center gap-2 @min-[560px]:order-first @min-[560px]:flex-nowrap @min-[560px]:justify-start">
+                {modo === 'con_actividades' && meta.sugeridos > 0 && (
+                  <Boton variante="contorno" ocupado={buscando} onClick={usarSugerencia}>
+                    {buscando ? 'Buscando…' : 'Elegir la sugerencia'}
+                  </Boton>
+                )}
+                <Boton variante="enlace" disabled={seleccion.size === 0 || buscando} onClick={limpiar}>
+                  Vaciar elección
                 </Boton>
-              )}
-              <Boton variante="enlace" tamano="flexible" disabled={seleccion.size === 0 || buscando} onClick={limpiar}>
-                Vaciar elección
-              </Boton>
+              </div>
               <Boton
-                tamano="flexible"
+                className="order-first w-full @min-[560px]:order-last @min-[560px]:w-auto"
                 disabled={seleccion.size === 0 || buscando}
                 onClick={abrirRevision}
               >

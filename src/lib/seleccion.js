@@ -116,7 +116,8 @@ export const formatoFechaHora = (iso) =>
 export const ESTADO_DECISION = {
   pendiente: { texto: 'Pendiente', tono: 'neutral', icono: 'reloj' },
   seleccionado: { texto: 'Seleccionado', tono: 'exito', icono: 'check' },
-  no_seleccionado: { texto: 'No seleccionado', tono: 'azul', icono: 'cerrar' },
+  // Mismo tono y mismo icono que «No habilitado»: en SPGTH una X roja es un resultado negativo, no un error del sistema.
+  no_seleccionado: { texto: 'No seleccionado', tono: 'peligro', icono: 'cerrar' },
 }
 
 export const RESULTADO_DECISION = {
@@ -159,3 +160,14 @@ export function accionesDeFila({ fila, puedeDecidir, enProceso, cupos, lista }) 
 }
 
 export const CODIGOS_CONFLICTO_DECISION = ['sin_cupos', 'lista_no_confirmada', 'lista_reemplazada', 'lista_requiere_revision']
+
+// Evidencia al decidir. 'confirmada' es lo que conservó la lista (posición y resultado), 'actual' lo de hoy según el Ranking
+// vivo y 'sustento' la fila de la versión registrada en la decisión. Esto devuelve en qué se diferencian dos de ellas
+// ([] si no cambió nada, null si no hay con qué comparar).
+export function diferencias(base, actual) {
+  if (!base || !actual) return null
+  const cambios = []
+  if ((base.resultado ?? null) !== (actual.resultado ?? null)) cambios.push({ campo: 'resultado', antes: base.resultado ?? null, ahora: actual.resultado ?? null })
+  if ((base.posicion ?? null) !== (actual.posicion ?? null)) cambios.push({ campo: 'posicion', antes: base.posicion ?? null, ahora: actual.posicion ?? null })
+  return cambios
+}

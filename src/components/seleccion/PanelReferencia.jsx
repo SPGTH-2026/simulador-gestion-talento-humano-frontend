@@ -245,7 +245,7 @@ export default function PanelReferencia({ convocatoriaId, postulacionId, activo,
                       {ev.evaluador ?? 'Evaluador eliminado'}
                       <span className="tabular-nums">{textoCumplimiento(ev.cumplimiento)}</span>
                       <EtiquetaResultado resultado={ev.resultado} />
-                      {esReferencia && <Etiqueta tono="azul">Es la referencia</Etiqueta>}
+                      {esReferencia && <Etiqueta tono="azul" className="whitespace-nowrap">Es la referencia</Etiqueta>}
                     </span>
                     <span className={`text-xs ${CLASE_TEXTO_SUAVE}`}>Actualizada {formatoFecha(ev.actualizada_en)}</span>
                   </span>
