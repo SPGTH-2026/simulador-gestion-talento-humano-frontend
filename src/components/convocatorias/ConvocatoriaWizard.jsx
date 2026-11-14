@@ -11,7 +11,7 @@ import EtiquetaEstado from './EtiquetaEstado'
 import Boton from '../ui/Boton'
 import Campo from '../ui/Campo'
 import Etiqueta from '../ui/Etiqueta'
-import { MensajeAviso, MensajeError, MensajeExito } from '../ui/Mensaje'
+import Mensaje, { MensajeAviso, MensajeError, MensajeExito } from '../ui/Mensaje'
 import PasosAsistente from './PasosAsistente'
 import Tarjeta from '../ui/Tarjeta'
 import {
@@ -22,7 +22,7 @@ import {
   CLASE_TEXTO_SUAVE,
   CLASE_TITULO_PAGINA,
 } from '../../lib/estilos'
-import { hoyEnBogota } from '../../lib/ventanaPostulacion'
+import { formatearFecha, hoyEnBogota } from '../../lib/ventanaPostulacion'
 import Icono from '../ui/Icono'
 
 const ETAPAS = [
@@ -589,11 +589,6 @@ export default function ConvocatoriaWizard({
     if (form.fecha_apertura && form.fecha_cierre && form.fecha_cierre < form.fecha_apertura) {
       e.fecha_cierre = 'La fecha de cierre debe ser posterior o igual a la de apertura.'
     }
-    // La evaluación empieza cuando ya no se reciben postulaciones: el mismo día del cierre o después. Antes del cierre,
-    // el servidor dejaría de aceptar postulaciones ese día y el cierre dejaría de mandar.
-    if (form.fecha_evaluacion && form.fecha_cierre && form.fecha_evaluacion < form.fecha_cierre) {
-      e.fecha_evaluacion = 'La fecha de evaluación no puede ser anterior a la de cierre.'
-    }
     const errorPonderaciones = validarPonderaciones()
     if (errorPonderaciones) e.documentos = errorPonderaciones
     return e
@@ -604,13 +599,9 @@ export default function ConvocatoriaWizard({
     for (const [campo, mensaje] of Object.entries(REQUERIDOS_PUBLICAR)) {
       if (!String(form[campo] ?? '').trim()) e[campo] ??= mensaje
     }
-    // Una convocatoria no se abre hacia atrás: la apertura es hoy o una fecha posterior (hoy en la zona de Colombia).
-    // El servidor solo exige que el cierre no esté en el pasado; esta regla es de la pantalla. No aplica a editar una
-    // convocatoria ya publicada (puedePublicar es falso): su apertura legítimamente ya pasó.
+    // Solo el cierre se valida contra hoy (contrato RF-CON-011). Una apertura pasada es válida: la convocatoria queda abierta
+    // al publicarla; se avisa en el paso 5 (avisosFechas) pero no se bloquea.
     const hoy = hoyEnBogota()
-    if (form.fecha_apertura && form.fecha_apertura < hoy) {
-      e.fecha_apertura ??= 'La fecha de apertura no puede estar en el pasado: elige hoy o una fecha posterior.'
-    }
     if (form.fecha_cierre && form.fecha_cierre < hoy) {
       e.fecha_cierre ??= 'La fecha de cierre no puede estar en el pasado.'
     }
@@ -618,7 +609,35 @@ export default function ConvocatoriaWizard({
   }
 
   const editable = !soloLectura
-  // Al publicar, el selector de fechas no ofrece días pasados (hoy en Colombia). Al editar una convocatoria ya publicada no hay mínimo.
+  // Avisos informativos del paso 5. No cuentan como pendientes ni bloquean guardar o publicar: el contrato admite estos
+  // casos y solo conviene que la persona sepa qué efecto tienen.
+  const avisosFechas = []
+  if (editable) {
+    const hoyAviso = hoyEnBogota()
+    if (puedePublicar && form.fecha_apertura && form.fecha_apertura < hoyAviso) {
+      avisosFechas.push({
+        clave: 'apertura',
+        tono: 'info',
+        texto: `La apertura (${formatearFecha(form.fecha_apertura)}) ya pasó: la convocatoria quedará abierta a los aspirantes apenas la publiques.`,
+      })
+    }
+    if (form.fecha_evaluacion && form.fecha_cierre && form.fecha_evaluacion < form.fecha_cierre) {
+      avisosFechas.push({
+        clave: 'evaluacion-antes-cierre',
+        tono: 'info',
+        texto: `La evaluación empieza el ${formatearFecha(form.fecha_evaluacion)}, antes del cierre: desde ese día quienes ya enviaron su postulación no podrán editarla ni reemplazar documentos. Los aspirantes podrán seguir postulándose hasta el ${formatearFecha(form.fecha_cierre)}.`,
+      })
+    }
+    if (form.fecha_evaluacion && form.fecha_apertura && form.fecha_evaluacion < form.fecha_apertura) {
+      avisosFechas.push({
+        clave: 'evaluacion-antes-apertura',
+        tono: 'aviso',
+        texto: 'La fecha de evaluación es anterior a la apertura. Revisa que sea la correcta.',
+      })
+    }
+  }
+  // Al publicar, el selector del CIERRE no ofrece días pasados (hoy en Colombia): es lo que exige el servidor. La apertura sí
+  // admite una fecha pasada. Al editar una convocatoria ya publicada no hay mínimo.
   const minimoFecha = puedePublicar && editable ? hoyEnBogota() : undefined
   const erroresBor = editable ? calcularErroresBorrador() : {}
   const erroresPub = editable && puedePublicar ? calcularErroresPublicacion() : erroresBor
@@ -1081,7 +1100,7 @@ export default function ConvocatoriaWizard({
       <div className="flex flex-col gap-4">
       <div className="grid gap-4 md:grid-cols-3">
         <Campo etiqueta="Fecha de apertura" requerido error={errorDe('fecha_apertura')}>
-          <input type="date" min={minimoFecha} {...campo('fecha_apertura')} />
+          <input type="date" {...campo('fecha_apertura')} />
         </Campo>
 
         <Campo etiqueta="Fecha de cierre" requerido error={errorDe('fecha_cierre')}>
@@ -1098,9 +1117,16 @@ export default function ConvocatoriaWizard({
       </div>
 
       <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
-        La fecha de evaluación es opcional: es el día en que empieza la evaluación de los candidatos. Debe ser el mismo
-        día del cierre o posterior, y desde esa fecha los aspirantes ya no pueden enviar ni cambiar su postulación.
+        La fecha de evaluación es opcional: es el día en que empieza la evaluación de los candidatos. Desde esa fecha, quienes
+        ya enviaron su postulación no pueden editarla ni reemplazar documentos. Recibir postulaciones nuevas depende solo de
+        las fechas de apertura y de cierre.
       </p>
+
+      {avisosFechas.map((a) => (
+        <Mensaje key={a.clave} tipo={a.tono}>
+          {a.texto}
+        </Mensaje>
+      ))}
       </div>
     ),    6: (
       <div className="flex flex-col gap-3">

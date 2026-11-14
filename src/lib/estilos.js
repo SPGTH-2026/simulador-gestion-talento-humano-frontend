@@ -51,9 +51,9 @@ export const CLASE_SUBTITULO_PAGINA = 'mt-1 text-sm text-slate-600 dark:text-sen
 export const CLASE_CHIP =
   'inline-flex items-center gap-1 rounded-full border border-sena-linea/70 bg-sena-fondo px-2.5 py-1 text-xs font-medium text-sena-azul dark:border-sena-borde/50 dark:bg-sena-noche/40 dark:text-sena-texto-suave'
 
-// Título de sección con la barra verde institucional a la izquierda.
-export const CLASE_TITULO_SECCION =
-  'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
+// Título de sección: la jerarquía la da el tamaño y el peso, sin adornos. Antes llevaba una barra verde a la izquierda
+// que repetía en cada tarjeta lo que la propia cabecera ya expresa; el verde queda para acciones y estados.
+export const CLASE_TITULO_SECCION = 'text-base font-semibold text-slate-800 dark:text-sena-texto'
 
 // Texto de apoyo y texto principal sobre una superficie (7.6:1 en claro, 6.6:1 en
 // oscuro). Slate-500 no se usa para texto: queda en 4.5:1 sobre el lienzo.

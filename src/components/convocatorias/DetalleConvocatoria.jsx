@@ -58,7 +58,7 @@ function hay(valor) {
 
 // ── Bloques de contenido reutilizables ────────────────────────────────────
 
-// Título de sección: barra verde a la izquierda, igual en todas las pestañas.
+// Título de sección: el estándar del sistema (CLASE_TITULO_SECCION), igual en todas las pestañas.
 function TituloSeccion({ children, className = '' }) {
   return <h3 className={`${CLASE_TITULO_SECCION} ${className}`.trim()}>{children}</h3>
 }
@@ -403,6 +403,15 @@ export default function DetalleConvocatoria({
     .filter((parte) => hay(parte) && String(parte).trim() !== titulo.trim())
     .join(' · ')
 
+  // Cargo, área y número de aspirantes (este último solo para gestión) en un solo texto: si la línea se parte, lo hace
+  // sin dejar un separador suelto al inicio.
+  const datosLinea = [
+    subtitulo,
+    c?.postulantes != null && esGestion ? `${c.postulantes} ${c.postulantes === 1 ? 'aspirante' : 'aspirantes'}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
       {/* Volver arriba a la izquierda, fuera de la cabecera. */}
@@ -413,40 +422,29 @@ export default function DetalleConvocatoria({
 
       {/* Cabecera: icono en cuadro azul claro, cargo como título, código y
           subtítulo, y el estado real a la derecha. */}
-      <header className={`${CLASE_TARJETA} overflow-hidden`}>
-        <div className="flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+      <header className={`${CLASE_TARJETA} flex flex-col gap-4 p-5`}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <div className="min-w-0">
             <h1 className={`${CLASE_TITULO_PAGINA} text-balance [overflow-wrap:anywhere]`}>{titulo}</h1>
-            {/* El identificador (CONV-AAAA-NNN) es un dato de gestión: solo lo ve la lista blanca (instructor, super
-                admin y el subrol gestor_convocatorias). */}
-            {(muestraCodigo || subtitulo) && (
-              <p className="mt-1 text-sm text-slate-600 dark:text-sena-texto-suave">
+            {/* Estado, identificador (dato de gestión: solo lo ve la lista blanca de instructor, super admin y el subrol
+                gestor_convocatorias), cargo y área, y el número de aspirantes (también de gestión: el aspirante no debe
+                ver cuántas personas se han postulado), todo en una misma línea. */}
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600 dark:text-sena-texto-suave">
+              <EtiquetaEstado codigo={c?.estado?.codigo} nombre={c?.estado?.nombre} />
+              <span>
                 {muestraCodigo && <span className="font-mono text-xs">{c?.codigo}</span>}
-                {muestraCodigo && subtitulo && ' · '}
-                {subtitulo}
-              </p>
-            )}
+                {muestraCodigo && datosLinea && ' · '}
+                {datosLinea}
+              </span>
+            </p>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 sm:flex-col sm:items-end sm:gap-2">
-            <EtiquetaEstado codigo={c?.estado?.codigo} nombre={c?.estado?.nombre} />
-            {/* Dato de gestión: solo llega a quien puede gestionar. El aspirante no debe ver cuántas personas se han
-                postulado. */}
-            {c?.postulantes != null && esGestion && (
-              <span className="text-sm text-slate-600 dark:text-sena-texto-suave">
-                {c.postulantes} {c.postulantes === 1 ? 'aspirante' : 'aspirantes'}
-              </span>
-            )}
-          </div>
+          {/* Acciones de gestión junto al título: en escritorio a la derecha, sin una franja aparte; en móvil debajo,
+              repartidas a todo el ancho. */}
+          {accionesGestion && <div className="sm:shrink-0">{accionesGestion}</div>}
         </div>
 
-        {/* Acciones de gestión: dentro de la cabecera, en una franja propia. A todo el ancho en móvil. */}
-        {(accionesGestion || errorAccion) && (
-          <div className="flex flex-col gap-2 border-t border-sena-linea/70 bg-sena-fondo/50 px-5 py-3 dark:border-sena-borde/50 dark:bg-sena-noche/30">
-            {errorAccion && <MensajeError>{errorAccion}</MensajeError>}
-            {accionesGestion}
-          </div>
-        )}
+        {errorAccion && <MensajeError>{errorAccion}</MensajeError>}
       </header>
 
       {/* Con panel de postulación hay dos pestañas, con todos los paneles

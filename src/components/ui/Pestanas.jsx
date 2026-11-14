@@ -107,7 +107,7 @@ export default function Pestanas({
               tabIndex={seleccionada ? 0 : -1}
               onClick={() => seleccionar(pestana.id)}
               onKeyDown={(e) => alTeclear(e, indice)}
-              className={`-mb-px flex shrink-0 items-center gap-2 rounded-t-md border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sena/40 ${
+              className={`-mb-px flex min-h-11 shrink-0 items-center gap-2 rounded-t-md border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sena/40 ${
                 seleccionada
                   ? 'border-sena text-sena-azul dark:border-sena dark:text-sena-texto'
                   : 'border-transparent text-slate-600 hover:border-sena-linea hover:text-sena-azul dark:text-sena-texto-suave dark:hover:border-sena-borde dark:hover:text-sena-texto'

@@ -331,12 +331,12 @@ function ContenidoDetalle({ id }) {
   // al título y al estado), no en una fila suelta encima.
   const hayAcciones = puedeGestionar && (editable || paso)
   const accionesGestion = hayAcciones ? (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+    <div className="flex flex-wrap items-center gap-2">
       {editable && (
         <Boton
           variante="contorno"
           tamano="tactil"
-          className="w-full sm:w-auto"
+          className="flex-1 sm:flex-none"
           onClick={() => navigate(`/convocatorias/${detalle.id}/editar`)}
         >
           Editar
@@ -347,7 +347,7 @@ function ContenidoDetalle({ id }) {
         <Boton
           variante="peligroSuave"
           tamano="tactil"
-          className="w-full sm:w-auto"
+          className="flex-1 sm:flex-none"
           ocupado={accionando}
           onClick={avanzarEstado}
         >

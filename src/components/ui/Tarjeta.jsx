@@ -10,8 +10,8 @@ export function Tarjeta({ as: Componente = 'div', className = '', children, ...p
 }
 
 // Tarjeta con el título de sección estándar. La cabecera va sobre una banda
-// tenue con la barra verde institucional y un borde inferior que separa el
-// título del contenido, para que la sección se lea como una unidad.
+// tenue con un borde inferior que separa el título del contenido, para que la
+// sección se lea como una unidad.
 export function TarjetaSeccion({ titulo, className = '', children }) {
   return (
     <section className={`${CLASE_TARJETA} overflow-hidden ${className}`.trim()}>

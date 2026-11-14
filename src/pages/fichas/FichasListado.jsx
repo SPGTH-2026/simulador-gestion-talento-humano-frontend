@@ -382,11 +382,11 @@ export default function FichasListado() {
                           >
                             {instructor.name}
                             {esSuperAdmin && (
-                              // Quitar: zona de toque de 28 px, con hover y foco visibles (antes era solo una «×» suelta).
+                              // Quitar: la «×» mide 28 px, pero su zona de toque llega a 44 px (after:-inset-2); con hover y foco visibles.
                               <button
                                 type="button"
                                 onClick={() => quitar(ficha, instructor)}
-                                className="grid size-7 place-items-center rounded-full font-bold text-peligro transition-colors hover:bg-peligro/10 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sena motion-reduce:transition-none"
+                                className="relative grid size-7 place-items-center rounded-full font-bold text-peligro transition-colors after:absolute after:-inset-2 after:content-[''] hover:bg-peligro/10 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-sena motion-reduce:transition-none"
                                 title="Quitar de la ficha"
                                 aria-label={`Quitar a ${instructor.name} de la ficha`}
                               >
