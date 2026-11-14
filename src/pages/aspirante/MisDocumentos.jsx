@@ -99,8 +99,9 @@ export default function MisDocumentos() {
         <ul className="list-disc list-inside space-y-1 ml-4">
           <li>Cada postulación tiene su propio espacio de documentos.</li>
           <li>Los documentos requeridos dependen de la convocatoria.</li>
-          <li>Puedes subir, reemplazar y eliminar mientras la convocatoria esté abierta (o según las reglas de edición).</li>
-          <li>Los certificados de skills son opcionales y se suben por separado.</li>
+          <li>Puedes cargar y reemplazar documentos mientras la convocatoria esté abierta (o según las reglas de edición).</li>
+          <li>Un documento obligatorio no se elimina: solo se reemplaza. Los opcionales y los adicionales sí se pueden eliminar.</li>
+          <li>Los certificados de skills son opcionales y se cargan por separado.</li>
         </ul>
       </div>
     </div>

@@ -118,7 +118,7 @@ export default function DocumentosListado() {
                 <th className={CLASE_TH}>Ficha</th>
                 <th className={CLASE_TH}>Postulaciones</th>
                 <th className={CLASE_TH}>Última actividad</th>
-                <th className={`${CLASE_TH} text-right`}>Acciones</th>
+                <th className={`${CLASE_TH} text-center`}>Acciones</th>
               </tr>
             </thead>
             <tbody className={CLASE_TBODY}>
@@ -133,7 +133,7 @@ export default function DocumentosListado() {
                   <td className={`${CLASE_TD} ${CLASE_TEXTO_SUAVE}`}>
                     {a.updated_at ? new Date(a.updated_at).toLocaleDateString('es-CO') : '—'}
                   </td>
-                  <td className={`${CLASE_TD} text-right`}>
+                  <td className={`${CLASE_TD} text-center`}>
                     {/* Misma acción de fila que «Ver detalle» en Preselección: botón con contorno, sin relleno. */}
                     <Boton
                       as={Link}

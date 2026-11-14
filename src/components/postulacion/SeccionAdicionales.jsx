@@ -99,7 +99,7 @@ export default function SeccionAdicionales({
       nuevos.titulo = `El título no puede superar ${MAX_TITULO_ADICIONAL} caracteres.`
     if (nota.length > MAX_NOTA_ADICIONAL)
       nuevos.nota = `La nota no puede superar ${MAX_NOTA_ADICIONAL} caracteres.`
-    if (!archivo) nuevos.archivo = 'Adjunta un archivo PDF.'
+    if (!archivo) nuevos.archivo = 'Selecciona un archivo PDF.'
 
     if (Object.keys(nuevos).length > 0) {
       setErrores(nuevos)
@@ -192,7 +192,7 @@ export default function SeccionAdicionales({
                       {adicional.archivo.nombre_original} ·{' '}
                       {formatearTamano(adicional.archivo.tamano_bytes)}
                       {adicional.archivo.subido_en && (
-                        <> · Subido el {formatearFechaHora(adicional.archivo.subido_en)}</>
+                        <> · Cargado el {formatearFechaHora(adicional.archivo.subido_en)}</>
                       )}
                     </p>
                   )}
@@ -265,19 +265,36 @@ export default function SeccionAdicionales({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="adicional-archivo" className="text-xs font-semibold text-slate-600 dark:text-sena-texto-suave">
+            <span id="adicional-archivo-etiqueta" className="text-xs font-semibold text-slate-600 dark:text-sena-texto-suave">
               Archivo (PDF, máx. {TAMANO_MAXIMO_MB} MB) *
-            </label>
+            </span>
+            {/* «Seleccionar archivo» solo abre el selector: la carga empieza con «Agregar documento adicional». El
+                nombre elegido se ve al lado (el control nativo cambiaba de texto según el idioma del navegador). */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Boton
+                variante="contorno"
+                tamano="tactil"
+                disabled={enviando}
+                aria-describedby="adicional-archivo-etiqueta"
+                onClick={() => refArchivo.current?.click()}
+              >
+                Seleccionar archivo
+              </Boton>
+              <span className="min-w-0 break-words text-sm text-slate-600 dark:text-sena-texto-suave" aria-live="polite">
+                {archivo ? `${archivo.name} · ${formatearTamano(archivo.size)}` : 'Ningún archivo seleccionado'}
+              </span>
+            </div>
             <input
               id="adicional-archivo"
               ref={refArchivo}
               type="file"
               accept=".pdf,application/pdf"
+              className="hidden"
+              aria-label="Seleccionar archivo del documento adicional"
               onChange={(e) => {
                 const elegido = e.target.files?.[0]
                 if (elegido) elegirArchivo(elegido)
               }}
-              className="text-sm text-slate-600 file:mr-3 file:cursor-pointer file:rounded file:border file:border-sena-azul/25 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-sena-azul dark:text-sena-texto-suave dark:file:border-sena-borde dark:file:bg-sena-superficie-alta dark:file:text-white"
             />
             {errores.archivo && (
               <p role="alert" className="text-xs text-red-600 dark:text-red-400">
@@ -286,7 +303,7 @@ export default function SeccionAdicionales({
             )}
           </div>
 
-          {enviando && <BarraProgreso valor={progresoEnvio} etiqueta="Subiendo documento adicional" />}
+          {enviando && <BarraProgreso valor={progresoEnvio} etiqueta="Cargando documento adicional" />}
 
           <div>
             <Boton variante="primario" tamano="tactil" type="submit" disabled={enviando}>

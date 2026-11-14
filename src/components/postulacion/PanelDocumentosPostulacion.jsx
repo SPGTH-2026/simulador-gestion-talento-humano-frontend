@@ -259,7 +259,7 @@ export default function PanelDocumentosPostulacion({
   const motivoVolver = !editable
     ? motivo
     : faltan.length > 0
-      ? `Falta subir: ${faltan.join(', ')}.`
+      ? `Falta cargar: ${faltan.join(', ')}.`
       : ''
 
   const alGuardarSexo = (sexoNuevo) => {

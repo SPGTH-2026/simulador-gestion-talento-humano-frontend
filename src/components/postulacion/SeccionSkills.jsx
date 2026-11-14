@@ -123,7 +123,7 @@ function FilaSkill({
                   disabled={Boolean(enVuelo)}
                   onClick={onAdjuntar}>
                   <span className="inline-flex items-center gap-1.5">
-                    {ocupada ? 'Subiendo...' : 'Adjuntar certificado'}
+                    {ocupada ? 'Cargando...' : 'Cargar certificado'}
                   </span>
                 </Boton>
               )
@@ -138,7 +138,7 @@ function FilaSkill({
       )}
 
       {activa && enVuelo === `cert-${declarada.id}` && (
-        <BarraProgreso valor={progresoCert ?? 0} etiqueta="Subiendo certificado" />
+        <BarraProgreso valor={progresoCert ?? 0} etiqueta="Cargando certificado" />
       )}
 
       <input
@@ -154,7 +154,7 @@ function FilaSkill({
         }}
       />
       {activa && enVuelo === `cert-${declarada.id}` && (
-        <BarraProgreso valor={progresoCert ?? 0} etiqueta="Subiendo certificado" />
+        <BarraProgreso valor={progresoCert ?? 0} etiqueta="Cargando certificado" />
       )}
     </li>
   )

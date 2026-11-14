@@ -55,18 +55,18 @@ const nombreDe = (fila) => fila.aspirante.name ?? 'aspirante'
 // Barra de documentos: gris sin documentos o sin ninguno cargado, ámbar con
 // avance parcial y verde con todos. El texto "x/y" acompaña siempre a la
 // barra: el color nunca es el único canal. El backend cuenta como 'cargados' los
-// documentos que el aspirante subió (antes 'validados'): el contrato no trae
-// validación documental, así que aquí se rotulan como subidos.
+// documentos que el aspirante cargó (antes 'validados'): el contrato no trae
+// validación documental, así que aquí se rotulan como cargados.
 function ProgresoDocumentos({ fila }) {
   const docs = fila.documentos ?? {}
   const total = docs.total ?? 0
-  const subidos = docs.cargados ?? docs.validados ?? 0
+  const cargados = docs.cargados ?? docs.validados ?? 0
   const maximo = Math.max(total, 1)
-  const pct = Math.min(100, Math.round((subidos / maximo) * 100))
+  const pct = Math.min(100, Math.round((cargados / maximo) * 100))
   const relleno =
-    total === 0 || subidos === 0
+    total === 0 || cargados === 0
       ? 'bg-slate-400 dark:bg-sena-texto-suave'
-      : subidos === total
+      : cargados === total
         ? 'bg-exito'
         : 'bg-aviso'
 
@@ -77,8 +77,8 @@ function ProgresoDocumentos({ fila }) {
         aria-label={`Documentos de ${nombreDe(fila)}`}
         aria-valuemin={0}
         aria-valuemax={maximo}
-        aria-valuenow={Math.min(subidos, maximo)}
-        aria-valuetext={`${subidos} de ${total} documentos subidos`}
+        aria-valuenow={Math.min(cargados, maximo)}
+        aria-valuetext={`${cargados} de ${total} documentos cargados`}
         className="h-2 min-w-10 flex-1 overflow-hidden rounded-full bg-sena-hundido dark:bg-sena-borde"
       >
         <div
@@ -90,7 +90,7 @@ function ProgresoDocumentos({ fila }) {
         className={`whitespace-nowrap text-sm font-medium tabular-nums ${CLASE_TEXTO_FUERTE}`}
         aria-hidden="true"
       >
-        {subidos}/{total}
+        {cargados}/{total}
       </span>
     </div>
   )
@@ -168,7 +168,7 @@ function TarjetaAspirante({ fila }) {
 
       <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-6 gap-y-3 border-t border-sena-linea/70 pt-4 dark:border-sena-borde/50">
         <div className="min-w-0">
-          <dt className={`mb-1 text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Documentos subidos</dt>
+          <dt className={`mb-1 text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Documentos cargados</dt>
           <dd>
             <ProgresoDocumentos fila={fila} />
           </dd>
@@ -632,7 +632,7 @@ export default function EvaluacionListado() {
                   </colgroup>
                   <thead className={CLASE_THEAD}>
                     <tr>
-                      {['Aspirante', 'Convocatoria', 'Documentos subidos', 'Cumplimiento', 'Evaluación'].map(
+                      {['Aspirante', 'Convocatoria', 'Documentos cargados', 'Cumplimiento', 'Evaluación'].map(
                         (titulo) => (
                           <th key={titulo} scope="col" className={CLASE_TH}>
                             {titulo}

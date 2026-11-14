@@ -118,7 +118,7 @@ export default function PanelFinalistas({ convocatoriaId, activo = true, invalid
         <section aria-labelledby="titulo-vigente" className={`flex flex-col gap-3 ${cargando ? 'opacity-60' : ''}`}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h3 id="titulo-vigente" className={`text-base font-semibold ${CLASE_TEXTO_FUERTE}`}>
-              Lista vigente · versión {actual.version}
+              Lista confirmada · versión {actual.version}
             </h3>
             <EtiquetaConIcono
               tono={conRevision ? 'aviso' : 'exito'}
@@ -150,7 +150,7 @@ export default function PanelFinalistas({ convocatoriaId, activo = true, invalid
           )}
 
           {/* Las marcas y el modo comparación son los mismos que los de Ranking: se comparten por convocatoria. */}
-          <BarraComparar comparacion={comparacion} />
+          <BarraComparar comparacion={comparacion} total={actual.finalistas.length} singular="finalista" plural="finalistas" />
 
           <div className={`${CLASE_TARJETA_PLANA} overflow-hidden`}>
             <table className="w-full table-fixed text-left text-sm">

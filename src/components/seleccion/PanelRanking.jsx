@@ -407,10 +407,12 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
     })
   }
   if (lista) {
+    const resumenLista = `Lista confirmada v${lista.version} · ${lista.total} ${lista.total === 1 ? 'finalista' : 'finalistas'}`
     avisos.push(
       lista.requiere_revision
-        ? { tono: 'aviso', texto: `Lista vigente v${lista.version} (${lista.total}): ya no coincide con el ranking. Revísala en «Finalistas».` }
-        : { tono: 'exito', texto: `Lista vigente v${lista.version} (${lista.total} ${lista.total === 1 ? 'finalista' : 'finalistas'}): coincide con el ranking.` },
+        ? // El ranking solo informa que la lista requiere revisión; el motivo de cada finalista se entrega en «Finalistas».
+          { tono: 'aviso', texto: `${resumenLista} · Requiere revisión: ya no coincide con el ranking. Revísala en «Finalistas», donde se indica el motivo de cada finalista.` }
+        : { tono: 'exito', texto: `${resumenLista} · Al día` },
     )
   }
   const hayAlerta = avisos.some((a) => a.tono === 'aviso')
@@ -571,7 +573,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
       {/* «Comparar candidatos» (CU-SEL-017) es un modo de la tabla, independiente de «Elegir»: sus marcas se guardan aparte
           y sobreviven a la paginación. Mientras está activo no hay casillas de «Elegir» ni acciones de confirmar, pero la
           elección (estado de este panel, que sigue montado) queda tal cual y reaparece al salir. */}
-      {hayFilas && <BarraComparar comparacion={comparacion} />}
+      {hayFilas && <BarraComparar comparacion={comparacion} total={meta.total} singular="candidato listo" plural="candidatos listos" />}
 
       {hayFilas && (
         <div className={`${CLASE_TARJETA_PLANA} overflow-hidden ${cargando ? 'opacity-60' : ''}`}>
@@ -690,7 +692,8 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
         </div>
       )}
 
-      {hayFilas && (
+      {/* Con una sola página el total ya está en la cabecera de la tabla: solo se pagina cuando hay más de una. */}
+      {hayFilas && (meta.last_page ?? 1) > 1 && (
         <Paginacion
           meta={meta}
           singular="candidato listo"

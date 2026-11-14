@@ -37,7 +37,7 @@ export function motivoNoEditable(estado) {
 
   switch (estado.ventana) {
     case 'antes':
-      return 'La convocatoria aún no está abierta. Podrás subir documentos cuando abra.'
+      return 'La convocatoria aún no está abierta. Podrás cargar documentos cuando abra.'
     case 'cerrada':
       return 'La convocatoria ya cerró. Tus documentos quedaron solo para consulta.'
     case 'no_publicada':

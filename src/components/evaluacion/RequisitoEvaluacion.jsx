@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import Boton from '../ui/Boton'
 import Icono from '../ui/Icono'
 import { CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
@@ -6,9 +7,13 @@ import { EtiquetaConIcono } from './PresentacionEvaluacion'
 import RespuestaSiNo from './RespuestaSiNo'
 
 // Un requisito de la lista: el documento pedido por la convocatoria con lo que
-// se sabe de él (si el aspirante lo subió, si es obligatorio, cuánto pesa) y los
-// controles del evaluador. Lo que el aspirante subió y lo que el evaluador
-// decide son cosas distintas: la etiqueta describe lo primero, Sí/No lo segundo.
+// se sabe de él (si el aspirante lo cargó, si es obligatorio, cuánto pesa) y los
+// controles del evaluador. Lo que el aspirante cargó y lo que el evaluador
+// decide son cosas distintas: la etiqueta describe lo primero, Cumple / No cumple lo segundo.
+//
+// Un obligatorio aplicable SIN archivo no se puede marcar «Cumple» (el servidor lo rechaza): la etiqueta dice
+// «Falta cargar el documento», «Cumple» queda desactivado y «No cumple» sigue disponible para que el evaluador lo
+// marque de forma explícita, por ejemplo al enviar a corrección. Nada se marca por él.
 export default function RequisitoEvaluacion({
   documento,
   peso,
@@ -20,18 +25,28 @@ export default function RequisitoEvaluacion({
 }) {
   const estado = ESTADO_DOCUMENTO[documento.estado] ?? ESTADO_DOCUMENTO.pendiente
   const sinArchivo = !documento.archivo
+  const faltante = sinArchivo && documento.estado === 'pendiente'
+  const ayudaId = useId()
 
   return (
     <li className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 @min-[36rem]:flex-row @min-[36rem]:items-center @min-[36rem]:justify-between @min-[36rem]:gap-4">
       <div className="min-w-0">
         <p className={`font-medium ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>{documento.nombre}</p>
         <p className={`mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs ${CLASE_TEXTO_SUAVE}`}>
-          <EtiquetaConIcono
-            tono={estado.tono}
-            icono={documento.estado === 'subido' ? <Icono nombre="check" className="size-3.5" /> : null}
-          >
-            {estado.texto}
-          </EtiquetaConIcono>
+          {faltante ? (
+            <span id={ayudaId}>
+              <EtiquetaConIcono tono="aviso" icono={<Icono nombre="alerta" className="size-3.5" />}>
+                Falta cargar el documento
+              </EtiquetaConIcono>
+            </span>
+          ) : (
+            <EtiquetaConIcono
+              tono={estado.tono}
+              icono={documento.estado === 'subido' ? <Icono nombre="check" className="size-3.5" /> : null}
+            >
+              {estado.texto}
+            </EtiquetaConIcono>
+          )}
           {actualizado && (
             <EtiquetaConIcono tono="azul" icono={<Icono nombre="reintentar" className="size-3.5" />}>
               Corregido por el aspirante
@@ -62,6 +77,10 @@ export default function RequisitoEvaluacion({
           requisito={documento.nombre}
           valor={respuesta}
           onChange={onChange}
+          textoSi="Cumple"
+          textoNo="No cumple"
+          ayudaId={faltante ? ayudaId : undefined}
+          deshabilitadoSi={faltante}
           className="col-span-2"
         />
       </div>

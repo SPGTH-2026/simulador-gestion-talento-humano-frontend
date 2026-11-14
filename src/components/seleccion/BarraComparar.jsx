@@ -26,7 +26,7 @@ export function CasillaComparar({ comparacion, id, aspirante }) {
 // no están en la página o pestaña a la vista— y «Limpiar marcas»; «Comparar (N)» y «Salir de comparación» siempre a la
 // vista. Salir conserva las marcas. El foco nunca se pierde: al entrar pasa al contador (o a «Salir» si no hay marcas),
 // al salir vuelve a «Comparar candidatos» y al quitar o limpiar se queda en un control visible de la barra.
-export default function BarraComparar({ comparacion }) {
+export default function BarraComparar({ comparacion, total, singular = 'candidato', plural = 'candidatos' }) {
   const { modo, marcas, entrar, salir, abrir, limpiar, quitar } = comparacion
   const n = marcas.size
   const valido = n >= MINIMO_COMPARAR && n <= MAXIMO_COMPARAR
@@ -35,6 +35,7 @@ export default function BarraComparar({ comparacion }) {
   // Sin marcas no hay nada que desplegar: se pliega durante el render, sin un instante con la lista vacía.
   if (desplegado && n === 0) setDesplegado(false)
   const idPanel = useId()
+  const idAyuda = useId()
   const raiz = useRef(null)
   const botonEntrar = useRef(null)
   const botonContador = useRef(null)
@@ -49,12 +50,39 @@ export default function BarraComparar({ comparacion }) {
     if (destino && destino.offsetParent !== null) destino.focus()
   }, [modo])
 
-  if (!modo) {
-    return (
-      <div className="flex @min-[560px]:justify-end">
-        <Boton ref={botonEntrar} variante="contorno" className="w-full @min-[560px]:w-auto" onClick={entrar}>
+  // Cabecera de la tabla: el total a la izquierda y la acción secundaria a la derecha (como «3 convocatorias» en el
+  // listado de Convocatorias), en una sola fila. En pantallas estrechas el botón baja, a todo el ancho. Con menos de dos
+  // candidatos no hay nada que comparar: el botón queda desactivado y una línea breve lo explica.
+  const pocos = total < MINIMO_COMPARAR
+  const cabecera = (
+    <div className="flex flex-col gap-2 @min-[420px]:flex-row @min-[420px]:items-center @min-[420px]:justify-between">
+      <p className={`text-sm ${CLASE_TEXTO_SUAVE}`} aria-live="polite">
+        <span className="tabular-nums">{total}</span> {total === 1 ? singular : plural}
+      </p>
+      {!modo && (
+        <Boton
+          ref={botonEntrar}
+          variante="contorno"
+          disabled={pocos}
+          aria-describedby={pocos ? idAyuda : undefined}
+          className="w-full @min-[420px]:w-auto"
+          onClick={entrar}
+        >
           Comparar candidatos{n > 0 ? ` (${n})` : ''}
         </Boton>
+      )}
+    </div>
+  )
+
+  if (!modo) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        {cabecera}
+        {pocos && (
+          <p id={idAyuda} className={`text-xs ${CLASE_TEXTO_SUAVE}`}>
+            Necesitas al menos {MINIMO_COMPARAR} {plural} para comparar.
+          </p>
+        )}
       </div>
     )
   }
@@ -82,6 +110,8 @@ export default function BarraComparar({ comparacion }) {
   }
 
   return (
+    <div className="flex flex-col gap-3">
+      {cabecera}
     <section
       ref={raiz}
       aria-label="Comparar candidatos"
@@ -145,5 +175,6 @@ export default function BarraComparar({ comparacion }) {
         </div>
       )}
     </section>
+    </div>
   )
 }

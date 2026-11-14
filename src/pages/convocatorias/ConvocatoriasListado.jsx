@@ -69,6 +69,10 @@ const NOMBRES_ESTADO = { publicada: 'Publicada', en_proceso: 'En proceso', cerra
 // con los filtros: así sobrevive a recargar, a "atrás" y al regreso del detalle.
 const CLAVES_FILTRO = ['q', 'estado', 'ficha', 'tipo', 'modalidad', 'orden', 'page']
 
+// Tarjetas por página: 12 llena filas completas con 2 columnas (tablet) y con 3 (escritorio ancho), y acerca la
+// paginación al contenido. El servidor admite de 1 a 100.
+const TARJETAS_POR_PAGINA = 12
+
 // Orden de la lista. 'reciente' es el predeterminado y no viaja en la URL ni a
 // la API; el backend acepta exactamente estos valores.
 const ORDENES = [
@@ -240,6 +244,7 @@ export default function ConvocatoriasListado() {
 
     listaConvocatorias({
       page: pagina,
+      per_page: TARJETAS_POR_PAGINA,
       q: busqueda || undefined,
       estado: filtroEstado || undefined,
       ficha_id: filtroFicha || undefined,

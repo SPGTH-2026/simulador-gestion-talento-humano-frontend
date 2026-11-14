@@ -23,7 +23,7 @@ const ESTILO_TITULO = CLASE_TITULO_SECCION
 const CLASE_ETIQUETA =
   'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
 
-// Documentos que pide la convocatoria: uno por tipo, con subir/reemplazar.
+// Documentos que pide la convocatoria: uno por tipo, con cargar/reemplazar (un obligatorio no se elimina).
 // La primera acción de guardado dispara el borrador silencioso (asegurar), así
 // que la sección funciona con y sin postulación existente.
 export default function SeccionDocumentosRequeridos({
@@ -111,8 +111,8 @@ export default function SeccionDocumentosRequeridos({
     const ok = await confirmar({
       titulo: 'Eliminar documento',
       mensaje: nombre
-        ? `¿Estás seguro de eliminar "${nombre}"? Podrás volver a subirlo.`
-        : '¿Estás seguro de eliminar este documento? Podrás volver a subirlo.',
+        ? `¿Estás seguro de eliminar "${nombre}"? Podrás volver a cargarlo.`
+        : '¿Estás seguro de eliminar este documento? Podrás volver a cargarlo.',
       textoConfirmar: 'Eliminar',
       textoCancelar: 'Cancelar',
       peligro: true,
@@ -165,6 +165,9 @@ export default function SeccionDocumentosRequeridos({
           // no aplica); el resto de documentos no se muestran si el backend los
           // marcó 'no_aplica'.
           const mostrarSubir = puedeEditar && !(noAplicaReal && !esLibreta)
+          // Un obligatorio cargado no se elimina: solo se reemplaza (regla del servidor, RF-DOC-006). Los opcionales sí.
+          const esObligatorio = Boolean(obligatorio) || esObligatorioFijo(codigo)
+          const yaCargado = estadoDoc === 'subido' || Boolean(archivosSubidos[clave])
 
           const motivoLibreta = !esLibreta
             ? ''
@@ -180,9 +183,7 @@ export default function SeccionDocumentosRequeridos({
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-sena-texto">
                     {parametro.nombre}
-                    <EtiquetaDocumento
-                      obligatorio={Boolean(obligatorio) || esObligatorioFijo(codigo)}
-                    />
+                    <EtiquetaDocumento obligatorio={esObligatorio} />
                     {ETIQUETAS_DOCUMENTO[codigo] && (
                       <span className={CLASE_ETIQUETA}>{ETIQUETAS_DOCUMENTO[codigo]}</span>
                     )}
@@ -191,12 +192,17 @@ export default function SeccionDocumentosRequeridos({
                   {(estadoDoc === 'subido' || archivosSubidos[clave]) && archivoMostrar && (
                     <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
                       {archivoMostrar.nombre_original} · {formatearTamano(archivoMostrar.tamano_bytes)}
-                      {archivoMostrar.subido_en && <> · Subido el {formatearFechaHora(archivoMostrar.subido_en)}</>}
+                      {archivoMostrar.subido_en && <> · Cargado el {formatearFechaHora(archivoMostrar.subido_en)}</>}
+                    </p>
+                  )}
+                  {puedeEditar && yaCargado && esObligatorio && archivoMostrar && (
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-sena-texto-suave">
+                      Es obligatorio: no se elimina, solo se reemplaza por otro archivo.
                     </p>
                   )}
                   {estadoDoc === 'pendiente' && !bloqueoLibreta && (
                     <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
-                      Pendiente por subir
+                      Pendiente por cargar
                     </p>
                   )}
                   {noAplica && !esLibreta && (
@@ -229,17 +235,17 @@ export default function SeccionDocumentosRequeridos({
                       onClick={() => refsInput.current[clave]?.click()}>
                       <span className="inline-flex items-center gap-1.5">
                         {enProceso
-                          ? 'Subiendo...'
-                          : estadoDoc === 'subido' || archivosSubidos[clave]
+                          ? 'Cargando...'
+                          : yaCargado
                             ? 'Reemplazar'
                             : error
                               ? 'Reintentar'
-                              : 'Subir'}
+                              : 'Cargar archivo'}
                       </span>
                     </Boton>
                   )}
 
-                  {puedeEditar && estadoDoc === 'subido' && (
+                  {puedeEditar && estadoDoc === 'subido' && !esObligatorio && (
                     <Boton variante="peligroSuave" tamano="tactil"
                       disabled={enProceso}
                       onClick={() => eliminar(archivoMostrar, clave)}>
@@ -262,7 +268,7 @@ export default function SeccionDocumentosRequeridos({
                 type="file"
                 accept=".pdf,application/pdf"
                 className="hidden"
-                aria-label={`Subir ${parametro.nombre}`}
+                aria-label={`Cargar archivo: ${parametro.nombre}`}
                 onChange={(e) => {
                   const archivo = e.target.files?.[0]
                   if (archivo) elegirArchivo(clave, parametro, archivo)
