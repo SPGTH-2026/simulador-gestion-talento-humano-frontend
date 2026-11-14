@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Boton from '../../components/ui/Boton'
 
 export default function NotFound() {
   return (
@@ -7,12 +8,9 @@ export default function NotFound() {
       <p className="text-lg text-slate-600 dark:text-sena-texto-suave">
         Esta página no existe.
       </p>
-      <Link
-        to="/"
-        className="rounded bg-sena-oscuro px-4 py-2 text-white transition-colors hover:bg-sena-azul"
-      >
+      <Boton as={Link} to="/">
         Volver al inicio
-      </Link>
+      </Boton>
     </div>
   )
 }

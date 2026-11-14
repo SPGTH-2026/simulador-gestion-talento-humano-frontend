@@ -23,6 +23,7 @@ const DocumentosListado = lazy(() => import('./pages/documentos/DocumentosListad
 const PortafolioDetalle = lazy(() => import('./pages/documentos/PortafolioDetalle'))
 const EvaluacionListado = lazy(() => import('./pages/evaluacion/EvaluacionListado'))
 const EvaluacionEvaluar = lazy(() => import('./pages/evaluacion/EvaluacionEvaluar'))
+const Preseleccion = lazy(() => import('./pages/seleccion/Preseleccion'))
 const SeleccionRanking = lazy(() => import('./pages/seleccion/SeleccionRanking'))
 const SeleccionDecidir = lazy(() => import('./pages/seleccion/SeleccionDecidir'))
 const Usuarios = lazy(() => import('./pages/usuarios/Usuarios'))
@@ -86,6 +87,7 @@ export default function AppRouter() {
           </Route>
 
           <Route element={<PermissionRoute permiso="seleccion:ver" />}>
+            <Route path="seleccion/preseleccion" element={<Preseleccion />} />
             <Route path="seleccion" element={<SeleccionRanking />} />
           </Route>
           <Route element={<PermissionRoute permiso="seleccion:decidir" />}>

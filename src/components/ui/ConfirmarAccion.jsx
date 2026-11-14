@@ -46,7 +46,7 @@ export default function ConfirmarAccion({
       </div>
 
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Boton autoFocus variante="secundario" onClick={onCancelar}>
+        <Boton autoFocus variante="contorno" onClick={onCancelar}>
           {textoCancelar}
         </Boton>
         <Boton variante={peligro ? 'peligro' : 'primario'} onClick={onConfirmar}>

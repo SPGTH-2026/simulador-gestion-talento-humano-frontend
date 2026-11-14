@@ -119,24 +119,6 @@ export function dispararDescarga(blob, nombre) {
   URL.revokeObjectURL(url)
 }
 
-// GET /api/postulaciones/{id}/documentos/{documento}/archivo
-export async function descargarDocumento(postulacionId, documentoId, nombre) {
-  const res = await client.get(
-    `/postulaciones/${postulacionId}/documentos/${documentoId}/archivo`,
-    { responseType: 'blob' },
-  )
-  dispararDescarga(res.data, nombre)
-}
-
-// GET /api/postulaciones/{id}/skills/{skill}/certificado/archivo
-export async function descargarCertificado(postulacionId, skillId, nombre) {
-  const res = await client.get(
-    `/postulaciones/${postulacionId}/skills/${skillId}/certificado/archivo`,
-    { responseType: 'blob' },
-  )
-  dispararDescarga(res.data, nombre)
-}
-
 // Abre un archivo del backend en una pestaña nueva.
 //
 // La petición va con la sesión (igual que las descargas) y el contenido se
