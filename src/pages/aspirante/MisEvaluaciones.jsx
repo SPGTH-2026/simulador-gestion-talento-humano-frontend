@@ -1,10 +1,10 @@
-﻿import { useCallback, useEffect, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { misEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
 import client from '../../api/client'
-import { IconoOjo, IconoX } from '../../components/convocatorias/Iconos'
+import { IconoX } from '../../components/convocatorias/Iconos'
 import {
   DatosAspirante,
   EtiquetaConIcono,
@@ -17,6 +17,7 @@ import Cargando from '../../components/ui/Cargando'
 import Dialogo from '../../components/ui/Dialogo'
 import Icono from '../../components/ui/Icono'
 import { MensajeAviso, MensajeError } from '../../components/ui/Mensaje'
+import Paginacion from '../../components/ui/Paginacion'
 import {
   CLASE_CAJA_SUAVE,
   CLASE_SUBTITULO_PAGINA,
@@ -28,6 +29,8 @@ import {
   CLASE_TITULO_PAGINA,
 } from '../../lib/estilos'
 import { ESTADO_DOCUMENTO, formatearPeso } from '../../lib/evaluacion'
+
+const POR_PAGINA = 12
 
 // El contrato puede traer el aspirante como texto o como objeto.
 const datosAspirante = (e) =>
@@ -78,7 +81,6 @@ function TarjetaEvaluacion({ evaluacion, onVerDetalle }) {
       </dl>
 
       <Boton variante="contorno" tamano="tactil" onClick={onVerDetalle} className="mt-auto w-full">
-        <IconoOjo className="h-4 w-4" />
         Ver detalle
       </Boton>
     </li>
@@ -243,6 +245,8 @@ export default function MisEvaluaciones() {
   const [evaluaciones, setEvaluaciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const inicioLista = useRef(null)
   const [detalle, setDetalle] = useState(null)
   const [documentos, setDocumentos] = useState([])
   // 'cargando' | 'listo' | 'error': los documentos del detalle.
@@ -252,7 +256,8 @@ export default function MisEvaluaciones() {
     () =>
       misEvaluaciones()
         .then((res) => {
-          setEvaluaciones(res.data)
+          // Una respuesta sin lista no debe tumbar la pantalla: se trata como «sin evaluaciones».
+          setEvaluaciones(Array.isArray(res?.data) ? res.data : [])
           setError('')
         })
         .catch((e) => setError(mensajeError(e)))
@@ -280,6 +285,17 @@ export default function MisEvaluaciones() {
       window.removeEventListener('focus', actualizar)
     }
   }, [cargar])
+
+  // La API entrega todas las evaluaciones; se muestran POR_PAGINA a la vez para que la página no
+  // crezca sin límite. 12 se reparte exacto en 1, 2 y 3 columnas. Si el refresco automático deja
+  // menos páginas que la actual, se muestra la última.
+  const totalPaginas = Math.max(1, Math.ceil(evaluaciones.length / POR_PAGINA))
+  const paginaActual = Math.min(pagina, totalPaginas)
+  const visibles = evaluaciones.slice((paginaActual - 1) * POR_PAGINA, paginaActual * POR_PAGINA)
+  const irAPagina = (n) => {
+    setPagina(n)
+    inicioLista.current?.scrollIntoView({ block: 'start' })
+  }
 
   const reintentar = () => {
     setCargando(true)
@@ -335,9 +351,7 @@ export default function MisEvaluaciones() {
       )}
 
       {cargando ? (
-        <div role="status">
-          <Cargando>Cargando evaluaciones…</Cargando>
-        </div>
+        <Cargando>Cargando evaluaciones…</Cargando>
       ) : (
         evaluaciones.length === 0 &&
         !error && (
@@ -352,11 +366,21 @@ export default function MisEvaluaciones() {
       )}
 
       {!cargando && evaluaciones.length > 0 && (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {evaluaciones.map((e) => (
-            <TarjetaEvaluacion key={e.id} evaluacion={e} onVerDetalle={() => verDetalle(e)} />
-          ))}
-        </ul>
+        <div ref={inicioLista} className="flex scroll-mt-4 flex-col gap-4">
+          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {visibles.map((e) => (
+              <TarjetaEvaluacion key={e.id} evaluacion={e} onVerDetalle={() => verDetalle(e)} />
+            ))}
+          </ul>
+          <Paginacion
+            meta={{ total: evaluaciones.length, last_page: totalPaginas, current_page: paginaActual }}
+            singular="evaluación"
+            plural="evaluaciones"
+            etiqueta="Paginación de evaluaciones"
+            onPagina={irAPagina}
+            className="px-1"
+          />
+        </div>
       )}
 
       {detalle && (

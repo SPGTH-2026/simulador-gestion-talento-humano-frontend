@@ -1,4 +1,5 @@
 import { menu } from '../config/menu'
+import { ALIAS_DE_PANTALLA } from './menuActivo'
 
 // Ruta de navegación ("Evaluación / Evaluar aspirantes") para la barra
 // superior. Se deduce del menú: no hay una segunda lista que mantener.
@@ -29,6 +30,14 @@ const SUBPANTALLAS = [
 ]
 
 export function migasDe(pathname) {
+  // Pantallas que viven en otra dirección pero pertenecen a una opción del menú
+  // (ver ALIAS_DE_PANTALLA): "Mis documentos / Documentos de la postulación".
+  const alias = ALIAS_DE_PANTALLA.find(({ patron }) => patron.test(pathname))
+  if (alias) {
+    const destino = DESTINOS.find((d) => d.to === alias.destino)
+    if (destino) return [...destino.tramos.map(({ texto, to }) => ({ texto, to })), { texto: alias.texto }]
+  }
+
   let mejor = null
   for (const d of DESTINOS) {
     const coincide = d.to === '/' ? pathname === '/' : pathname === d.to || pathname.startsWith(`${d.to}/`)

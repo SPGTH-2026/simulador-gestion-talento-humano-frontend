@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { mensajeError } from '../../api/mensajeError'
@@ -39,6 +39,17 @@ export default function Login() {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [entrandoConGoogle, setEntrandoConGoogle] = useState(false)
+
+  // Al volver con "atrás" desde Google el navegador puede restaurar esta página
+  // tal como estaba (con el botón ya bloqueado en "Redirigiendo..."). Sin esto
+  // quedaría deshabilitado para siempre; 'pageshow' con 'persisted' avisa de ese caso.
+  useEffect(() => {
+    const alVolver = (evento) => {
+      if (evento.persisted) setEntrandoConGoogle(false)
+    }
+    window.addEventListener('pageshow', alVolver)
+    return () => window.removeEventListener('pageshow', alVolver)
+  }, [])
   const [errores, setErrores] = useState({})
 
   // Errores que devuelve el backend al callback de Google (?error=...)
@@ -137,7 +148,7 @@ export default function Login() {
         ¿Olvidaste tu contraseña?
       </Boton>
 
-      <Boton type="submit" tamano="flexible" disabled={enviando} className="w-full">
+      <Boton type="submit" tamano="flexible" ocupado={enviando} className="w-full">
         {enviando ? 'Iniciando sesión...' : 'Iniciar sesión'}
       </Boton>
 
@@ -152,10 +163,10 @@ export default function Login() {
         tamano="flexible"
         type="button"
         onClick={entrarConGoogle}
-        disabled={entrandoConGoogle}
+        ocupado={entrandoConGoogle}
         className="w-full"
       >
-        <GoogleIcon />
+        {!entrandoConGoogle && <GoogleIcon />}
         {entrandoConGoogle ? 'Redirigiendo a Google...' : 'Iniciar sesión con Google'}
       </Boton>
 

@@ -12,7 +12,7 @@ const TONOS = {
 export default function Etiqueta({ tono = 'neutral', className = '', children }) {
   return (
     <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
         TONOS[tono] ?? TONOS.neutral
       } ${className}`.trim()}
     >

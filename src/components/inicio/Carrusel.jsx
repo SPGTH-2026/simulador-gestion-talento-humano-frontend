@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CLASE_TARJETA } from '../../lib/estilos'
 import Icono from '../ui/Icono'
-import cafeteria640 from '../../assets/inicio/inicio-cafeteria-640.webp'
-import cafeteria1280 from '../../assets/inicio/inicio-cafeteria-1280.webp'
+import instalaciones640 from '../../assets/inicio/inicio-instalaciones-640.webp'
+import instalaciones1280 from '../../assets/inicio/inicio-instalaciones-1280.webp'
 import edificioHd640 from '../../assets/inicio/inicio-edificio-hd-640.webp'
 import edificioHd1280 from '../../assets/inicio/inicio-edificio-hd-1280.webp'
 import edificio640 from '../../assets/inicio/inicio-edificio-640.webp'
@@ -12,13 +12,14 @@ import edificio1280 from '../../assets/inicio/inicio-edificio-1280.webp'
 // ve: no se atribuyen nombres, eventos ni lugares. Cada una es un recorte 5:2
 // de la foto original (los originales no se tocan); 'posicion' decide qué parte
 // se conserva cuando el contenedor es más ancho o más alto que ese recorte, para
-// no cortar rostros ni el letrero.
+// no cortar rostros ni el letrero. En escritorio la altura se limita a 20 rem: los perfiles sin columna lateral
+// (administrador, gestor, evaluador…) le dan todo el ancho y, con proporción fija, la franja crecía sin medida.
 const FOTOS = [
   {
-    id: 'cafeteria',
-    alt: 'Vista aérea de un edificio de varios pisos con fachada de vidrio y, al frente, un letrero blanco con el logosímbolo rojo del SENA y la leyenda «Servicio Nacional de Aprendizaje», bajo un cielo nublado.',
-    pequena: cafeteria640,
-    grande: cafeteria1280,
+    id: 'instalaciones',
+    alt: 'Edificio de tres pisos con una gran fachada de vidrio, franjas de paneles metálicos grises y una marquesina blanca sostenida por columnas en forma de «Y», bajo un cielo azul con nubes.',
+    pequena: instalaciones640,
+    grande: instalaciones1280,
     posicion: 'object-center',
   },
   {
@@ -159,7 +160,7 @@ export default function Carrusel() {
             aria-roledescription="diapositiva"
             aria-label={`${i + 1} de ${FOTOS.length}`}
             inert={i !== actual}
-            className="aspect-[2/1] w-full min-w-full max-w-full shrink-0 basis-full snap-center bg-sena-hundido sm:aspect-[5/2] lg:aspect-[3/1] dark:bg-sena-superficie-alta"
+            className="aspect-[2/1] w-full min-w-full max-w-full shrink-0 basis-full snap-center bg-sena-hundido sm:aspect-[5/2] lg:aspect-[3/1] lg:max-h-80 dark:bg-sena-superficie-alta"
           >
             <img
               src={foto.grande}

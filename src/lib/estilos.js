@@ -11,11 +11,6 @@
 // Base de los campos de formulario (input, select, textarea). El tamaño y el
 // peso se añaden en cada variante: así nunca conviven dos utilidades en
 // conflicto dentro de la misma clase (p. ej. text-sm junto a text-2xl).
-const BASE_INPUT =
-  'rounded-md border border-sena-azul/20 p-2 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-70 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto dark:disabled:bg-sena-noche/40'
-
-// Campo normal.
-export const CLASE_INPUT = `font-normal text-sm text-slate-700 ${BASE_INPUT}`
 
 // Etiqueta de un campo: texto en columna con su control debajo.
 export const CLASE_LABEL = 'flex flex-col gap-1 text-sm font-medium text-sena-azul dark:text-sena-texto'
@@ -56,9 +51,9 @@ export const CLASE_SUBTITULO_PAGINA = 'mt-1 text-sm text-slate-600 dark:text-sen
 export const CLASE_CHIP =
   'inline-flex items-center gap-1 rounded-full border border-sena-linea/70 bg-sena-fondo px-2.5 py-1 text-xs font-medium text-sena-azul dark:border-sena-borde/50 dark:bg-sena-noche/40 dark:text-sena-texto-suave'
 
-// Título de sección con la barra verde institucional a la izquierda.
-export const CLASE_TITULO_SECCION =
-  'border-l-4 border-sena pl-3 text-sm font-semibold text-slate-800 dark:text-sena-texto'
+// Título de sección: la jerarquía la da el tamaño y el peso, sin adornos. Antes llevaba una barra verde a la izquierda
+// que repetía en cada tarjeta lo que la propia cabecera ya expresa; el verde queda para acciones y estados.
+export const CLASE_TITULO_SECCION = 'text-base font-semibold text-slate-800 dark:text-sena-texto'
 
 // Texto de apoyo y texto principal sobre una superficie (7.6:1 en claro, 6.6:1 en
 // oscuro). Slate-500 no se usa para texto: queda en 4.5:1 sobre el lienzo.
@@ -68,7 +63,7 @@ export const CLASE_TEXTO_FUERTE = 'text-slate-800 dark:text-sena-texto'
 // Botón redondo solo con ícono (tema, notificaciones). 44 px en pantallas
 // táctiles y 40 px desde 'lg', donde hay puntero.
 export const CLASE_BOTON_ICONO =
-  'grid size-11 place-items-center rounded-full text-slate-600 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto-suave dark:hover:bg-white/10 dark:hover:text-white lg:size-10'
+  'grid size-11 place-items-center rounded-full text-slate-600 transition-[color,background-color,scale] duration-150 hover:bg-sena-hundido hover:text-sena-azul active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100 dark:text-sena-texto-suave dark:hover:bg-white/10 dark:hover:text-white lg:size-10'
 
 // Campos con el borde de contraste (4.0:1) que exige WCAG para identificar un
 // control; el de CLASE_INPUT queda en 1.5:1. Lo usa Evaluación; se unificará
@@ -77,6 +72,10 @@ const BASE_CAMPO =
   'min-h-11 w-full rounded-md border border-sena-azul/60 bg-white px-3 text-slate-700 placeholder:text-slate-500 aria-invalid:border-peligro disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-texto-suave/70 dark:bg-sena-noche dark:text-sena-texto dark:placeholder:text-sena-texto-suave dark:aria-invalid:border-peligro'
 
 export const CLASE_CAMPO = `text-sm font-normal ${BASE_CAMPO}`
+
+// Campo de los formularios antiguos (Usuarios, Fichas, Convocatorias...): es el mismo campo estándar, de 44 px y con
+// el borde de contraste. Antes medía 35-38 px y su borde quedaba en 1.5:1.
+export const CLASE_INPUT = CLASE_CAMPO
 
 // Código de un solo uso (OTP) y código de ficha: centrados y más grandes. Cada
 // variante lleva su propio tamaño de texto para no mezclar dos en una clase. El
@@ -96,7 +95,6 @@ export const CLASE_TBODY = 'divide-y divide-sena-hundido dark:divide-sena-borde'
 export const CLASE_TH = 'p-3'
 export const CLASE_TD = 'p-3'
 export const CLASE_FILA = 'hover:bg-sena-hundido dark:hover:bg-sena-superficie-alta/40'
-export const CLASE_TABLA_ESTADO = 'p-8 text-center text-sm text-slate-500 dark:text-sena-texto-suave'
 
 // Enlace de título dentro de una lista o tarjeta (convocatoria, postulación).
 // Mide al menos 44 px de alto aunque el título sea corto, para que se pueda

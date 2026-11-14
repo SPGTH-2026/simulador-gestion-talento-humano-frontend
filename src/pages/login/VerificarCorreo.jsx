@@ -17,7 +17,7 @@ import { useCuentaAtras } from '../../lib/useCuentaAtras'
 const PANTALLA = 'verificar-correo'
 
 export default function VerificarCorreo() {
-  const { user, authResolved, refrescar, logout } = useAuth()
+  const { user, authResolved, refrescar, logout, cerrandoSesion } = useAuth()
 
   const [code, setCode] = useState('')
   const [errores, setErrores] = useState({})
@@ -135,13 +135,13 @@ export default function VerificarCorreo() {
           )}
         </Campo>
 
-        <Boton type="submit" tamano="flexible" disabled={enviando || code.length !== 6}>
+        <Boton type="submit" tamano="flexible" ocupado={enviando} disabled={code.length !== 6}>
           {enviando ? 'Verificando...' : 'Confirmar correo'}
         </Boton>
       </form>
 
       <div className="mt-4 flex flex-col items-stretch gap-1">
-        <Boton variante="enlace" tamano="flexible" onClick={reenviar} disabled={reenviando || bloqueado}>
+        <Boton variante="enlace" tamano="flexible" onClick={reenviar} ocupado={reenviando} disabled={bloqueado}>
           {reenviando
             ? 'Enviando...'
             : bloqueado
@@ -149,7 +149,7 @@ export default function VerificarCorreo() {
               : 'Reenviar código'}
         </Boton>
 
-        <Boton variante="enlace" tamano="flexible" onClick={logout}>
+        <Boton variante="enlace" tamano="flexible" onClick={logout} ocupado={cerrandoSesion}>
           Cerrar sesión
         </Boton>
       </div>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import Boton from '../../components/ui/Boton'
 
 export default function Forbidden() {
   return (
@@ -7,12 +8,9 @@ export default function Forbidden() {
       <p className="text-lg text-slate-600 dark:text-sena-texto-suave">
         No tienes permiso para ver esta página.
       </p>
-      <Link
-        to="/"
-        className="rounded bg-sena-oscuro px-4 py-2 text-white transition-colors hover:bg-sena-azul"
-      >
+      <Boton as={Link} to="/">
         Volver al inicio
-      </Link>
+      </Boton>
     </div>
   )
 }

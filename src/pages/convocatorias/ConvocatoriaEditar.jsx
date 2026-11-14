@@ -8,6 +8,9 @@ import {
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import ConvocatoriaWizard from '../../components/convocatorias/ConvocatoriaWizard'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import Boton from '../../components/ui/Boton'
+import Icono from '../../components/ui/Icono'
+import Cargando from '../../components/ui/Cargando'
 
 // Borrador y publicada se editan completos; en_proceso y cerrada son de solo
 // lectura. Al publicar desde aquí se guarda (PATCH) y, si todo va bien, se
@@ -25,6 +28,9 @@ export default function ConvocatoriaEditar() {
   const [guardando, setGuardando] = useState(false)
   const [publicando, setPublicando] = useState(false)
   const [error, setError] = useState(location.state?.error ?? '')
+  // Confirmación del último guardado y aviso de qué quedó guardado si la publicación falló. Pueden llegar de Nueva.
+  const [exito, setExito] = useState(location.state?.exito ?? '')
+  const [aviso, setAviso] = useState(location.state?.aviso ?? '')
   const [errores, setErrores] = useState(location.state?.errores ?? {})
   const [sucio, setSucio] = useState(false)
 
@@ -72,18 +78,20 @@ export default function ConvocatoriaEditar() {
     navigate('/convocatorias')
   }
 
+  // Guardar conserva el paso y la pantalla: confirma con un mensaje (con «Volver al listado») en lugar de sacar a la
+  // persona de donde estaba trabajando.
   const guardar = async (datos) => {
     setGuardando(true)
     setError('')
     setErrores({})
+    setExito('')
+    setAviso('')
 
     try {
-      await actualizarConvocatoria(id, datos)
+      const res = await actualizarConvocatoria(id, datos)
+      setDetalle(res.data)
       setSucio(false)
-      // Los cambios ya están guardados: se vuelve al listado, que es donde
-      // el gestor sigue trabajando (estado, cierre, edición de otra
-      // convocatoria).
-      navigate('/convocatorias', { replace: true })
+      setExito('Cambios guardados. Puedes seguir editando o volver al listado.')
     } catch (e) {
       setErrores(erroresDeCampo(e))
       setError(mensajeError(e))
@@ -96,6 +104,8 @@ export default function ConvocatoriaEditar() {
     setPublicando(true)
     setError('')
     setErrores({})
+    setExito('')
+    setAviso('')
 
     try {
       const res = await actualizarConvocatoria(id, datos)
@@ -109,6 +119,10 @@ export default function ConvocatoriaEditar() {
         // El guardado ya quedó; el error (p. ej. faltan campos) se muestra aquí.
         setErrores(erroresDeCampo(e))
         setError(mensajeError(e))
+        setAviso(
+          'Los cambios se guardaron, pero la convocatoria sigue en borrador porque no se pudo publicar. ' +
+            'Corrige lo que se indica y pulsa «Publicar convocatoria» de nuevo.',
+        )
       }
     } catch (e) {
       setErrores(erroresDeCampo(e))
@@ -119,7 +133,7 @@ export default function ConvocatoriaEditar() {
   }
 
   if (cargando) {
-    return <p className="text-slate-500 dark:text-sena-texto-suave">Cargando convocatoria...</p>
+    return <Cargando>Cargando convocatoria…</Cargando>
   }
 
   if (errorCarga || !detalle) {
@@ -128,13 +142,11 @@ export default function ConvocatoriaEditar() {
         <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           {errorCarga || 'No se encontró la convocatoria.'}
         </p>
-        <button
-          type="button"
-          onClick={() => navigate('/convocatorias')}
-          className="self-start rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-        >
-          ← Volver
-        </button>
+        <Boton variante="fantasma" tamano="tactil" className="self-start"
+          onClick={() => navigate('/convocatorias')}>
+          <Icono nombre="flechaIzquierda" className="size-4" />
+          Volver
+        </Boton>
       </div>
     )
   }
@@ -153,11 +165,17 @@ export default function ConvocatoriaEditar() {
         soloLectura={soloLectura}
         bloquearDocumentos={bloquearDocumentos}
         puedePublicar={estado === 'borrador'}
+        etapaInicial={location.state?.etapa ?? 1}
+        exito={exito}
+        aviso={aviso}
         guardando={guardando}
         publicando={publicando}
         errores={errores}
         error={error}
-        onCambio={() => setSucio(true)}
+        onCambio={() => {
+          setSucio(true)
+          setExito('')
+        }}
         onGuardar={guardar}
         onPublicar={publicar}
         onVolver={volver}

@@ -5,21 +5,25 @@ import { listaFichas } from '../../api/fichas'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import Boton from '../../components/ui/Boton'
+import Paginacion from '../../components/ui/Paginacion'
+import Campo from '../../components/ui/Campo'
+import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import Cargando from '../../components/ui/Cargando'
+import Icono from '../../components/ui/Icono'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import Etiqueta from '../../components/ui/Etiqueta'
 import { MensajeError, MensajeExito } from '../../components/ui/Mensaje'
 import Tarjeta from '../../components/ui/Tarjeta'
 import {
   CLASE_FILA,
+  CLASE_CAMPO,
   CLASE_INPUT,
   CLASE_LABEL,
   CLASE_TABLA,
   CLASE_TBODY,
   CLASE_TD,
   CLASE_TH,
-  CLASE_THEAD,
-} from '../../lib/estilos'
+  CLASE_THEAD, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 
 const ROLES = [
   { valor: 'super_admin', etiqueta: 'Super admin' },
@@ -62,6 +66,7 @@ export default function Usuarios() {
   const [termino, setTermino] = useState('')
   const [busqueda, setBusqueda] = useState('')
   const [filtroFicha, setFiltroFicha] = useState('')
+  const [filtroRol, setFiltroRol] = useState('')
   const [pagina, setPagina] = useState(1)
 
   const [cargando, setCargando] = useState(true)
@@ -103,7 +108,9 @@ export default function Usuarios() {
   }, [termino])
 
   useEffect(() => {
-    const control = new AbortController()
+    // Si la consulta cambia antes de que llegue la respuesta (otro filtro, otra página), la respuesta vieja
+    // se descarta: así no pisa a la nueva.
+    let vigente = true
 
     // En los refetch de paginación/filtros la tabla conserva los datos viejos
     // mientras llegan los nuevos; por eso 'cargando' solo se activa en el montaje.
@@ -111,19 +118,25 @@ export default function Usuarios() {
       page: pagina,
       search: busqueda || undefined,
       ficha_id: filtroFicha || undefined,
+      role: filtroRol || undefined,
     })
       .then((res) => {
+        if (!vigente) return
         setUsuarios(res.data)
         setMeta(res.meta)
         setErrorLista('')
       })
       .catch((e) => {
-        if (e.name !== 'CanceledError') setErrorLista(mensajeError(e))
+        if (vigente) setErrorLista(mensajeError(e))
       })
-      .finally(() => setCargando(false))
+      .finally(() => {
+        if (vigente) setCargando(false)
+      })
 
-    return () => control.abort()
-  }, [pagina, busqueda, filtroFicha, intento])
+    return () => {
+      vigente = false
+    }
+  }, [pagina, busqueda, filtroFicha, filtroRol, intento])
 
   // El instructor no gestiona instructores ni super admins (matriz del backend).
   const rolesPermitidos = esInstructor
@@ -211,37 +224,76 @@ export default function Usuarios() {
     }
   }
 
+  const hayFiltros = Boolean(termino || filtroFicha || filtroRol)
+  // Limpiar quita búsqueda y filtros de una vez, al instante, y vuelve a la primera página.
+  const limpiarFiltros = () => {
+    setTermino('')
+    setBusqueda('')
+    setFiltroFicha('')
+    setFiltroRol('')
+    setPagina(1)
+  }
+
   const rolOrden = (rol) => (rol === 'aspirante' ? 0 : rol === 'aprendiz' ? 1 : rol === 'instructor' ? 2 : 3)
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">Usuarios y Roles</h1>
+      <h1 className={CLASE_TITULO_PAGINA}>Usuarios y Roles</h1>
 
-        <div className="flex flex-wrap gap-2">
-          <input
-            type="search"
-            placeholder="Buscar por nombre o correo"
+      {/* Mismo bloque de filtros que Convocatorias y Evaluación: buscador con lupa en su propia fila y, debajo,
+          los selectores con su etiqueta y «Limpiar filtros» cuando hay alguno activo. */}
+      <div role="search" aria-label="Filtrar usuarios" className="flex flex-col gap-3">
+        <Campo etiqueta="Buscar por nombre o correo">
+          <CampoBusqueda
+            placeholder="Escribe para buscar…"
             value={termino}
             onChange={(e) => setTermino(e.target.value)}
-            className={CLASE_INPUT + ' min-w-56'}
           />
+        </Campo>
 
-          <select
-            value={filtroFicha}
-            onChange={(e) => {
-              setFiltroFicha(e.target.value)
-              setPagina(1)
-            }}
-            className={CLASE_INPUT}
-          >
-            <option value="">Todas las fichas</option>
-            {fichas.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.codigo} · {f.nombre_programa}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <Campo etiqueta="Rol" className="sm:w-52 sm:shrink-0">
+            <select
+              value={filtroRol}
+              onChange={(e) => {
+                setFiltroRol(e.target.value)
+                setPagina(1)
+              }}
+              className={CLASE_CAMPO}
+            >
+              <option value="">Todos los roles</option>
+              {rolesPermitidos.map((r) => (
+                <option key={r.valor} value={r.valor}>
+                  {r.etiqueta}
+                </option>
+              ))}
+            </select>
+          </Campo>
+
+          <Campo etiqueta="Ficha" className="sm:w-72 sm:shrink-0">
+            <select
+              value={filtroFicha}
+              onChange={(e) => {
+                setFiltroFicha(e.target.value)
+                setPagina(1)
+              }}
+              className={CLASE_CAMPO}
+            >
+              <option value="">Todas las fichas</option>
+              {fichas.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.codigo} · {f.nombre_programa}
+                </option>
+              ))}
+            </select>
+          </Campo>
+
+          {hayFiltros && (
+            <Boton variante="contorno" tamano="flexible" onClick={limpiarFiltros} className="sm:shrink-0">
+              <Icono nombre="cerrar" className="size-5 shrink-0" />
+              Limpiar filtros
+            </Boton>
+          )}
         </div>
       </div>
 
@@ -259,7 +311,7 @@ export default function Usuarios() {
       )}
       {exito && <MensajeExito>{exito}</MensajeExito>}
 
-      <Tarjeta className="overflow-x-auto">
+      <Tarjeta className="@container overflow-x-auto">
         <table className={`${CLASE_TABLA} min-w-175`}>
           <thead className={CLASE_THEAD}>
             <tr>
@@ -275,7 +327,9 @@ export default function Usuarios() {
             {cargando && (
               <tr>
                 <td colSpan="6">
-                  <Cargando>Cargando usuarios...</Cargando>
+                  <div className="sticky left-0 w-[100cqw]">
+                    <Cargando>Cargando usuarios…</Cargando>
+                  </div>
                 </td>
               </tr>
             )}
@@ -367,7 +421,7 @@ export default function Usuarios() {
                           </label>
 
                           <div className="ml-auto flex gap-2">
-                            <Boton variante="secundario" onClick={() => setEditandoId(null)}>
+                            <Boton variante="contorno" onClick={() => setEditandoId(null)}>
                               Cancelar
                             </Boton>
                             <Boton type="submit" disabled={guardando}>
@@ -399,17 +453,22 @@ export default function Usuarios() {
                       </td>
                       <td className={`${CLASE_TD} text-right`}>
                         <div className="flex justify-end gap-2">
-                          <Boton variante="secundario" tamano="sm" onClick={() => empezarEdicion(u)}>
-                            Cambiar rol
-                          </Boton>
-                          {u.id !== user?.id && (
-                            <Boton
-                              variante={u.active ? 'peligro' : 'secundario'}
-                              tamano="sm"
-                              onClick={() => alternarActivo(u)}
-                            >
-                              {u.active ? 'Inhabilitar' : 'Reactivar'}
-                            </Boton>
+                          {/* Nadie cambia su propio rol ni se inhabilita a sí mismo: en su fila no hay acciones. */}
+                          {u.id === user?.id ? (
+                            <span className="py-1.5 text-xs text-slate-500 dark:text-sena-texto-suave">Tu cuenta</span>
+                          ) : (
+                            <>
+                              <Boton variante="contorno" tamano="tactil" onClick={() => empezarEdicion(u)}>
+                                Cambiar rol
+                              </Boton>
+                              <Boton
+                                variante={u.active ? 'peligro' : 'contorno'}
+                                tamano="tactil"
+                                onClick={() => alternarActivo(u)}
+                              >
+                                {u.active ? 'Inhabilitar' : 'Reactivar'}
+                              </Boton>
+                            </>
                           )}
                         </div>
                       </td>
@@ -420,29 +479,14 @@ export default function Usuarios() {
         </table>
       </Tarjeta>
 
-      <div className="flex items-center justify-between text-sm text-slate-600 dark:text-sena-texto-suave">
-        <span>
-          Página {meta.current_page} de {Math.max(meta.last_page, 1)} · {meta.total} usuario(s)
-        </span>
-        <div className="flex gap-2">
-          <Boton
-            variante="secundario"
-            tamano="sm"
-            onClick={() => setPagina((p) => Math.max(1, p - 1))}
-            disabled={meta.current_page <= 1}
-          >
-            Anterior
-          </Boton>
-          <Boton
-            variante="secundario"
-            tamano="sm"
-            onClick={() => setPagina((p) => Math.min(meta.last_page, p + 1))}
-            disabled={meta.current_page >= meta.last_page}
-          >
-            Siguiente
-          </Boton>
-        </div>
-      </div>
+      <Paginacion
+        meta={meta}
+        singular="usuario"
+        plural="usuarios"
+        etiqueta="Paginación de usuarios"
+        onPagina={setPagina}
+        className="px-1"
+      />
     </div>
   )
 }
