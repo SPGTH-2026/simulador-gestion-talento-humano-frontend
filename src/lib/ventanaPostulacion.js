@@ -7,7 +7,7 @@
 
 // "Hoy" en America/Bogota como cadena AAAA-MM-DD. 'en-CA' produce justo ese
 // orden. El timeZone fijo evita que un navegador en otra zona cambie el día.
-function hoyEnBogota() {
+export function hoyEnBogota() {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/Bogota',
     year: 'numeric',

@@ -132,25 +132,6 @@ export function IconoUsuarios({ className = 'h-4 w-4' }) {
   )
 }
 
-export function IconoMaletin({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M20.25 14.15v4.073a2.25 2.25 0 0 1-2.25 2.25h-12a2.25 2.25 0 0 1-2.25-2.25V14.15M20.25 14.15a2.25 2.25 0 0 1 0-4.5m0 4.5a2.25 2.25 0 0 0 0-4.5M3.75 14.15a2.25 2.25 0 0 0 0-4.5m0 4.5a2.25 2.25 0 0 1 0-4.5m0 0V6.75A2.25 2.25 0 0 1 6 4.5h12a2.25 2.25 0 0 1 2.25 2.25v2.9M3.75 9.65v2.9" />
-      <path d="M9 4.5V3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V4.5" />
-    </svg>
-  )
-}
-
 const TONOS = {
   azul: 'text-sena-azul hover:bg-sena-cielo/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta',
   rojo: 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50',

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import {
   obtenerPortafolio,
   estadoRevision,
@@ -25,12 +25,18 @@ import {
 } from '../../lib/estilos'
 import { ESTADO_DOCUMENTO } from '../../lib/evaluacion'
 import { formatearTamano } from '../../lib/postulacionDocumentos'
+import { formatearFechaHora } from '../../lib/ventanaPostulacion'
 
-// Línea de acciones de volver: botón fantasma con flecha, el mismo de Evaluación. Antes era texto azul sin variante
-// oscura y en modo noche desaparecía.
-function Volver({ onClick, children }) {
+// Línea de acciones de volver: botón fantasma con flecha, el mismo de Evaluación. Con 'to' es un enlace fijo (no
+// depende del historial: un enlace directo o una pestaña nueva también vuelve al listado); con 'onClick', una acción.
+function Volver({ to, onClick, children }) {
   return (
-    <Boton variante="fantasma" tamano="tactil" onClick={onClick} className="-ml-4 self-start">
+    <Boton
+      variante="fantasma"
+      tamano="tactil"
+      {...(to ? { as: Link, to } : { onClick })}
+      className="-ml-4 self-start"
+    >
       <Icono nombre="flechaIzquierda" className="size-4" />
       {children}
     </Boton>
@@ -40,16 +46,22 @@ function Volver({ onClick, children }) {
 const TITULO_BLOQUE = `text-base font-semibold ${CLASE_TEXTO_FUERTE}`
 
 // Portafolio en solo lectura: quien llega aquí ve y descarga, no escribe.
-export default function PortafolioDetalle() {
-  const { userId } = useParams()
-  const navigate = useNavigate()
-
+function Portafolio({ userId }) {
   const [portafolio, setPortafolio] = useState(null)
   const [postulacionSel, setPostulacionSel] = useState(null)
   const [revision, setRevision] = useState(null)
-  const [cargando, setCargando] = useState(false)
+  // La carga inicial empieza en curso: sin esto el primer render dibujaba una pantalla en blanco.
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
-  const [errorAccion, setErrorAccion] = useState('')
+  // Postulación cuya revisión se está abriendo, y el fallo (con su postulación) para mostrarlo junto a su botón.
+  const [abriendoId, setAbriendoId] = useState(null)
+  const [errorRevision, setErrorRevision] = useState(null)
+  // Archivos con una acción en curso (claves 'ver:…' / 'descargar:…') y el error de cada tarjeta de archivo.
+  const [enCurso, setEnCurso] = useState(() => new Set())
+  const [erroresArchivo, setErroresArchivo] = useState({})
+  const encabezadoRevision = useRef(null)
+  // Guarda síncrona: dos clics seguidos llegan antes de que React pinte el botón ocupado, así que el estado solo no basta.
+  const guardaAcciones = useRef(new Set())
 
   const cargarPortafolio = useCallback(async () => {
     setCargando(true)
@@ -65,51 +77,62 @@ export default function PortafolioDetalle() {
     }
   }, [userId])
 
-  const cargarRevision = useCallback(async (postulacionId) => {
-    setCargando(true)
-    setError('')
-    try {
-      const data = await estadoRevision(postulacionId)
-      setRevision(data)
-    } catch (e) {
-      const msg = await mensajeErrorBlob(e)
-      setError(msg || 'No se pudo cargar la revisión de documentos.')
-      console.error(e)
-    } finally {
-      setCargando(false)
-    }
-  }, [])
-
   useEffect(() => {
     cargarPortafolio()
   }, [cargarPortafolio])
 
-  const handleVerDocumentos = (postulacion) => {
-    if (postulacion.puede_ver_documentos) {
-      setPostulacionSel(postulacion)
-      setRevision(null)
-      setErrorAccion('')
-      cargarRevision(postulacion.id)
-    }
-  }
+  // Al terminar de cargar una revisión, el foco pasa a su encabezado (y se desplaza a la vista): la revisión aparece
+  // debajo de la lista y, sin esto, quien usa teclado o lector de pantalla no sabría que ya está.
+  useEffect(() => {
+    if (!revision) return
+    encabezadoRevision.current?.focus()
+    encabezadoRevision.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+  }, [revision])
 
-  const verArchivo = (ruta, nombre) => {
-    setErrorAccion('')
-    abrirArchivoEnPestana(ruta, { nombre }).catch(async (e) => {
-      const msg = await mensajeErrorBlob(e)
-      setErrorAccion(msg || 'No se pudo abrir el archivo.')
-    })
-  }
-
-  const descargar = async (descarga) => {
-    setErrorAccion('')
+  const handleVerDocumentos = async (postulacion) => {
+    if (!postulacion.puede_ver_documentos || guardaAcciones.current.has('revision')) return
+    guardaAcciones.current.add('revision')
+    setAbriendoId(postulacion.id)
+    setErrorRevision(null)
     try {
-      await descarga()
+      const data = await estadoRevision(postulacion.id)
+      setPostulacionSel(postulacion)
+      setErroresArchivo({})
+      setRevision(data)
     } catch (e) {
       const msg = await mensajeErrorBlob(e)
-      setErrorAccion(msg || 'No se pudo descargar el archivo.')
+      setErrorRevision({ id: postulacion.id, mensaje: msg || 'No se pudo cargar la revisión de documentos.' })
+      console.error(e)
+    } finally {
+      guardaAcciones.current.delete('revision')
+      setAbriendoId(null)
     }
   }
+
+  // Ejecuta una acción sobre un archivo: mientras dura, su botón queda ocupado (un doble clic no la repite) y, si
+  // falla, el error aparece en la tarjeta de ese archivo.
+  const accionArchivo = async (clave, accion, textoError) => {
+    if (guardaAcciones.current.has(clave)) return
+    guardaAcciones.current.add(clave)
+    setEnCurso((previo) => new Set(previo).add(clave))
+    setErroresArchivo((previo) => ({ ...previo, [clave.split(':')[1]]: '' }))
+    try {
+      await accion()
+    } catch (e) {
+      const msg = await mensajeErrorBlob(e)
+      setErroresArchivo((previo) => ({ ...previo, [clave.split(':')[1]]: msg || textoError }))
+    } finally {
+      guardaAcciones.current.delete(clave)
+      setEnCurso((previo) => {
+        const siguiente = new Set(previo)
+        siguiente.delete(clave)
+        return siguiente
+      })
+    }
+  }
+
+  // Abre el archivo en otra pestaña. Devuelve la promesa: 'accionArchivo' mantiene el botón ocupado hasta que termina.
+  const verArchivo = (ruta, nombre) => abrirArchivoEnPestana(ruta, { nombre })
 
   const rutaArchivo = (suffix) => `/revision/postulaciones/${postulacionSel.id}/${suffix}`
 
@@ -121,9 +144,14 @@ export default function PortafolioDetalle() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <Mensaje tipo="error">{error}</Mensaje>
-        <Boton variante="contorno" tamano="tactil" onClick={() => navigate(-1)}>
-          Volver
-        </Boton>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Boton variante="contorno" tamano="tactil" onClick={cargarPortafolio}>
+            Reintentar
+          </Boton>
+          <Boton variante="fantasma" tamano="tactil" as={Link} to="/documentos">
+            Volver al listado
+          </Boton>
+        </div>
       </div>
     )
   }
@@ -133,14 +161,30 @@ export default function PortafolioDetalle() {
   const { usuario, postulaciones } = portafolio
 
   // Ver y Descargar son acciones neutras de lectura: las dos con contorno, sin iconos decorativos.
-  const botonesLectura = (ver, descargarFn) => (
-    <div className="flex flex-wrap items-center gap-2">
-      <Boton variante="contorno" tamano="tactil" onClick={ver}>
-        Ver
-      </Boton>
-      <Boton variante="contorno" tamano="tactil" onClick={() => descargar(descargarFn)}>
-        Descargar
-      </Boton>
+  // 'id' identifica el archivo (también para mostrar su error junto a los botones).
+  const botonesLectura = (id, nombre, ver, descargarFn) => (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Boton
+          variante="contorno"
+          tamano="tactil"
+          ocupado={enCurso.has(`ver:${id}`)}
+          aria-label={`Ver ${nombre}`}
+          onClick={() => accionArchivo(`ver:${id}`, ver, 'No se pudo abrir el archivo.')}
+        >
+          Ver
+        </Boton>
+        <Boton
+          variante="contorno"
+          tamano="tactil"
+          ocupado={enCurso.has(`descargar:${id}`)}
+          aria-label={`Descargar ${nombre}`}
+          onClick={() => accionArchivo(`descargar:${id}`, descargarFn, 'No se pudo descargar el archivo.')}
+        >
+          Descargar
+        </Boton>
+      </div>
+      {erroresArchivo[id] && <Mensaje tipo="error">{erroresArchivo[id]}</Mensaje>}
     </div>
   )
 
@@ -148,7 +192,7 @@ export default function PortafolioDetalle() {
     <>
       <div className="flex flex-col gap-5">
         <header className="flex flex-col">
-          <Volver onClick={() => navigate(-1)}>Volver al listado</Volver>
+          <Volver to="/documentos">Volver al listado</Volver>
           <h1 className={`${CLASE_TITULO_PAGINA} text-balance ${CLASE_TEXTO_PARTIDO}`}>Portafolio de {usuario.name}</h1>
           <p className={CLASE_SUBTITULO_PAGINA}>
             {usuario.email} · Ficha: {usuario.ficha?.codigo ?? 'Sin ficha'}
@@ -162,11 +206,19 @@ export default function PortafolioDetalle() {
         ) : (
           <div className="flex flex-col gap-4">
             {postulaciones.map((p) => (
-              <Tarjeta key={p.id} as="article" className="flex flex-col gap-3 p-4">
+              <Tarjeta
+                key={p.id}
+                as="article"
+                aria-current={revision && postulacionSel?.id === p.id ? 'true' : undefined}
+                className={`flex flex-col gap-3 p-4 ${
+                  revision && postulacionSel?.id === p.id ? 'ring-2 ring-sena/60 dark:ring-sena-acento/60' : ''
+                }`}
+              >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="min-w-0">
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">
                       <EtiquetaPostulacion codigo={p.estado?.codigo} nombre={p.estado?.nombre} />
+                      {revision && postulacionSel?.id === p.id && <Etiqueta tono="azul">En revisión</Etiqueta>}
                       {p.puede_ver_documentos ? (
                         <Etiqueta tono="exito">Documentos disponibles</Etiqueta>
                       ) : (
@@ -178,16 +230,25 @@ export default function PortafolioDetalle() {
                   </div>
                   {p.puede_ver_documentos && (
                     // Abre la revisión de la postulación: navegación, con contorno como «Ver detalle».
-                    <Boton variante="contorno" tamano="tactil" onClick={() => handleVerDocumentos(p)} className="shrink-0">
-                      Ver documentos
+                    <Boton
+                      variante="contorno"
+                      tamano="tactil"
+                      ocupado={abriendoId === p.id}
+                      disabled={abriendoId !== null && abriendoId !== p.id}
+                      onClick={() => handleVerDocumentos(p)}
+                      className="shrink-0"
+                    >
+                      {abriendoId === p.id ? 'Abriendo…' : 'Ver documentos'}
                     </Boton>
                   )}
                 </div>
 
+                {errorRevision?.id === p.id && <Mensaje tipo="error">{errorRevision.mensaje}</Mensaje>}
+
                 <IndicadorCompletitud estado={{ completo: p.completo }} titulo="Estado de los documentos" />
 
                 <p className={`text-xs ${CLASE_TEXTO_SUAVE}`}>
-                  Postulada el {p.fecha_postulacion ? new Date(p.fecha_postulacion).toLocaleDateString('es-CO') : '—'}
+                  Postulada el {formatearFechaHora(p.fecha_postulacion)}
                   {' · '}Documentos: {p.documentos?.subidos ?? 0}/{p.documentos?.requeridos ?? 0} requeridos,{' '}
                   {p.documentos?.adicionales ?? 0} adicionales
                   {' · '}Skills: {p.skills?.total ?? 0} ({p.skills?.con_certificado ?? 0} con certificado)
@@ -205,17 +266,18 @@ export default function PortafolioDetalle() {
               onClick={() => {
                 setPostulacionSel(null)
                 setRevision(null)
-                setErrorAccion('')
               }}
             >
               Volver al listado de postulaciones
             </Volver>
-            <h2 className={`text-xl font-bold ${CLASE_TEXTO_FUERTE} ${CLASE_TEXTO_PARTIDO}`}>
+            <h2
+              ref={encabezadoRevision}
+              tabIndex={-1}
+              className={`scroll-mt-4 text-xl font-bold focus:outline-none ${CLASE_TEXTO_FUERTE} ${CLASE_TEXTO_PARTIDO}`}
+            >
               Documentos de: {postulacionSel.convocatoria?.nombre}
             </h2>
           </header>
-
-          {errorAccion && <Mensaje tipo="error">{errorAccion}</Mensaje>}
 
           <IndicadorCompletitud estado={revision} titulo="Estado de los documentos" />
 
@@ -255,6 +317,8 @@ export default function PortafolioDetalle() {
                       {d.archivo && (
                         <div className="mt-auto border-t border-sena-linea/70 pt-3 dark:border-sena-borde/50">
                           {botonesLectura(
+                            `doc-${d.archivo.id}`,
+                            d.archivo.nombre_original,
                             () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
                             () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
                           )}
@@ -283,6 +347,8 @@ export default function PortafolioDetalle() {
                     {d.archivo && (
                       <div className="mt-auto border-t border-sena-linea/70 pt-3 dark:border-sena-borde/50">
                         {botonesLectura(
+                          `adic-${d.archivo.id}`,
+                          d.archivo.nombre_original,
                           () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
                           () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
                         )}
@@ -314,6 +380,8 @@ export default function PortafolioDetalle() {
                       </div>
                       {s.certificado &&
                         botonesLectura(
+                          `skill-${s.id}`,
+                          s.certificado.nombre_original,
                           () => verArchivo(rutaArchivo(`skills/${s.id}/certificado/archivo?inline=1`), s.certificado.nombre_original),
                           () => descargarCertificadoRevision(postulacionSel.id, s.id, s.certificado.nombre_original),
                         )}
@@ -331,4 +399,10 @@ export default function PortafolioDetalle() {
       )}
     </>
   )
+}
+
+// 'key' por aspirante: al cambiar de portafolio el estado del anterior (revisión abierta, errores) se descarta.
+export default function PortafolioDetalle() {
+  const { userId } = useParams()
+  return <Portafolio key={userId} userId={userId} />
 }

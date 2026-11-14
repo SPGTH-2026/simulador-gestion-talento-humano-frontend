@@ -28,6 +28,9 @@ export default function ConvocatoriaEditar() {
   const [guardando, setGuardando] = useState(false)
   const [publicando, setPublicando] = useState(false)
   const [error, setError] = useState(location.state?.error ?? '')
+  // Confirmación del último guardado y aviso de qué quedó guardado si la publicación falló. Pueden llegar de Nueva.
+  const [exito, setExito] = useState(location.state?.exito ?? '')
+  const [aviso, setAviso] = useState(location.state?.aviso ?? '')
   const [errores, setErrores] = useState(location.state?.errores ?? {})
   const [sucio, setSucio] = useState(false)
 
@@ -75,18 +78,20 @@ export default function ConvocatoriaEditar() {
     navigate('/convocatorias')
   }
 
+  // Guardar conserva el paso y la pantalla: confirma con un mensaje (con «Volver al listado») en lugar de sacar a la
+  // persona de donde estaba trabajando.
   const guardar = async (datos) => {
     setGuardando(true)
     setError('')
     setErrores({})
+    setExito('')
+    setAviso('')
 
     try {
-      await actualizarConvocatoria(id, datos)
+      const res = await actualizarConvocatoria(id, datos)
+      setDetalle(res.data)
       setSucio(false)
-      // Los cambios ya están guardados: se vuelve al listado, que es donde
-      // el gestor sigue trabajando (estado, cierre, edición de otra
-      // convocatoria).
-      navigate('/convocatorias', { replace: true })
+      setExito('Cambios guardados. Puedes seguir editando o volver al listado.')
     } catch (e) {
       setErrores(erroresDeCampo(e))
       setError(mensajeError(e))
@@ -99,6 +104,8 @@ export default function ConvocatoriaEditar() {
     setPublicando(true)
     setError('')
     setErrores({})
+    setExito('')
+    setAviso('')
 
     try {
       const res = await actualizarConvocatoria(id, datos)
@@ -112,6 +119,10 @@ export default function ConvocatoriaEditar() {
         // El guardado ya quedó; el error (p. ej. faltan campos) se muestra aquí.
         setErrores(erroresDeCampo(e))
         setError(mensajeError(e))
+        setAviso(
+          'Los cambios se guardaron, pero la convocatoria sigue en borrador porque no se pudo publicar. ' +
+            'Corrige lo que se indica y pulsa «Publicar convocatoria» de nuevo.',
+        )
       }
     } catch (e) {
       setErrores(erroresDeCampo(e))
@@ -154,11 +165,17 @@ export default function ConvocatoriaEditar() {
         soloLectura={soloLectura}
         bloquearDocumentos={bloquearDocumentos}
         puedePublicar={estado === 'borrador'}
+        etapaInicial={location.state?.etapa ?? 1}
+        exito={exito}
+        aviso={aviso}
         guardando={guardando}
         publicando={publicando}
         errores={errores}
         error={error}
-        onCambio={() => setSucio(true)}
+        onCambio={() => {
+          setSucio(true)
+          setExito('')
+        }}
         onGuardar={guardar}
         onPublicar={publicar}
         onVolver={volver}
