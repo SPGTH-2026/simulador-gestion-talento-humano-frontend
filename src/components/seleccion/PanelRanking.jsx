@@ -13,6 +13,8 @@ import Icono from '../ui/Icono'
 import { MensajeAviso, MensajeError, MensajeExito } from '../ui/Mensaje'
 import Rueda from '../ui/Rueda'
 import Paginacion from '../ui/Paginacion'
+import BarraComparar, { CasillaComparar } from './BarraComparar'
+import CasillaSeleccion from './CasillaSeleccion'
 import {
   CLASE_CAJA_SUAVE,
   CLASE_CAMPO,
@@ -57,7 +59,7 @@ function SinDato({ lectura }) {
 // 'key' = id de la convocatoria.
 // 'activo': la pestaña está a la vista. El ranking se pide la primera vez que se abre y al volver no se repite
 // (salvo que algo lo haya invalidado: un guardado, una confirmación o un 409 piden la recarga explícita).
-export default function PanelRanking({ convocatoriaId, activo = true, enProceso, puedeDecidir, onConfirmada }) {
+export default function PanelRanking({ convocatoriaId, activo = true, enProceso, puedeDecidir, comparacion, onConfirmada }) {
   const [pagina, setPagina] = useState(1)
   const [estado, setEstado] = useState({ fase: 'cargando', filas: [], meta: null, error: '' })
   const [intento, setIntento] = useState(0)
@@ -166,6 +168,9 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
   const puedeCambiarObjetivo = puedeDecidir && enProceso === true && modo !== 'pendiente_de_configurar'
   const empate = meta?.empate_en_corte ?? null
   const lista = meta?.lista_confirmada ?? null
+  const enComparacion = comparacion.modo
+  // Una sola columna de casillas: «Elegir» (solo quien puede elegir) o, en modo comparación, «Comparar».
+  const columnaCasillas = enComparacion || puedeElegir
 
   const alternar = (fila) => {
     setAviso(null)
@@ -563,6 +568,11 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
         </div>
       )}
 
+      {/* «Comparar candidatos» (CU-SEL-017) es un modo de la tabla, independiente de «Elegir»: sus marcas se guardan aparte
+          y sobreviven a la paginación. Mientras está activo no hay casillas de «Elegir» ni acciones de confirmar, pero la
+          elección (estado de este panel, que sigue montado) queda tal cual y reaparece al salir. */}
+      {hayFilas && <BarraComparar comparacion={comparacion} />}
+
       {hayFilas && (
         <div className={`${CLASE_TARJETA_PLANA} overflow-hidden ${cargando ? 'opacity-60' : ''}`}>
           <table className="w-full table-fixed text-left text-sm">
@@ -573,24 +583,26 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
             {/* Desde 640 px Aspirante ocupa poco más de un tercio (o el 60 % sin Puesto ni Resultado) y las demás columnas
                 se reparten el resto por igual, en vez de dejarle todo el ancho sobrante al nombre. Por debajo, anchos fijos
                 (el encabezado «Documental» necesita unos 115 px). */}
+            {/* Entre 640 y 860 px las cifras necesitan anchos fijos; desde 860 px Aspirante toma un tercio y las cifras se
+                reparten el resto por igual. La columna de casillas mide 96 px en modo comparación (su encabezado es más largo). */}
             <colgroup>
-              {puedeElegir && <col className="w-12" />}
-              <col className={conPuesto ? '@min-[640px]:w-[38%]' : '@min-[640px]:w-[60%]'} />
-              {conPuesto && <col className="hidden w-20 @min-[520px]:table-column @min-[640px]:w-auto" />}
-              {conPuesto && <col className="hidden w-28 @min-[520px]:table-column @min-[640px]:w-auto" />}
-              <col className="hidden w-32 @min-[520px]:table-column @min-[640px]:w-auto" />
+              {columnaCasillas && <col className={enComparacion ? 'w-24' : 'w-14 @min-[640px]:w-20'} />}
+              <col className={conPuesto ? '@min-[860px]:w-[34%]' : '@min-[860px]:w-[56%]'} />
+              {conPuesto && <col className="hidden w-16 @min-[640px]:table-column @min-[860px]:w-auto" />}
+              {conPuesto && <col className="hidden w-24 @min-[640px]:table-column @min-[860px]:w-auto" />}
+              <col className="hidden w-32 @min-[640px]:table-column @min-[860px]:w-auto" />
             </colgroup>
             <thead className={CLASE_THEAD}>
               <tr>
-                {puedeElegir && (
+                {columnaCasillas && (
                   <th scope="col" className={CLASE_TH}>
-                    <span className="sr-only">Elegir</span>
+                    {enComparacion ? 'Comparar' : 'Elegir'}
                   </th>
                 )}
                 <th scope="col" className={CLASE_TH}>Aspirante</th>
-                {conPuesto && <th scope="col" className={`hidden @min-[520px]:table-cell ${CLASE_TH} text-right`}>Puesto</th>}
-                {conPuesto && <th scope="col" className={`hidden @min-[520px]:table-cell ${CLASE_TH} text-right`}>Resultado</th>}
-                <th scope="col" className={`hidden @min-[520px]:table-cell ${CLASE_TH} text-right`}>Documental</th>
+                {conPuesto && <th scope="col" className={`hidden @min-[640px]:table-cell ${CLASE_TH} text-right`}>Puesto</th>}
+                {conPuesto && <th scope="col" className={`hidden @min-[640px]:table-cell ${CLASE_TH} text-right`}>Resultado</th>}
+                <th scope="col" className={`hidden @min-[640px]:table-cell ${CLASE_TH} text-right`}>Documental</th>
               </tr>
             </thead>
             <tbody className={CLASE_TBODY}>
@@ -606,20 +618,23 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
                         : 'hover:bg-sena-fondo/60 dark:hover:bg-sena-superficie-alta/40'
                     }
                   >
-                    {puedeElegir && (
+                    {columnaCasillas && (
                       <td className={CLASE_TD}>
-                        <input
-                          type="checkbox"
-                          className={CLASE_CHECK}
-                          checked={seleccion.has(f.postulacion_id)}
-                          onChange={() => alternar(f)}
-                          aria-label={`Elegir a ${f.aspirante} como finalista`}
-                        />
+                        {/* Una sola columna de casillas: «Elegir» en la vista normal, «Comparar» en el modo comparación. */}
+                        {enComparacion ? (
+                          <CasillaComparar comparacion={comparacion} id={f.postulacion_id} aspirante={f.aspirante} />
+                        ) : (
+                          <CasillaSeleccion
+                            marcada={seleccion.has(f.postulacion_id)}
+                            onCambiar={() => alternar(f)}
+                            etiqueta={`Elegir a ${f.aspirante} como finalista`}
+                          />
+                        )}
                       </td>
                     )}
                     <td className={CLASE_TD}>
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="hidden shrink-0 @min-[520px]:block"><AvatarIniciales nombre={f.aspirante} /></span>
+                        <span className="hidden shrink-0 @min-[860px]:block"><AvatarIniciales nombre={f.aspirante} /></span>
                         <div className="flex min-w-0 flex-col items-start gap-1">
                           {/* Dos líneas como máximo; el nombre completo también va en el title y en la casilla. */}
                           <span title={f.aspirante} className={`line-clamp-2 font-medium ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>
@@ -631,7 +646,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
                           </span>
                           {/* En móvil los datos van bajo el nombre y dicen qué son: «Puesto 1 · Resultado 10,00 · Documental 100 %». */}
                           {(conPuesto || doc != null) && (
-                            <span className={`text-xs tabular-nums @min-[520px]:hidden ${CLASE_TEXTO_SUAVE}`}>
+                            <span className={`text-xs tabular-nums @min-[640px]:hidden ${CLASE_TEXTO_SUAVE}`}>
                               {[
                                 conPuesto && `Puesto ${f.posicion ?? '—'}`,
                                 conPuesto && `Resultado ${res ?? '—'}`,
@@ -647,12 +662,12 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
                       </div>
                     </td>
                     {conPuesto && (
-                      <td className={`hidden @min-[520px]:table-cell ${CLASE_TD} text-right`}>
+                      <td className={`hidden @min-[640px]:table-cell ${CLASE_TD} text-right`}>
                         <span className={`font-semibold tabular-nums ${CLASE_TEXTO_FUERTE}`}>{f.posicion ?? '—'}</span>
                       </td>
                     )}
                     {conPuesto && (
-                      <td className={`hidden @min-[520px]:table-cell ${CLASE_TD} text-right`}>
+                      <td className={`hidden @min-[640px]:table-cell ${CLASE_TD} text-right`}>
                         {res == null ? (
                           <SinDato lectura="Sin resultado" />
                         ) : (
@@ -660,7 +675,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
                         )}
                       </td>
                     )}
-                    <td className={`hidden @min-[520px]:table-cell ${CLASE_TD} text-right`}>
+                    <td className={`hidden @min-[640px]:table-cell ${CLASE_TD} text-right`}>
                       {doc == null ? (
                         <SinDato lectura="Sin dato de cumplimiento" />
                       ) : (
@@ -687,7 +702,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
         />
       )}
 
-      {puedeElegir && hayFilas && (
+      {puedeElegir && !enComparacion && hayFilas && (
         <section
           aria-label="Elección de finalistas"
           className={`${CLASE_TARJETA_PLANA} flex flex-col gap-3 p-3`}

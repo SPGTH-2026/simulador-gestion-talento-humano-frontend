@@ -2,6 +2,7 @@ import { EtiquetaConIcono } from '../evaluacion/PresentacionEvaluacion'
 import Icono from '../ui/Icono'
 import { MensajeAviso } from '../ui/Mensaje'
 import PanelCalificaciones from './PanelCalificaciones'
+import Valor from './Valor'
 import {
   CLASE_CAJA_SUAVE,
   CLASE_TEXTO_FUERTE,
@@ -16,19 +17,6 @@ import {
   textoCumplimiento,
   textoNota,
 } from '../../lib/seleccion'
-
-// «—» dicho con palabras para el lector de pantalla: un dato que no existe no es un cero.
-function Valor({ valor, sinDato }) {
-  if (valor == null) {
-    return (
-      <span className={CLASE_TEXTO_SUAVE}>
-        <span aria-hidden="true">—</span>
-        <span className="sr-only">{sinDato}</span>
-      </span>
-    )
-  }
-  return <span className={`tabular-nums ${CLASE_TEXTO_FUERTE}`}>{valor}</span>
-}
 
 function Dato({ titulo, children }) {
   return (

@@ -8,7 +8,9 @@ import PanelRanking from '../../components/seleccion/PanelRanking'
 import Boton from '../../components/ui/Boton'
 import { MensajeError } from '../../components/ui/Mensaje'
 import Pestanas from '../../components/ui/Pestanas'
+import ComparadorCandidatos from '../../components/seleccion/ComparadorCandidatos'
 import useFiltrosUrl from '../../hooks/useFiltrosUrl'
+import useMarcasComparacion from '../../hooks/useMarcasComparacion'
 import {
   CLASE_CHIP,
   CLASE_TARJETA_PLANA,
@@ -31,6 +33,8 @@ export default function SeleccionRanking() {
   const [invalidacion, setInvalidacion] = useState(0)
 
   const convocatoriaId = valores.convocatoria
+  // Marcas para comparar (CU-SEL-017): de la convocatoria a la vista, compartidas por Ranking y Finalistas.
+  const comparacion = useMarcasComparacion(convocatoriaId)
   const pestana = valores.pestana === 'finalistas' ? 'finalistas' : 'ranking'
 
   const elegir = useCallback(
@@ -121,6 +125,7 @@ export default function SeleccionRanking() {
                         activo={pestana === 'ranking'}
                         enProceso={enProceso}
                         puedeDecidir={can('seleccion:decidir')}
+                        comparacion={comparacion}
                         onConfirmada={() => setInvalidacion((n) => n + 1)}
                       />
                     ),
@@ -134,6 +139,7 @@ export default function SeleccionRanking() {
                         convocatoriaId={convocatoriaId}
                         activo={pestana === 'finalistas'}
                         invalidacion={invalidacion}
+                        comparacion={comparacion}
                       />
                     ),
                   },
@@ -143,6 +149,15 @@ export default function SeleccionRanking() {
           )}
         </div>
       </div>
+
+      {/* Solo lectura: abrirlo y cerrarlo no toca las marcas de comparar ni la elección de finalistas del Ranking. */}
+      {comparacion.abierto && (
+        <ComparadorCandidatos
+          convocatoriaId={convocatoriaId}
+          ids={[...comparacion.marcas.keys()]}
+          onCerrar={comparacion.cerrar}
+        />
+      )}
     </div>
   )
 }

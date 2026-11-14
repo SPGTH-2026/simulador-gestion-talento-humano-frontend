@@ -8,6 +8,7 @@ import Icono from '../ui/Icono'
 import { MensajeAviso, MensajeError } from '../ui/Mensaje'
 import Rueda from '../ui/Rueda'
 import Paginacion from '../ui/Paginacion'
+import BarraComparar, { CasillaComparar } from './BarraComparar'
 import {
   CLASE_CAJA_SUAVE,
   CLASE_TARJETA_PLANA,
@@ -32,7 +33,7 @@ const MODO = {
 // pide en cada página del historial, pero no depende de ella.
 // 'activo': la pestaña está a la vista. Los datos se piden al abrirla por primera vez y no se repiten al volver, salvo
 // que 'invalidacion' haya cambiado (el padre la sube cuando una confirmación o un 409 dejaron la lista desactualizada).
-export default function PanelFinalistas({ convocatoriaId, activo = true, invalidacion = 0 }) {
+export default function PanelFinalistas({ convocatoriaId, activo = true, invalidacion = 0, comparacion }) {
   const [pagina, setPagina] = useState(1)
   const [estado, setEstado] = useState({ fase: 'cargando', datos: null, meta: null, error: '' })
   const [intento, setIntento] = useState(0)
@@ -148,16 +149,21 @@ export default function PanelFinalistas({ convocatoriaId, activo = true, invalid
             </div>
           )}
 
+          {/* Las marcas y el modo comparación son los mismos que los de Ranking: se comparten por convocatoria. */}
+          <BarraComparar comparacion={comparacion} />
+
           <div className={`${CLASE_TARJETA_PLANA} overflow-hidden`}>
             <table className="w-full table-fixed text-left text-sm">
               <caption className="sr-only">Finalistas de la lista vigente</caption>
               <colgroup>
+                {comparacion.modo && <col className="w-24" />}
                 <col />
                 <col className="w-28 @min-[520px]:w-36" />
                 {conRevision && <col className="hidden w-64 @min-[640px]:table-column" />}
               </colgroup>
               <thead className={CLASE_THEAD}>
                 <tr>
+                  {comparacion.modo && <th scope="col" className={CLASE_TH}>Comparar</th>}
                   <th scope="col" className={CLASE_TH}>Aspirante</th>
                   <th scope="col" className={`${CLASE_TH} text-right`}>Puesto · resultado</th>
                   {conRevision && (
@@ -172,6 +178,11 @@ export default function PanelFinalistas({ convocatoriaId, activo = true, invalid
                   const textoMotivo = motivo ? (MOTIVO_REVISION[motivo] ?? 'Requiere revisión.') : null
                   return (
                     <tr key={f.postulacion_id}>
+                      {comparacion.modo && (
+                        <td className={CLASE_TD}>
+                          <CasillaComparar comparacion={comparacion} id={f.postulacion_id} aspirante={f.aspirante ?? '?'} />
+                        </td>
+                      )}
                       <td className={CLASE_TD}>
                         <div className="flex min-w-0 items-center gap-3">
                           <span className="hidden shrink-0 @min-[520px]:block"><AvatarIniciales nombre={f.aspirante ?? '?'} /></span>

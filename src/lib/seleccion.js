@@ -171,3 +171,7 @@ export function diferencias(base, actual) {
   if ((base.posicion ?? null) !== (actual.posicion ?? null)) cambios.push({ campo: 'posicion', antes: base.posicion ?? null, ahora: actual.posicion ?? null })
   return cambios
 }
+
+// Comparar candidatos (CU-SEL-017): de 2 a 5, de la misma convocatoria.
+export const MINIMO_COMPARAR = 2
+export const MAXIMO_COMPARAR = 5

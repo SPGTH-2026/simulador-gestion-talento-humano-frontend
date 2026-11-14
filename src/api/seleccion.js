@@ -164,3 +164,27 @@ export const historialDecision = (convocatoriaId, postulacionId, params) =>
   client
     .get(`/seleccion/convocatorias/${convocatoriaId}/decisiones/${postulacionId}/historial`, { params })
     .then((res) => res.data)
+
+// GET /api/seleccion/convocatorias/{c}/comparacion?postulaciones[]=…  (seleccion:ver; SOLO LECTURA)
+//   De 2 a 5 postulaciones distintas de ESA convocatoria (422 si el número o la distinción fallan; 404 si alguna es de otra
+//   convocatoria o la convocatoria es de otra ficha; 403 sin permiso). Una sola petición para todas.
+//   -> { data: [{ postulacion_id, aspirante, fecha_postulacion,
+//          confirmada: null | { lista_version, posicion, resultado },     // lo que CONSERVÓ la lista vigente
+//          revision: null | ya_no_elegible | cambio_resultado,            // si esa fila requiere revisión
+//          actual: null | { listo, posicion, resultado },                 // HOY según el Ranking (null si ya no está postulada)
+//          documental: { estado, cumplimiento },
+//          evaluacion: null | { referencia: null | { evaluador, designada_por, vigente },
+//                               evaluaciones: [{ evaluador, cumplimiento, resultado }] },  // solo Instructor y Superadmin
+//          actividades: { entrevista|prueba_tecnica: { estado: desactivada|pendiente|registrada, nota, fecha_realizacion,
+//                          observacion, registrada_por } },                // notas VIGENTES (no una copia histórica)
+//          skills: { requeridas: [{ nombre, declarada, certificado_cargado }], adicionales } }],
+//        meta: { modo: pendiente_de_configurar|sin_actividades|con_actividades,
+//          actividades: { entrevista|prueba_tecnica: { activa, peso } },
+//          lista: null | { version, confirmada_en, requiere_revision },
+//          evaluador_visible, skills_requeridas } }
+// 'certificado_cargado' solo dice que hay un archivo cargado; NO es una validación. Nunca viaja el archivo ni su ruta.
+// 'resultado' llega como texto con dos decimales ("8.70"). Con sin_actividades no hay puesto ni resultado (null).
+export const compararCandidatos = (convocatoriaId, postulaciones) =>
+  client
+    .get(`/seleccion/convocatorias/${convocatoriaId}/comparacion`, { params: { postulaciones } })
+    .then((res) => res.data)
