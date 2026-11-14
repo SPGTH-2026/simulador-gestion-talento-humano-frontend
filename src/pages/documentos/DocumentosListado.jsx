@@ -102,7 +102,7 @@ export default function DocumentosListado() {
       {error && <Mensaje tipo="error">{error}</Mensaje>}
 
       {cargando ? (
-        <Cargando mensaje="Cargando aspirantes..." />
+        <Cargando>Cargando aspirantes…</Cargando>
       ) : aspirantes.length === 0 ? (
         <EstadoVacio
           icono="📂"

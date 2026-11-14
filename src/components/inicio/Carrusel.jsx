@@ -12,7 +12,8 @@ import edificio1280 from '../../assets/inicio/inicio-edificio-1280.webp'
 // ve: no se atribuyen nombres, eventos ni lugares. Cada una es un recorte 5:2
 // de la foto original (los originales no se tocan); 'posicion' decide qué parte
 // se conserva cuando el contenedor es más ancho o más alto que ese recorte, para
-// no cortar rostros ni el letrero.
+// no cortar rostros ni el letrero. En escritorio la altura se limita a 16 rem: los perfiles sin columna lateral
+// (administrador, gestor, evaluador…) le dan todo el ancho y, con proporción fija, la franja crecía sin medida.
 const FOTOS = [
   {
     id: 'instalaciones',
@@ -159,7 +160,7 @@ export default function Carrusel() {
             aria-roledescription="diapositiva"
             aria-label={`${i + 1} de ${FOTOS.length}`}
             inert={i !== actual}
-            className="aspect-[2/1] w-full min-w-full max-w-full shrink-0 basis-full snap-center bg-sena-hundido sm:aspect-[5/2] lg:aspect-[3/1] dark:bg-sena-superficie-alta"
+            className="aspect-[2/1] w-full min-w-full max-w-full shrink-0 basis-full snap-center bg-sena-hundido sm:aspect-[5/2] lg:aspect-[3/1] lg:max-h-64 dark:bg-sena-superficie-alta"
           >
             <img
               src={foto.grande}

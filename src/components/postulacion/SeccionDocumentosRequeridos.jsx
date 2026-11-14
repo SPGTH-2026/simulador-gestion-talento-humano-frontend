@@ -235,7 +235,7 @@ export default function SeccionDocumentosRequeridos({
                       onClick={() => refsInput.current[clave]?.click()}>
                       <span className="inline-flex items-center gap-1.5">
                         {enProceso
-                          ? 'Cargando...'
+                          ? 'Cargando…'
                           : yaCargado
                             ? 'Reemplazar'
                             : error

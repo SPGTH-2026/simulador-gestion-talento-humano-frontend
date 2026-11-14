@@ -311,7 +311,7 @@ export default function Usuarios() {
       )}
       {exito && <MensajeExito>{exito}</MensajeExito>}
 
-      <Tarjeta className="overflow-x-auto">
+      <Tarjeta className="@container overflow-x-auto">
         <table className={`${CLASE_TABLA} min-w-175`}>
           <thead className={CLASE_THEAD}>
             <tr>
@@ -327,7 +327,9 @@ export default function Usuarios() {
             {cargando && (
               <tr>
                 <td colSpan="6">
-                  <Cargando>Cargando usuarios...</Cargando>
+                  <div className="sticky left-0 w-[100cqw]">
+                    <Cargando>Cargando usuarios…</Cargando>
+                  </div>
                 </td>
               </tr>
             )}

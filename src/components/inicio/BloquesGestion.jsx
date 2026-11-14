@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import Boton from '../ui/Boton'
-import Icono from '../ui/Icono'
 import { TarjetaSeccion } from '../ui/Tarjeta'
 import EtiquetaEstado from '../convocatorias/EtiquetaEstado'
 import {
@@ -85,7 +84,7 @@ const ELEMENTOS_SELECCION = 4
 // Preselección y Ranking ya posicionados en cada una. Es el equivalente, para quien trabaja en Selección, del bloque de
 // convocatorias de gestión: mismo marco, mismas filas y el mismo texto sobre el alcance.
 export function BloqueConvocatoriasSeleccion({ recurso }) {
-  const { user } = useAuth()
+  const { user, can } = useAuth()
   const enProceso = (c) => (c.estado?.codigo === 'en_proceso' ? 1 : 0)
   // sort es estable: dentro de cada grupo se conserva el orden del listado.
   const lista = [...(recurso.datos?.data ?? [])].sort((a, b) => enProceso(b) - enProceso(a)).slice(0, ELEMENTOS_SELECCION)
@@ -99,9 +98,16 @@ export function BloqueConvocatoriasSeleccion({ recurso }) {
       vacio={lista.length === 0}
       textoVacio="No hay convocatorias en tu alcance todavía."
       pie={
-        <Boton as={Link} to="/seleccion/preseleccion" variante="enlace" tamano="flexible">
-          Ver todas en Preselección
-        </Boton>
+        <>
+          <Boton as={Link} to="/seleccion/preseleccion" variante="enlace" tamano="flexible">
+            Ver todas en Preselección
+          </Boton>
+          {can('seleccion:decidir') && (
+            <Boton as={Link} to="/seleccion/decidir" variante="enlace" tamano="flexible">
+              Ir a Decidir
+            </Boton>
+          )}
+        </>
       }
     >
       <ul className={CLASE_LISTA}>
@@ -274,38 +280,6 @@ export function BloqueRecorridoSeleccion() {
           </li>
         ))}
       </ol>
-    </TarjetaSeccion>
-  )
-}
-
-// Accesos a los módulos que el usuario puede abrir. Salen del menú (destinos y
-// permisos): no hay una segunda lista. 'columnas' los reparte en una o dos
-// columnas según el espacio del bloque.
-export function BloqueAccesos({ destinos, dosColumnas = false }) {
-  return (
-    <TarjetaSeccion titulo="Accesos">
-      <ul className={`grid gap-2 ${dosColumnas ? 'sm:grid-cols-2' : ''}`}>
-        {destinos.map((d) => (
-          <li key={d.to}>
-            <Boton
-              as={Link}
-              to={d.to}
-              aria-label={d.grupo ? `${d.grupo}: ${d.label}` : undefined}
-              variante="contorno"
-              tamano="flexible"
-              className="w-full justify-start text-left"
-            >
-              <Icono nombre={d.icono} className="size-5 shrink-0" />
-              <span className="min-w-0">
-                {d.label}
-                {d.grupo && (
-                  <span className={`block text-xs font-normal ${CLASE_TEXTO_SUAVE}`}>{d.grupo}</span>
-                )}
-              </span>
-            </Boton>
-          </li>
-        ))}
-      </ul>
     </TarjetaSeccion>
   )
 }

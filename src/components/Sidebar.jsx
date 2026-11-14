@@ -13,6 +13,7 @@ import LogoSena from './ui/LogoSena'
 // Deja solo lo que el usuario puede ver, incluyendo los hijos
 function filtrarMenu(items, can) {
   return items
+    .filter((item) => item.disponible !== false)
     .map((item) => {
       if (item.children) {
         const hijos = item.children.filter((hijo) => can(hijo.permiso))

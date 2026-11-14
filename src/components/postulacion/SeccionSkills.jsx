@@ -123,7 +123,7 @@ function FilaSkill({
                   disabled={Boolean(enVuelo)}
                   onClick={onAdjuntar}>
                   <span className="inline-flex items-center gap-1.5">
-                    {ocupada ? 'Cargando...' : 'Cargar certificado'}
+                    {ocupada ? 'Cargando…' : 'Cargar certificado'}
                   </span>
                 </Boton>
               )

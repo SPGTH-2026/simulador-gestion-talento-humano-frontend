@@ -11,7 +11,6 @@ import {
   BloqueResultados,
 } from '../../components/inicio/BloquesAspirante'
 import {
-  BloqueAccesos,
   BloqueConvocatoriasGestion,
   BloqueConvocatoriasSeleccion,
   BloqueRequiereAtencionSeleccion,
@@ -20,13 +19,13 @@ import {
 } from '../../components/inicio/BloquesGestion'
 import { useCarga } from '../../hooks/useCarga'
 import { CLASE_SUBTITULO_PAGINA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
-import { MAX_ELEMENTOS, destinosDelMenu, perfilInicio } from '../../lib/inicio'
+import { MAX_ELEMENTOS, perfilInicio } from '../../lib/inicio'
 
 // Línea de apoyo bajo el título, según lo que el perfil encuentra en la página.
 function subtituloDe(perfil) {
   if (perfil.postulaciones) return 'Tus postulaciones y las convocatorias disponibles.'
-  if (perfil.gestion || perfil.evaluando || perfil.convocatoriasSeleccion) return 'Convocatorias y accesos a tus módulos.'
-  return 'Accesos a los módulos que puedes usar.'
+  if (perfil.gestion || perfil.evaluando || perfil.convocatoriasSeleccion) return 'Convocatorias y trabajo pendiente de tu rol.'
+  return 'Bienvenido a SPGTH.'
 }
 
 function Inicio() {
@@ -56,8 +55,6 @@ function Inicio() {
   // endpoint, pero nunca el mismo usuario.
   const evaluaciones = useCarga(() => misEvaluaciones(), perfil.resultados || perfil.evaluando)
 
-  const destinos = perfil.accesos ? destinosDelMenu(can) : []
-
   const principales = []
   const laterales = []
 
@@ -79,10 +76,7 @@ function Inicio() {
   if (perfil.resultados) laterales.push(<BloqueResultados key="res" recurso={evaluaciones} />)
   if (perfil.postulaciones) laterales.push(<BloqueRecorrido key="rec" />)
 
-  // Los accesos van siempre a un lado: todos los roles comparten la misma composición (columna principal ancha y
-  // columna lateral), también quien no tiene bloques de datos (p. ej. el seleccionador).
-  if (destinos.length > 0) laterales.push(<BloqueAccesos key="acc" destinos={destinos} />)
-  // Orientación del recorrido, como «Cómo avanza el proceso» del aspirante (va tras los accesos).
+  // Orientación del recorrido, como «Cómo avanza el proceso» del aspirante.
   if (perfil.convocatoriasSeleccion) laterales.push(<BloqueRecorridoSeleccion key="rec-sel" />)
 
   const conLateral = laterales.length > 0

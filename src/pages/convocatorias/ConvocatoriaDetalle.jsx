@@ -19,6 +19,7 @@ import {
 } from '../../lib/ventanaPostulacion'
 import { CLASE_TARJETA } from '../../lib/estilos'
 import Icono from '../../components/ui/Icono'
+import Cargando from '../../components/ui/Cargando'
 
 
 // Vista de solo lectura propia (componente DetalleConvocatoria.jsx). El wizard
@@ -108,7 +109,7 @@ function ContenidoDetalle({ id }) {
   }
 
   if (cargando) {
-    return <p className="text-slate-500 dark:text-sena-texto-suave">Cargando convocatoria...</p>
+    return <Cargando>Cargando convocatoria…</Cargando>
   }
 
   // El aspirante postulado a una convocatoria que ya no está publicada (el

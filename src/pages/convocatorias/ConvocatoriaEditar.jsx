@@ -10,6 +10,7 @@ import ConvocatoriaWizard from '../../components/convocatorias/ConvocatoriaWizar
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import Boton from '../../components/ui/Boton'
 import Icono from '../../components/ui/Icono'
+import Cargando from '../../components/ui/Cargando'
 
 // Borrador y publicada se editan completos; en_proceso y cerrada son de solo
 // lectura. Al publicar desde aquí se guarda (PATCH) y, si todo va bien, se
@@ -121,7 +122,7 @@ export default function ConvocatoriaEditar() {
   }
 
   if (cargando) {
-    return <p className="text-slate-500 dark:text-sena-texto-suave">Cargando convocatoria...</p>
+    return <Cargando>Cargando convocatoria…</Cargando>
   }
 
   if (errorCarga || !detalle) {

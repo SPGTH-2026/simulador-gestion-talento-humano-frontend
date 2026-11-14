@@ -5,6 +5,7 @@ import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulac
 import { CLASE_CAJA_SUAVE, CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 import { Link } from 'react-router-dom'
 import Boton from '../../components/ui/Boton'
+import Cargando from '../../components/ui/Cargando'
 
 export default function MisDocumentos() {
   const [postulaciones, setPostulaciones] = useState([])
@@ -30,14 +31,14 @@ export default function MisDocumentos() {
   }, [cargar])
 
   if (cargando) {
-    return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-2 border-sena-azul border-t-transparent" /></div>
+    return <Cargando>Cargando tus postulaciones…</Cargando>
   }
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <p className="text-red-600 dark:text-red-300">{error}</p>
-        <button onClick={cargar} className="text-sena-azul hover:underline dark:text-sena-texto">Reintentar</button>
+        <Boton variante="contorno" onClick={cargar}>Reintentar</Boton>
       </div>
     )
   }

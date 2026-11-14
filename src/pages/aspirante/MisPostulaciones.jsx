@@ -7,6 +7,7 @@ import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulac
 import EtiquetaVentana from '../../components/convocatorias/EtiquetaVentana'
 import Boton from '../../components/ui/Boton'
 import Paginacion from '../../components/ui/Paginacion'
+import Cargando from '../../components/ui/Cargando'
 import { estadoVentana, formatearFechaHora, textoVentana } from '../../lib/ventanaPostulacion'
 import { CLASE_META_DT, CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 
@@ -331,7 +332,7 @@ export default function MisPostulaciones() {
       )}
 
       {cargando ? (
-        <p className="text-slate-500 dark:text-sena-texto-suave">Cargando postulaciones...</p>
+        <Cargando>Cargando postulaciones…</Cargando>
       ) : postulaciones.length === 0 ? (
         // Sin postulaciones: mensaje claro con enlace al listado.
         <div className={`${CLASE_TARJETA} flex flex-col items-center gap-3 p-8 text-center`}>

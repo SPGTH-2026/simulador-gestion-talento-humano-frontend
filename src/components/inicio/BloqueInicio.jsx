@@ -24,11 +24,7 @@ export default function BloqueInicio({
     <TarjetaSeccion titulo={titulo}>
       {descripcion && <p className={`mb-3 text-sm ${CLASE_TEXTO_SUAVE}`}>{descripcion}</p>}
 
-      {recurso.fase === 'cargando' && (
-        <div role="status">
-          <Cargando>{textoCarga}</Cargando>
-        </div>
-      )}
+      {recurso.fase === 'cargando' && <Cargando>{textoCarga}</Cargando>}
 
       {recurso.fase === 'error' && (
         <div className="flex flex-col items-start gap-3">

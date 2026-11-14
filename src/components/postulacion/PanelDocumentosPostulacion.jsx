@@ -149,7 +149,7 @@ export default function PanelDocumentosPostulacion({
       const postulacion = await postularse(convocatoria?.id)
       onPostulacionCreada?.(postulacion)
       // Primero el estado y DESPUÉS el id. Si el id se pone antes, el panel
-      // muestra "Cargando tus datos..." mientras llega el estado y desmonta la
+      // muestra "Cargando tus datos…" mientras llega el estado y desmonta la
       // sección de documentos en plena subida (se perdía el progreso y el archivo).
       const fresco = await estadoDocumentos(postulacion.id).catch(() => null)
       if (fresco) aplicarEstado(fresco)
@@ -226,7 +226,7 @@ export default function PanelDocumentosPostulacion({
   // Sin estado todavía: mientras llega el GET, o el error de acceso.
   if (idPostulacion && !estado && !error) {
     return (
-      <p className="text-slate-500 dark:text-sena-texto-suave">Cargando tus datos...</p>
+      <p className="text-slate-500 dark:text-sena-texto-suave">Cargando tus datos…</p>
     )
   }
   if (idPostulacion && !estado && error) {

@@ -227,11 +227,7 @@ export default function EvaluacionEvaluar() {
   }
 
   if (cargando) {
-    return (
-      <div role="status">
-        <Cargando>Cargando evaluación…</Cargando>
-      </div>
-    )
+    return <Cargando>Cargando evaluación…</Cargando>
   }
 
   if (!dato) {

@@ -1,6 +1,9 @@
 // Cada opción pide UN permiso. Los módulos con hijos se muestran
 // si al usuario le queda al menos un hijo visible.
 // Notificaciones no está aquí: se abre desde la campana del Topbar.
+// Mientras la pantalla de Notificaciones no tenga funciones ni backend, la campana no se muestra.
+export const NOTIFICACIONES_DISPONIBLES = false
+
 // 'icono' es solo presentación (ver components/ui/Icono.jsx): no cambia
 // permisos ni destinos. Los hijos no llevan ícono.
 export const menu = [
@@ -50,8 +53,17 @@ export const menu = [
 
   { id: 'usuarios', label: 'Usuarios y Roles', icono: 'usuarios', to: '/usuarios', permiso: 'usuarios:gestionar' },
   { id: 'fichas', label: 'Fichas', icono: 'fichas', to: '/fichas', permiso: 'usuarios:gestionar' },
-  { id: 'reportes', label: 'Reportes', icono: 'reportes', to: '/reportes', permiso: 'reportes:ver' },
-  { id: 'supervision', label: 'Supervisión', icono: 'supervision', to: '/supervision', permiso: 'supervision:gestionar' },
+  // 'disponible: false': la pantalla existe (ruta y permiso siguen en el router) pero todavía no tiene funciones ni
+  // backend, así que el menú no la ofrece. Para mostrarla de nuevo basta quitar esa línea.
+  { id: 'reportes', label: 'Reportes', icono: 'reportes', to: '/reportes', permiso: 'reportes:ver', disponible: false },
+  {
+    id: 'supervision',
+    label: 'Supervisión',
+    icono: 'supervision',
+    to: '/supervision',
+    permiso: 'supervision:gestionar',
+    disponible: false,
+  },
 
   // Vistas del aspirante
   { id: 'mis-postulaciones', label: 'Mis postulaciones', icono: 'postulaciones', to: '/mis-postulaciones', permiso: 'propio:postulaciones' },

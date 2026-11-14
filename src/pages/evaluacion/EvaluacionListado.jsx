@@ -589,7 +589,7 @@ export default function EvaluacionListado() {
           porque Tailwind no genera las que se arman concatenando cadenas. */}
       <div className="@container flex flex-col gap-3" aria-busy={actualizando}>
         {verEsqueleto && (
-          <EsqueletoListado texto={cargando ? 'Cargando aspirantes...' : 'Buscando aspirantes...'} />
+          <EsqueletoListado texto={cargando ? 'Cargando aspirantes…' : 'Buscando aspirantes…'} />
         )}
 
         {verVacio && (

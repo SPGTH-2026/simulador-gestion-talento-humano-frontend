@@ -114,7 +114,7 @@ export default function PortafolioDetalle() {
   const rutaArchivo = (suffix) => `/revision/postulaciones/${postulacionSel.id}/${suffix}`
 
   if (cargando && !portafolio) {
-    return <Cargando mensaje="Cargando portafolio..." />
+    return <Cargando>Cargando portafolio…</Cargando>
   }
 
   if (error && !portafolio) {

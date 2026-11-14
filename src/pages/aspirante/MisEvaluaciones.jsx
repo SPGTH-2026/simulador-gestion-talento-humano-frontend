@@ -351,9 +351,7 @@ export default function MisEvaluaciones() {
       )}
 
       {cargando ? (
-        <div role="status">
-          <Cargando>Cargando evaluaciones…</Cargando>
-        </div>
+        <Cargando>Cargando evaluaciones…</Cargando>
       ) : (
         evaluaciones.length === 0 &&
         !error && (

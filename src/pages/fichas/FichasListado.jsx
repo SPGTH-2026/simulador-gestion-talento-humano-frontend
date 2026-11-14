@@ -214,7 +214,7 @@ export default function FichasListado() {
       {error && <MensajeError>{error}</MensajeError>}
       {exito && <MensajeExito>{exito}</MensajeExito>}
 
-      <Tarjeta className="overflow-x-auto">
+      <Tarjeta className="@container overflow-x-auto">
         <table className={`${CLASE_TABLA} min-w-200`}>
           <thead className={CLASE_THEAD}>
             <tr>
@@ -231,7 +231,9 @@ export default function FichasListado() {
             {cargando && (
               <tr>
                 <td colSpan="7">
-                  <Cargando>Cargando fichas...</Cargando>
+                  <div className="sticky left-0 w-[100cqw]">
+                    <Cargando>Cargando fichas…</Cargando>
+                  </div>
                 </td>
               </tr>
             )}
