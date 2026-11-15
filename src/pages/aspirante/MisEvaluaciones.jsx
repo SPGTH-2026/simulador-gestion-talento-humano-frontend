@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { misEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
@@ -16,7 +16,7 @@ import Boton from '../../components/ui/Boton'
 import Cargando from '../../components/ui/Cargando'
 import Dialogo from '../../components/ui/Dialogo'
 import Icono from '../../components/ui/Icono'
-import { MensajeAviso, MensajeError } from '../../components/ui/Mensaje'
+import { MensajeAviso, MensajeError, MensajeExito } from '../../components/ui/Mensaje'
 import {
   CLASE_CAJA_SUAVE,
   CLASE_SUBTITULO_PAGINA,
@@ -28,6 +28,7 @@ import {
   CLASE_TITULO_PAGINA,
 } from '../../lib/estilos'
 import { ESTADO_DOCUMENTO, formatearPeso } from '../../lib/evaluacion'
+import { formatearFechaHora } from '../../lib/ventanaPostulacion'
 
 // El contrato puede traer el aspirante como texto o como objeto.
 const datosAspirante = (e) =>
@@ -217,10 +218,20 @@ function DetalleEvaluacion({ evaluacion, documentos, estadoDocumentos, onCerrar 
           <span>
             <strong>El evaluador pidió corregir</strong> los documentos marcados con «Corregir».
           </span>
-          {evaluacion.postulacion_id && (
+          {evaluacion.correccion_enviada_at && (
+            <p className="text-xs text-slate-600 dark:text-sena-texto-suave">
+              Corrección enviada el {formatearFechaHora(evaluacion.correccion_enviada_at)}. El evaluador la revisará.
+            </p>
+          )}
+          {evaluacion.fecha_limite_correccion && !evaluacion.correccion_enviada_at && (
+            <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+              Plazo para corregir: hasta el {formatearFechaHora(evaluacion.fecha_limite_correccion)}.
+            </p>
+          )}
+          {evaluacion.postulacion_id && !evaluacion.correccion_enviada_at && (
             <Boton
               as={Link}
-              to={`/postulaciones/${evaluacion.postulacion_id}/documentos`}
+              to={`/postulaciones/${evaluacion.postulacion_id}/correcciones`}
               onClick={onCerrar}
               variante="contorno"
               tamano="tactil"
@@ -240,6 +251,9 @@ function DetalleEvaluacion({ evaluacion, documentos, estadoDocumentos, onCerrar 
 
 export default function MisEvaluaciones() {
   const { can } = useAuth()
+  const location = useLocation()
+  // Aviso que llega desde otra página (p. ej. tras enviar la corrección).
+  const [exito] = useState(location.state?.exito ?? '')
   const [evaluaciones, setEvaluaciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -324,6 +338,8 @@ export default function MisEvaluaciones() {
         <h1 className={CLASE_TITULO_PAGINA}>Mis evaluaciones</h1>
         <p className={CLASE_SUBTITULO_PAGINA}>Consulta el estado y el resultado de cada evaluación.</p>
       </div>
+
+      {exito && <MensajeExito>{exito}</MensajeExito>}
 
       {error && (
         <div className="flex flex-col items-start gap-3">

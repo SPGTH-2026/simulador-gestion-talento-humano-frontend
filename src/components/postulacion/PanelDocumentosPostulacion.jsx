@@ -3,12 +3,14 @@ import { postularse, cambiarEstadoPostulacion } from '../../api/postulaciones'
 import {
   estadoDocumentos,
   obtenerPerfil,
+  obtenerCorreccion,
+  enviarCorreccion,
   abrirArchivoEnPestana,
   mensajeErrorBlob,
 } from '../../api/postulacionesDocumentos'
 import { mensajeError } from '../../api/mensajeError'
 import { useAuth } from '../../auth/useAuth'
-import { estadoVentana } from '../../lib/ventanaPostulacion'
+import { estadoVentana, formatearFechaHora } from '../../lib/ventanaPostulacion'
 import { CODIGO_LIBRETA_MILITAR, motivoNoEditable } from '../../lib/postulacionDocumentos'
 import { CLASE_CAJA_SUAVE } from '../../lib/estilos'
 import IndicadorCompletitud from './IndicadorCompletitud'
@@ -40,6 +42,8 @@ export default function PanelDocumentosPostulacion({
   onPostulacionCreada,
   onEnviado,
   onVerDocumentos,
+  modoCorreccion = false,
+  onCorreccionEnviada,
 }) {
   const { user } = useAuth()
   const idInicial = postulacionId ?? miPostulacion?.id ?? null
@@ -52,6 +56,52 @@ export default function PanelDocumentosPostulacion({
   const [aviso, setAviso] = useState('')
   // Promesa de creación en vuelo: una sola creación de borrador a la vez.
   const creandoRef = useRef(null)
+  // Corrección pedida por el evaluador (null si no hay ninguna pendiente).
+  const [correccion, setCorreccion] = useState(null)
+  const [enviandoCorreccion, setEnviandoCorreccion] = useState(false)
+
+  useEffect(() => {
+    let activo = true
+    if (!idPostulacion || user?.role !== 'aspirante') return undefined
+    obtenerCorreccion(idPostulacion)
+      .then((c) => {
+        if (activo) setCorreccion(c)
+      })
+      .catch(() => {})
+    return () => {
+      activo = false
+    }
+  }, [idPostulacion, estado, user?.role])
+
+  // Documentos marcados con "No" por el evaluador, y los que ya se reemplazaron.
+  const marcados = useMemo(
+    () =>
+      new Set(
+        Object.entries(correccion?.perfil ?? {})
+          .filter(([clave, valor]) => valor === false && clave.startsWith('doc-'))
+          .map(([clave]) => Number(clave.slice(4))),
+      ),
+    [correccion],
+  )
+  const reemplazados = useMemo(
+    () => new Set((correccion?.documentos_actualizados ?? []).map((clave) => Number(String(clave).slice(4)))),
+    [correccion],
+  )
+  const infoCorreccion = correccion ? { marcados, reemplazados } : null
+  const pendientes = [...marcados].filter((id) => !reemplazados.has(id))
+
+  const enviarCorreccionAhora = async () => {
+    setEnviandoCorreccion(true)
+    setError('')
+    try {
+      await enviarCorreccion(idPostulacion)
+      onCorreccionEnviada?.()
+    } catch (e) {
+      setError(mensajeError(e))
+    } finally {
+      setEnviandoCorreccion(false)
+    }
+  }
 
   const aplicarEstado = useCallback(
     (data) => {
@@ -297,14 +347,16 @@ export default function PanelDocumentosPostulacion({
         </p>
       )}
 
-      <IndicadorCompletitud estado={vista} />
+      {!modoCorreccion && <IndicadorCompletitud estado={vista} />}
 
-      <SeccionSexo
-        sexo={sexo}
-        editable={editableSexo}
-        onGuardado={alGuardarSexo}
-        onError={setError}
-      />
+      {!modoCorreccion && (
+        <SeccionSexo
+          sexo={sexo}
+          editable={editableSexo}
+          onGuardado={alGuardarSexo}
+          onError={setError}
+        />
+      )}
 
       <SeccionDocumentosRequeridos
         vista={vista}
@@ -313,25 +365,40 @@ export default function PanelDocumentosPostulacion({
         asegurar={asegurar}
         onRecargar={recargar}
         onError={setError}
+        correccion={infoCorreccion}
+        soloCorreccion={modoCorreccion}
       />
 
-      <SeccionSkills
-        vista={vista}
-        editable={editable}
-        asegurar={asegurar}
-        onRecargar={recargar}
-        onError={setError}
-      />
+      {modoCorreccion && correccion && (
+        <CorreccionEnvio
+          correccion={correccion}
+          pendientes={pendientes}
+          enviando={enviandoCorreccion}
+          onEnviar={enviarCorreccionAhora}
+        />
+      )}
 
-      <SeccionAdicionales
-        vista={vista}
-        editable={editable}
-        asegurar={asegurar}
-        onRecargar={recargar}
-        onError={setError}
-      />
+      {!modoCorreccion && (
+        <>
+          <SeccionSkills
+            vista={vista}
+            editable={editable}
+            asegurar={asegurar}
+            onRecargar={recargar}
+            onError={setError}
+          />
 
-      {esBorrador && editable && (
+          <SeccionAdicionales
+            vista={vista}
+            editable={editable}
+            asegurar={asegurar}
+            onRecargar={recargar}
+            onError={setError}
+          />
+        </>
+      )}
+
+      {!modoCorreccion && esBorrador && editable && (
         <SeccionEnviarPostulacion
           estado={vista}
           onExito={() => onEnviado?.()}
@@ -370,5 +437,48 @@ export default function PanelDocumentosPostulacion({
         </div>
       )}
     </div>
+  )
+}
+
+// Resumen de la corrección pedida y botón para enviarla cuando todos los documentos
+// marcados están reemplazados.
+function CorreccionEnvio({ correccion, pendientes, enviando, onEnviar }) {
+  const enviada = correccion.correccion_enviada_at
+  const limite = correccion.fecha_limite_correccion ?? null
+  const vencido = limite ? new Date(limite) < new Date() : false
+  const faltan = pendientes.length
+  const bloqueado = !enviada && vencido
+  const texto = bloqueado
+    ? 'Ya no puedes enviar la corrección porque el plazo terminó.'
+    : enviada
+    ? `Corrección enviada el ${formatearFechaHora(enviada)}. El evaluador la revisará.`
+    : faltan > 0
+      ? `Faltan ${faltan} documento(s) por reemplazar.`
+      : 'Ya reemplazaste todos los documentos marcados. Envía la corrección para que el evaluador la revise.'
+
+  return (
+    <section className={`${CLASE_CAJA_SUAVE} flex flex-col gap-3 p-4`}>
+      <h2 className="text-sm font-semibold text-slate-800 dark:text-sena-texto">
+        Corrección solicitada por el evaluador
+      </h2>
+      {correccion.observaciones && (
+        <p className="text-sm text-slate-700 dark:text-sena-texto-suave">{correccion.observaciones}</p>
+      )}
+      <p className="text-xs text-slate-600 dark:text-sena-texto-suave">{texto}</p>
+      {limite && !enviada && (
+        <p className={`text-xs font-medium ${vencido ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+          {vencido ? 'El plazo para corregir venció el ' : 'Plazo para corregir: hasta el '}
+          {formatearFechaHora(limite)}.
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={Boolean(enviada) || faltan > 0 || enviando || bloqueado}
+        onClick={onEnviar}
+        className="self-start rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {enviando ? 'Enviando...' : 'Enviar documento corregido'}
+      </button>
+    </section>
   )
 }

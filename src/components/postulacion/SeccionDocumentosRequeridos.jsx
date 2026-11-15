@@ -37,10 +37,14 @@ export default function SeccionDocumentosRequeridos({
   asegurar,
   onRecargar,
   onError,
+  correccion = null,
+  soloCorreccion = false,
 }) {
   const documentos = vista.documentos ?? []
   const sexoMujer = sexo?.codigo === 'mujer'
   const sinSexo = !sexo?.codigo
+  // Documentos que el evaluador marcó con "Corregir" (correccion.marcados).
+  const hayMarcados = documentos.some((d) => correccion?.marcados?.has(d.parametro.id))
 
   // códigos de los documentos con una petición EN VUELO. Un Set permite que
   // varias filas trabajen a la vez sin pisarse (una operación por documento).
@@ -151,6 +155,10 @@ export default function SeccionDocumentosRequeridos({
       <ul className="mt-3 flex flex-col divide-y divide-slate-100 dark:divide-sena-borde">
         {documentos.map((documento) => {
           const { parametro, obligatorio, estado: estadoDoc, archivo } = documento
+          const marcado = Boolean(correccion?.marcados?.has(parametro.id))
+          const reemplazado = Boolean(correccion?.reemplazados?.has(parametro.id))
+          // En el modo corrección solo se muestran los documentos marcados.
+          if (soloCorreccion && !marcado) return null
           const codigo = parametro.codigo
           // Clave estable para el estado local: los documentos nuevos del
           // gestor nacen sin código, así que se usa el id como respaldo.
@@ -189,6 +197,16 @@ export default function SeccionDocumentosRequeridos({
                     />
                     {ETIQUETAS_DOCUMENTO[codigo] && (
                       <span className={CLASE_ETIQUETA}>{ETIQUETAS_DOCUMENTO[codigo]}</span>
+                    )}
+                    {marcado && !reemplazado && (
+                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+                        Corregir este documento
+                      </span>
+                    )}
+                    {marcado && reemplazado && (
+                      <span className="rounded-full bg-sena-cielo/30 px-2 py-0.5 text-xs font-medium text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto">
+                        Corregido, en revisión
+                      </span>
                     )}
                   </p>
 
@@ -250,7 +268,7 @@ export default function SeccionDocumentosRequeridos({
                     </button>
                   )}
 
-                  {puedeEditar && estadoDoc === 'subido' && (
+                  {puedeEditar && !soloCorreccion && estadoDoc === 'subido' && (
                     <button
                       type="button"
                       disabled={enProceso}
@@ -288,9 +306,11 @@ export default function SeccionDocumentosRequeridos({
           )
         })}
 
-        {documentos.length === 0 && (
+        {(documentos.length === 0 || (soloCorreccion && !hayMarcados)) && (
           <li className="py-3 text-sm text-slate-500 dark:text-sena-texto-suave">
-            Esta convocatoria no pide documentos.
+            {soloCorreccion
+              ? 'No tienes documentos marcados para corregir.'
+              : 'Esta convocatoria no pide documentos.'}
           </li>
         )}
       </ul>
