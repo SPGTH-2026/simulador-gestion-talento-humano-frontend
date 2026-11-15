@@ -4,10 +4,6 @@ import { useAuth } from '../../auth/useAuth'
 import { listaEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
 import {
-  IconoFlechaDerecha,
-  IconoFlechaIzquierda,
-  IconoLupa,
-  IconoOjo,
   IconoX,
 } from '../../components/convocatorias/Iconos'
 import {
@@ -17,6 +13,8 @@ import {
   Resultado,
 } from '../../components/evaluacion/PresentacionEvaluacion'
 import Boton from '../../components/ui/Boton'
+import CampoBusqueda from '../../components/ui/CampoBusqueda'
+import Paginacion from '../../components/ui/Paginacion'
 import Campo from '../../components/ui/Campo'
 import Etiqueta from '../../components/ui/Etiqueta'
 import Icono from '../../components/ui/Icono'
@@ -58,18 +56,18 @@ const nombreDe = (fila) => fila.aspirante.name ?? 'aspirante'
 // Barra de documentos: gris sin documentos o sin ninguno cargado, ámbar con
 // avance parcial y verde con todos. El texto "x/y" acompaña siempre a la
 // barra: el color nunca es el único canal. El backend cuenta como 'cargados' los
-// documentos que el aspirante subió (antes 'validados'): el contrato no trae
-// validación documental, así que aquí se rotulan como subidos.
+// documentos que el aspirante cargó (antes 'validados'): el contrato no trae
+// validación documental, así que aquí se rotulan como cargados.
 function ProgresoDocumentos({ fila }) {
   const docs = fila.documentos ?? {}
   const total = docs.total ?? 0
-  const subidos = docs.cargados ?? docs.validados ?? 0
+  const cargados = docs.cargados ?? docs.validados ?? 0
   const maximo = Math.max(total, 1)
-  const pct = Math.min(100, Math.round((subidos / maximo) * 100))
+  const pct = Math.min(100, Math.round((cargados / maximo) * 100))
   const relleno =
-    total === 0 || subidos === 0
+    total === 0 || cargados === 0
       ? 'bg-slate-400 dark:bg-sena-texto-suave'
-      : subidos === total
+      : cargados === total
         ? 'bg-exito'
         : 'bg-aviso'
 
@@ -80,8 +78,8 @@ function ProgresoDocumentos({ fila }) {
         aria-label={`Documentos de ${nombreDe(fila)}`}
         aria-valuemin={0}
         aria-valuemax={maximo}
-        aria-valuenow={Math.min(subidos, maximo)}
-        aria-valuetext={`${subidos} de ${total} documentos subidos`}
+        aria-valuenow={Math.min(cargados, maximo)}
+        aria-valuetext={`${cargados} de ${total} documentos cargados`}
         className="h-2 min-w-10 flex-1 overflow-hidden rounded-full bg-sena-hundido dark:bg-sena-borde"
       >
         <div
@@ -93,7 +91,7 @@ function ProgresoDocumentos({ fila }) {
         className={`whitespace-nowrap text-sm font-medium tabular-nums ${CLASE_TEXTO_FUERTE}`}
         aria-hidden="true"
       >
-        {subidos}/{total}
+        {cargados}/{total}
       </span>
     </div>
   )
@@ -171,7 +169,7 @@ function TarjetaAspirante({ fila }) {
 
       <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-6 gap-y-3 border-t border-sena-linea/70 pt-4 dark:border-sena-borde/50">
         <div className="min-w-0">
-          <dt className={`mb-1 text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Documentos subidos</dt>
+          <dt className={`mb-1 text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Documentos cargados</dt>
           <dd>
             <ProgresoDocumentos fila={fila} />
           </dd>
@@ -192,7 +190,6 @@ function TarjetaAspirante({ fila }) {
       </dl>
 
       <EnlaceRevisar fila={fila} variante="primario" className="mt-auto w-full">
-        <IconoOjo className="h-4 w-4" />
         Revisar
       </EnlaceRevisar>
     </li>
@@ -512,18 +509,11 @@ export default function EvaluacionListado() {
               etiqueta="Buscar aspirante"
               className="@min-[520px]:col-span-2 @min-[860px]:col-span-1"
             >
-              <div className="relative">
-                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500 dark:text-sena-texto-suave">
-                  <IconoLupa />
-                </span>
-                <input
-                  type="search"
-                  placeholder="Nombre o correo..."
-                  value={termino}
-                  onChange={(e) => setTermino(e.target.value)}
-                  className={`${CLASE_CAMPO} pl-10`}
-                />
-              </div>
+              <CampoBusqueda
+                placeholder="Nombre o correo…"
+                value={termino}
+                onChange={(e) => setTermino(e.target.value)}
+              />
             </Campo>
 
             <Boton
@@ -608,7 +598,7 @@ export default function EvaluacionListado() {
           porque Tailwind no genera las que se arman concatenando cadenas. */}
       <div className="@container flex flex-col gap-3" aria-busy={actualizando}>
         {verEsqueleto && (
-          <EsqueletoListado texto={cargando ? 'Cargando aspirantes...' : 'Buscando aspirantes...'} />
+          <EsqueletoListado texto={cargando ? 'Cargando aspirantes…' : 'Buscando aspirantes…'} />
         )}
 
         {verVacio && (
@@ -651,7 +641,7 @@ export default function EvaluacionListado() {
                   </colgroup>
                   <thead className={CLASE_THEAD}>
                     <tr>
-                      {['Aspirante', 'Convocatoria', 'Documentos subidos', 'Cumplimiento', 'Evaluación'].map(
+                      {['Aspirante', 'Convocatoria', 'Documentos cargados', 'Cumplimiento', 'Evaluación'].map(
                         (titulo) => (
                           <th key={titulo} scope="col" className={CLASE_TH}>
                             {titulo}
@@ -678,38 +668,15 @@ export default function EvaluacionListado() {
               ))}
             </ul>
 
-            <nav
-              aria-label="Paginación de aspirantes"
-              className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-            >
-              <p className={CLASE_TEXTO_SUAVE}>
-                Página <span className="tabular-nums">{meta.current_page}</span> de{' '}
-                <span className="tabular-nums">{Math.max(meta.last_page, 1)}</span> ·{' '}
-                <span className="tabular-nums">{meta.total}</span> aspirante(s)
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Boton
-                  variante="contorno"
-                  tamano="tactil"
-                  className="min-w-32 flex-1 sm:flex-none"
-                  onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                  disabled={meta.current_page <= 1}
-                >
-                  <IconoFlechaIzquierda className="h-4 w-4" />
-                  Anterior
-                </Boton>
-                <Boton
-                  variante="contorno"
-                  tamano="tactil"
-                  className="min-w-32 flex-1 sm:flex-none"
-                  onClick={() => setPagina((p) => Math.min(meta.last_page, p + 1))}
-                  disabled={meta.current_page >= meta.last_page}
-                >
-                  Siguiente
-                  <IconoFlechaDerecha className="h-4 w-4" />
-                </Boton>
-              </div>
-            </nav>
+            <Paginacion
+              meta={meta}
+              singular="aspirante"
+              plural="aspirantes"
+              etiqueta="Paginación de aspirantes"
+              ocupado={actualizando}
+              onPagina={setPagina}
+              className="px-1"
+            />
           </>
         )}
       </div>

@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { listaMisPostulaciones } from '../../api/postulaciones'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
-import { CLASE_CAJA_SUAVE, CLASE_TARJETA } from '../../lib/estilos'
+import { CLASE_CAJA_SUAVE, CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 import { Link } from 'react-router-dom'
+import Boton from '../../components/ui/Boton'
+import Cargando from '../../components/ui/Cargando'
 
 export default function MisDocumentos() {
   const [postulaciones, setPostulaciones] = useState([])
@@ -29,14 +31,14 @@ export default function MisDocumentos() {
   }, [cargar])
 
   if (cargando) {
-    return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-2 border-sena-azul border-t-transparent" /></div>
+    return <Cargando>Cargando tus postulaciones…</Cargando>
   }
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <p className="text-red-600 dark:text-red-300">{error}</p>
-        <button onClick={cargar} className="text-sena-azul hover:underline dark:text-sena-texto">Reintentar</button>
+        <Boton variante="contorno" onClick={cargar}>Reintentar</Boton>
       </div>
     )
   }
@@ -55,7 +57,7 @@ export default function MisDocumentos() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-sena-texto">Mis documentos</h1>
+        <h1 className={CLASE_TITULO_PAGINA}>Mis documentos</h1>
         <p className="text-sm text-slate-500 dark:text-sena-texto-suave mt-1">
           Gestiona los documentos de cada postulación. Cada convocatoria tiene sus propios requisitos.
         </p>
@@ -78,12 +80,9 @@ export default function MisDocumentos() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Link
-                  to={`/postulaciones/${p.id}/documentos`}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors whitespace-nowrap"
-                >
+                <Boton as={Link} to={`/postulaciones/${p.id}/documentos`}>
                   Gestionar documentos
-                </Link>
+                </Boton>
               </div>
             </div>
 
@@ -101,8 +100,9 @@ export default function MisDocumentos() {
         <ul className="list-disc list-inside space-y-1 ml-4">
           <li>Cada postulación tiene su propio espacio de documentos.</li>
           <li>Los documentos requeridos dependen de la convocatoria.</li>
-          <li>Puedes subir, reemplazar y eliminar mientras la convocatoria esté abierta (o según las reglas de edición).</li>
-          <li>Los certificados de skills son opcionales y se suben por separado.</li>
+          <li>Puedes cargar y reemplazar documentos mientras la convocatoria esté abierta (o según las reglas de edición).</li>
+          <li>Un documento obligatorio no se elimina: solo se reemplaza. Los opcionales y los adicionales sí se pueden eliminar.</li>
+          <li>Los certificados de skills son opcionales y se cargan por separado.</li>
         </ul>
       </div>
     </div>

@@ -1,3 +1,5 @@
+import Boton from './Boton'
+
 // Estado vacío reutilizable: cuando una lista no tiene resultados.
 export default function EstadoVacio({ icono, titulo, descripcion, accion, children }) {
   return (
@@ -6,12 +8,7 @@ export default function EstadoVacio({ icono, titulo, descripcion, accion, childr
       {titulo && <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{titulo}</h3>}
       {descripcion && <p className="text-sm text-slate-500 dark:text-sena-texto-suave mb-4 max-w-md">{descripcion}</p>}
       {accion && (
-        <button
-          onClick={accion.onClick}
-          className="px-4 py-2 text-sm font-semibold text-white bg-sena-azul rounded hover:bg-sena-azul/90 transition-colors"
-        >
-          {accion.label}
-        </button>
+        <Boton onClick={accion.onClick}>{accion.label}</Boton>
       )}
       {children}
     </div>

@@ -32,12 +32,12 @@ export function repartirPesos(documentos) {
   return pesos
 }
 
-// Lo que demuestra cada estado de documento de la API: 'subido' solo dice que
-// el aspirante cargó un archivo; ninguna parte del contrato indica que alguien
-// lo haya validado. Que el requisito se cumple lo decide el evaluador (Sí/No).
+// Lo que demuestra cada estado de documento de la API: 'subido' (código del contrato) solo dice que el aspirante
+// cargó un archivo; ninguna parte del contrato indica que alguien lo haya validado. Que el requisito se cumple lo
+// decide el evaluador (Cumple / No cumple).
 export const ESTADO_DOCUMENTO = {
-  subido: { texto: 'Subido', tono: 'azul' },
-  pendiente: { texto: 'Sin subir', tono: 'aviso' },
+  subido: { texto: 'Cargado', tono: 'azul' },
+  pendiente: { texto: 'Sin cargar', tono: 'aviso' },
   no_aplica: { texto: 'No aplica', tono: 'neutral' },
 }
 

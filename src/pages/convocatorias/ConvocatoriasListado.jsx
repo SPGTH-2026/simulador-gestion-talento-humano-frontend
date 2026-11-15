@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import useFiltrosUrl from '../../hooks/useFiltrosUrl'
 import { useAuth } from '../../auth/useAuth'
 import {
@@ -14,7 +14,10 @@ import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulac
 import EtiquetaVentana from '../../components/convocatorias/EtiquetaVentana'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
+import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import Icono from '../../components/ui/Icono'
+import Paginacion from '../../components/ui/Paginacion'
+import Rueda from '../../components/ui/Rueda'
 import { MensajeError } from '../../components/ui/Mensaje'
 import Tarjeta from '../../components/ui/Tarjeta'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
@@ -27,7 +30,6 @@ import {
   CLASE_META_DT,
   CLASE_SUBTITULO_PAGINA,
   CLASE_TARJETA_PLANA,
-  CLASE_TEXTO_SUAVE,
   CLASE_TITULO_PAGINA,
 } from '../../lib/estilos'
 
@@ -41,7 +43,7 @@ const CLASE_ESQUELETO =
 // sistema compartido (components/ui/Icono): el mismo tamaño y trazo en todos.
 // El texto puede partirse en dos líneas en un botón angosto, pero nunca se
 // comprime ni se corta.
-const CLASE_BOTON_ACCION = 'justify-center lg:min-h-10'
+const CLASE_BOTON_ACCION = 'justify-center'
 
 // Tamaño único de los iconos de los botones.
 const ICONO_BOTON = 'size-5 shrink-0'
@@ -66,6 +68,10 @@ const NOMBRES_ESTADO = { publicada: 'Publicada', en_proceso: 'En proceso', cerra
 // Parámetros de la URL que usa este listado (ver useFiltrosUrl). La página va
 // con los filtros: así sobrevive a recargar, a "atrás" y al regreso del detalle.
 const CLAVES_FILTRO = ['q', 'estado', 'ficha', 'tipo', 'modalidad', 'orden', 'page']
+
+// Tarjetas por página: 12 llena filas completas con 2 columnas (tablet) y con 3 (escritorio ancho), y acerca la
+// paginación al contenido. El servidor admite de 1 a 100.
+const TARJETAS_POR_PAGINA = 12
 
 // Orden de la lista. 'reciente' es el predeterminado y no viaja en la URL ni a
 // la API; el backend acepta exactamente estos valores.
@@ -238,6 +244,7 @@ export default function ConvocatoriasListado() {
 
     listaConvocatorias({
       page: pagina,
+      per_page: TARJETAS_POR_PAGINA,
       q: busqueda || undefined,
       estado: filtroEstado || undefined,
       ficha_id: filtroFicha || undefined,
@@ -278,7 +285,6 @@ export default function ConvocatoriasListado() {
   // "Buscando" incluye la consulta en curso y los 300 ms de espera mientras se
   // escribe: durante ese tiempo no se puede afirmar que no hay resultados.
   const buscando = cargando || numero !== resuelta || termino !== busqueda
-  const actualizando = buscando && !cargando
 
   const hayConvocatorias = convocatorias.length > 0
   const datosVigentes =
@@ -375,8 +381,8 @@ export default function ConvocatoriasListado() {
   )
 
   // Las mismas acciones se usan en todas las tarjetas, para no duplicar la
-  // lógica de permisos. "Ver detalle" es la principal y va a todo el ancho;
-  // "Editar" y el cierre son secundarias y comparten una segunda fila.
+  // lógica de permisos. "Ver detalle" va a todo el ancho y es navegación (contorno, sin icono);
+  // "Editar" y el cierre comparten una fila encima.
   const renderAcciones = (c) => {
     const paso = pasoDeEstado(c.estado?.codigo)
     const editable = c.estado?.codigo === 'borrador' || c.estado?.codigo === 'publicada'
@@ -385,14 +391,16 @@ export default function ConvocatoriasListado() {
     // incluso si la convocatoria ya no está publicada: el detalle absorbe el 404.
     if (esAspirante) {
       return (
+        // «Ver información» abre una pantalla: es navegación (contorno) y un enlace de verdad, para que la barra de
+        // carga del marco y «abrir en otra pestaña» funcionen.
         <Boton
-          variante="primario"
+          as={Link}
+          to={`/convocatorias/${c.id}`}
+          variante="contorno"
           tamano="flexible"
           className={CLASE_BOTON_ACCION}
-          onClick={() => navigate(`/convocatorias/${c.id}`)}
           aria-label={`Ver información de ${c.nombre}`}
         >
-          <Icono nombre="ojo" className={ICONO_BOTON} />
           <span className={TEXTO_BOTON}>Ver información</span>
         </Boton>
       )
@@ -406,17 +414,9 @@ export default function ConvocatoriasListado() {
 
     return (
       <>
-        <Boton
-          variante="primario"
-          tamano="flexible"
-          className={CLASE_BOTON_ACCION}
-          onClick={() => navigate(`/convocatorias/${c.id}`)}
-          aria-label={`Ver detalle de ${c.nombre}`}
-        >
-          <Icono nombre="ojo" className={ICONO_BOTON} />
-          <span className={TEXTO_BOTON}>Ver detalle</span>
-        </Boton>
-
+        {/* Las acciones secundarias van ARRIBA y "Ver detalle" siempre al final: el pie de la tarjeta
+            va pegado al fondo, así "Ver detalle" queda a la misma altura en todas las tarjetas de una
+            fila aunque unas tengan Editar/Cerrar y otras no. */}
         {(mostrarEditar || mostrarCerrar) && (
           <div
             className={
@@ -425,13 +425,13 @@ export default function ConvocatoriasListado() {
           >
             {mostrarEditar && (
               <Boton
+                as={Link}
+                to={`/convocatorias/${c.id}/editar`}
                 variante="contorno"
                 tamano="flexible"
                 className={`${CLASE_BOTON_ACCION} ${comparten ? '@min-[320px]:flex-none' : ''}`}
-                onClick={() => navigate(`/convocatorias/${c.id}/editar`)}
                 aria-label={`Editar ${c.nombre}`}
               >
-                <Icono nombre="lapiz" className={ICONO_BOTON} />
                 <span className={TEXTO_BOTON}>Editar</span>
               </Boton>
             )}
@@ -447,12 +447,22 @@ export default function ConvocatoriasListado() {
                 onClick={() => avanzarEstado(c, paso)}
                 aria-label={`${paso.etiqueta} ${c.nombre}`}
               >
-                <Icono nombre="candado" className={ICONO_BOTON} />
                 <span className={TEXTO_BOTON}>{paso.etiqueta}</span>
               </Boton>
             )}
           </div>
         )}
+
+        <Boton
+          as={Link}
+          to={`/convocatorias/${c.id}`}
+          variante="contorno"
+          tamano="flexible"
+          className={CLASE_BOTON_ACCION}
+          aria-label={`Ver detalle de ${c.nombre}`}
+        >
+          <span className={TEXTO_BOTON}>Ver detalle</span>
+        </Boton>
       </>
     )
   }
@@ -475,7 +485,7 @@ export default function ConvocatoriasListado() {
           <Boton
             tamano="flexible"
             onClick={() => navigate('/convocatorias/nueva')}
-            className="self-start sm:self-auto lg:min-h-10"
+            className="self-start sm:self-auto"
           >
             <Icono nombre="mas" className={ICONO_BOTON} />
             Nueva convocatoria
@@ -488,33 +498,23 @@ export default function ConvocatoriasListado() {
           actualización viven en la misma barra. */}
       <Tarjeta className="p-4">
         <div role="search" aria-label="Buscar y filtrar convocatorias" className="flex flex-col gap-3">
-          {/* El buscador ocupa su propia fila hasta que cabe junto a los filtros
-              (pantallas muy anchas): con el menú lateral, una fila de tres
-              campos dejaría el buscador demasiado estrecho. */}
-          <div className="flex flex-col gap-3 2xl:flex-row 2xl:items-end">
+          {/* El buscador ocupa siempre su propia fila y los filtros van debajo, que
+              se reparten según el espacio. Antes el buscador subía junto a los
+              filtros en pantallas anchas; con los filtros de tipo, modalidad y
+              orden ya no cabían en una línea, se partían en dos filas y el
+              buscador (alineado abajo) dejaba un hueco arriba a la izquierda. */}
+          <div className="flex flex-col gap-3">
             <Campo
               etiqueta={gestionaEstricto ? 'Buscar por nombre, código o cargo' : 'Buscar por nombre o cargo'}
-              className="2xl:min-w-64 2xl:flex-1"
             >
               {({ id, describedby }) => (
-                <div className="relative">
-                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500 dark:text-sena-texto-suave">
-                    <Icono nombre="lupa" />
-                  </span>
-                  <input
-                    id={id}
-                    type="search"
-                    placeholder={
-                      gestionaEstricto
-                        ? 'Buscar por nombre, código o cargo...'
-                        : 'Buscar por nombre o cargo...'
-                    }
-                    value={termino}
-                    onChange={(e) => setTermino(e.target.value)}
-                    aria-describedby={describedby}
-                    className={`${CLASE_CAMPO} pl-10`}
-                  />
-                </div>
+                <CampoBusqueda
+                  id={id}
+                  placeholder="Escribe para buscar…"
+                  value={termino}
+                  onChange={(e) => setTermino(e.target.value)}
+                  aria-describedby={describedby}
+                />
               )}
             </Campo>
 
@@ -598,7 +598,7 @@ export default function ConvocatoriasListado() {
             </Campo>
 
             {puedeFiltrarFicha && (
-              <Campo etiqueta="Ficha" className="sm:min-w-0 sm:flex-1 2xl:w-72 2xl:flex-none">
+              <Campo etiqueta="Ficha" className="sm:min-w-0 sm:max-w-sm sm:flex-1">
                 {({ id }) => (
                   <select
                     id={id}
@@ -616,38 +616,7 @@ export default function ConvocatoriasListado() {
                 )}
               </Campo>
             )}
-
-            {hayFiltros && (
-              <Boton variante="contorno" tamano="flexible" onClick={limpiarFiltros} className="sm:shrink-0 lg:min-h-10">
-                <Icono nombre="cerrar" className={ICONO_BOTON} />
-                Limpiar filtros
-              </Boton>
-            )}
             </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <p className={`text-sm ${CLASE_TEXTO_SUAVE}`} aria-live="polite">
-              {cargando ? 'Cargando convocatorias…' : mostrarTotal ? totalTexto : ''}
-            </p>
-
-            {/* Indicador discreto de actualización. El aviso para lectores de
-                pantalla existe siempre (sr-only) para que el cambio se anuncie;
-                a la vista solo aparece mientras hay una consulta pendiente. */}
-            <p
-              role="status"
-              className={actualizando ? `inline-flex items-center gap-2 text-xs ${CLASE_TEXTO_SUAVE}` : 'sr-only'}
-            >
-              {actualizando && (
-                <>
-                  <span
-                    className="size-3 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin"
-                    aria-hidden="true"
-                  />
-                  Actualizando resultados...
-                </>
-              )}
-            </p>
           </div>
         </div>
       </Tarjeta>
@@ -665,9 +634,36 @@ export default function ConvocatoriasListado() {
       )}
 
       {/* Inicio de los resultados: a donde se lleva la pantalla al paginar. */}
-      <div ref={refResultados} className="scroll-mt-4" aria-busy={actualizando}>
+      <div ref={refResultados} className="flex scroll-mt-4 flex-col gap-4" aria-busy={buscando}>
+        {/* Una sola línea de estado sobre los resultados, siempre con el mismo estilo: carga, actualización o total. */}
+        {(buscando || (hayLista && mostrarTotal)) && (
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <p
+              role="status"
+              className="flex min-h-6 items-center gap-2.5 text-base font-medium text-sena-azul dark:text-sena-texto"
+            >
+              {buscando ? (
+                <>
+                  <Rueda /> {verEsqueleto ? 'Cargando convocatorias…' : 'Actualizando convocatorias…'}
+                </>
+              ) : (
+                totalTexto
+              )}
+            </p>
+            {/* «Limpiar filtros» vive aquí, junto al total que los filtros acaban de cambiar: así no ocupa un lugar en la
+                tarjeta de filtros ni hace que el campo Ficha se parta cuando aparece. */}
+            {hayFiltros && (
+              <Boton variante="enlace" tamano="tactil" onClick={limpiarFiltros} className="-mr-2">
+                <Icono nombre="cerrar" className={ICONO_BOTON} />
+                Limpiar filtros
+              </Boton>
+            )}
+          </div>
+        )}
+
         {verEsqueleto && (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+          <div className="flex flex-col gap-4" aria-busy="true">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <Tarjeta key={i} className="p-5">
                 <div className="flex items-center justify-between gap-3">
@@ -689,7 +685,7 @@ export default function ConvocatoriasListado() {
                 <div className={`${CLASE_ESQUELETO} mt-5 h-11 w-full`} />
               </Tarjeta>
             ))}
-            <span className="sr-only">Cargando convocatorias…</span>
+          </div>
           </div>
         )}
 
@@ -746,6 +742,20 @@ export default function ConvocatoriasListado() {
                   <div className="flex items-start justify-between gap-3">
                     <span className="min-w-0 truncate pt-0.5 font-mono text-xs font-medium tracking-wide text-slate-600 dark:text-sena-texto-suave">
                       {gestionaEstricto ? c.codigo : null}
+                      {/* La ficha va como texto plano junto al código, y solo cuando el usuario tiene más de una en su
+                          alcance (la lista de fichas es el alcance completo, no el resultado filtrado: al filtrar por una
+                          sola sigue visible) y la API la entrega (solo Instructor y Superadministrador). */}
+                      {fichas.length > 1 && c.ficha?.codigo && (
+                        <>
+                          {gestionaEstricto ? ' ' : null}
+                          <span
+                            title={`Ficha ${c.ficha.codigo}${c.ficha.nombre_programa ? ` · ${c.ficha.nombre_programa}` : ''}`}
+                            className={gestionaEstricto ? 'ml-3 uppercase' : 'uppercase'}
+                          >
+                            Ficha {c.ficha.codigo}
+                          </span>
+                        </>
+                      )}
                     </span>
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                       {esAspirante && <EtiquetaVentana convocatoria={c} />}
@@ -885,41 +895,14 @@ export default function ConvocatoriasListado() {
       </div>
 
       {hayLista && meta.total > 0 && meta.last_page > 1 && (
-        <Tarjeta
-          as="nav"
-          aria-label="Paginación de convocatorias"
-          className="flex flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-        >
-          <p className={CLASE_TEXTO_SUAVE} aria-live="polite">
-            Página <span className="tabular-nums">{meta.current_page}</span> de{' '}
-            <span className="tabular-nums">{Math.max(meta.last_page, 1)}</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {/* aria-disabled y no 'disabled': al llegar a un extremo el botón
-                que tiene el foco no debe perderlo. */}
-            <Boton
-              variante="contorno"
-              tamano="flexible"
-              className="min-w-32 flex-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 sm:flex-none lg:min-h-10"
-              onClick={() => irAPagina(pagina - 1)}
-              aria-disabled={meta.current_page <= 1}
-              aria-label="Página anterior"
-            >
-              <Icono nombre="flechaIzquierda" className={ICONO_BOTON} />
-              Anterior
-            </Boton>
-            <Boton
-              variante="contorno"
-              tamano="flexible"
-              className="min-w-32 flex-1 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 sm:flex-none lg:min-h-10"
-              onClick={() => irAPagina(pagina + 1)}
-              aria-disabled={meta.current_page >= meta.last_page}
-              aria-label="Página siguiente"
-            >
-              Siguiente
-              <Icono nombre="flechaDerecha" className={ICONO_BOTON} />
-            </Boton>
-          </div>
+        <Tarjeta className="px-4 py-3">
+          <Paginacion
+            meta={meta}
+            singular="convocatoria"
+            plural="convocatorias"
+            etiqueta="Paginación de convocatorias"
+            onPagina={irAPagina}
+          />
         </Tarjeta>
       )}
     </div>

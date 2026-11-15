@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import Boton from '../ui/Boton'
-import Icono from '../ui/Icono'
 import { TarjetaSeccion } from '../ui/Tarjeta'
 import EtiquetaEstado from '../convocatorias/EtiquetaEstado'
 import {
@@ -11,6 +10,7 @@ import {
   CLASE_TEXTO_SUAVE,
 } from '../../lib/estilos'
 import { MAX_ELEMENTOS, alcanceConvocatorias } from '../../lib/inicio'
+import { textoCandidatos } from '../../lib/seleccion'
 import { formatearFecha } from '../../lib/ventanaPostulacion'
 import BloqueInicio from './BloqueInicio'
 
@@ -77,6 +77,128 @@ export function BloqueConvocatoriasGestion({ recurso }) {
   )
 }
 
+// Cuántas convocatorias adelanta el bloque de Selección: con cuatro, las dos columnas de Inicio quedan parejas.
+const ELEMENTOS_SELECCION = 4
+
+// Convocatorias de Selección (primeras del listado, las que están en proceso primero) con acceso directo a
+// Preselección y Ranking ya posicionados en cada una. Es el equivalente, para quien trabaja en Selección, del bloque de
+// convocatorias de gestión: mismo marco, mismas filas y el mismo texto sobre el alcance.
+export function BloqueConvocatoriasSeleccion({ recurso }) {
+  const { user, can } = useAuth()
+  const enProceso = (c) => (c.estado?.codigo === 'en_proceso' ? 1 : 0)
+  // sort es estable: dentro de cada grupo se conserva el orden del listado.
+  const lista = [...(recurso.datos?.data ?? [])].sort((a, b) => enProceso(b) - enProceso(a)).slice(0, ELEMENTOS_SELECCION)
+
+  return (
+    <BloqueInicio
+      titulo="Convocatorias para trabajar"
+      descripcion={`${alcanceConvocatorias(user)} Se muestran las primeras del listado, con las que están en proceso primero.`}
+      recurso={recurso}
+      textoCarga="Cargando convocatorias…"
+      vacio={lista.length === 0}
+      textoVacio="No hay convocatorias en tu alcance todavía."
+      pie={
+        <>
+          <Boton as={Link} to="/seleccion/preseleccion" variante="enlace" tamano="flexible">
+            Ver todas en Preselección
+          </Boton>
+          {can('seleccion:decidir') && (
+            <Boton as={Link} to="/seleccion/decidir" variante="enlace" tamano="flexible">
+              Ir a Decidir
+            </Boton>
+          )}
+        </>
+      }
+    >
+      <ul className={CLASE_LISTA}>
+        {lista.map((c) => (
+          <li key={c.id} className={CLASE_FILA_LISTA}>
+            <div className="min-w-0">
+              <p className={`font-semibold text-slate-800 dark:text-sena-texto ${CLASE_TEXTO_PARTIDO}`}>{c.nombre}</p>
+              <p className={`mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm ${CLASE_TEXTO_SUAVE}`}>
+                <EtiquetaEstado codigo={c.estado?.codigo} nombre={c.estado?.nombre} />
+                <span>
+                  {c.vacantes} {c.vacantes === 1 ? 'vacante' : 'vacantes'}
+                </span>
+                {c.candidatos != null && <span>{textoCandidatos(c.candidatos)}</span>}
+              </p>
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <Boton
+                as={Link}
+                to={`/seleccion/preseleccion?convocatoria=${c.id}`}
+                aria-label={`Preselección de ${c.nombre}`}
+                variante="contorno"
+                tamano="flexible"
+              >
+                Preselección
+              </Boton>
+              <Boton
+                as={Link}
+                to={`/seleccion?convocatoria=${c.id}`}
+                aria-label={`Ranking de ${c.nombre}`}
+                variante="contorno"
+                tamano="flexible"
+              >
+                Ranking
+              </Boton>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </BloqueInicio>
+  )
+}
+
+// «Requiere tu atención»: convocatorias en proceso con candidatos listos para Ranking y sin lista de finalistas. El
+// criterio lo aplica el backend (GET /seleccion/convocatorias?atencion=1: hasta 4 y meta.hay_mas), así que un pendiente
+// aparece aunque no esté en la primera página del listado general. Enlaza cada una a su Ranking.
+export function BloqueRequiereAtencionSeleccion({ recurso }) {
+  const lista = recurso.datos?.data ?? []
+  const hayMas = recurso.datos?.meta?.hay_mas === true
+
+  return (
+    <BloqueInicio
+      titulo="Requiere tu atención"
+      descripcion="Convocatorias en proceso con candidatos listos y sin lista de finalistas confirmada."
+      recurso={recurso}
+      textoCarga="Buscando pendientes…"
+      vacio={lista.length === 0}
+      textoVacio="No tienes convocatorias pendientes por ahora."
+      pie={
+        hayMas ? (
+          <Boton as={Link} to="/seleccion/preseleccion?estado=en_proceso" variante="enlace" tamano="flexible">
+            Hay más pendientes: ver las que están en proceso
+          </Boton>
+        ) : null
+      }
+    >
+      <ul className={CLASE_LISTA}>
+        {lista.map((c) => (
+          <li key={c.id} className={CLASE_FILA_LISTA}>
+            <div className="min-w-0">
+              <p className={`font-semibold text-slate-800 dark:text-sena-texto ${CLASE_TEXTO_PARTIDO}`}>{c.nombre}</p>
+              <p className={`mt-0.5 text-sm ${CLASE_TEXTO_SUAVE}`}>
+                {c.listos} {c.listos === 1 ? 'listo' : 'listos'} de {textoCandidatos(c.candidatos)} · sin lista de finalistas
+              </p>
+            </div>
+            <Boton
+              as={Link}
+              to={`/seleccion?convocatoria=${c.id}`}
+              aria-label={`Ir al Ranking de ${c.nombre}`}
+              variante="contorno"
+              tamano="flexible"
+              className="shrink-0"
+            >
+              Ir al Ranking
+            </Boton>
+          </li>
+        ))}
+      </ul>
+    </BloqueInicio>
+  )
+}
+
 // Evaluaciones que el aprendiz ya empezó y no ha finalizado. GET
 // /mis-evaluaciones devuelve SOLO las que hizo él (no pagina), así que la
 // cantidad es completa. No se muestra puntaje ni cumplimiento: son
@@ -131,34 +253,33 @@ export function BloqueEvaluacionesEnProceso({ recurso }) {
   )
 }
 
-// Accesos a los módulos que el usuario puede abrir. Salen del menú (destinos y
-// permisos): no hay una segunda lista. 'columnas' los reparte en una o dos
-// columnas según el espacio del bloque.
-export function BloqueAccesos({ destinos, dosColumnas = false }) {
+// Orientación sobre el recorrido de Selección, en el mismo formato que «Cómo avanza el proceso» del aspirante. No
+// marca avance: el estado real de cada convocatoria está en Preselección y Ranking.
+export function BloqueRecorridoSeleccion() {
+  const pasos = [
+    ['Preselección', 'Revisa a los candidatos, configura las actividades y registra las notas.'],
+    ['Ranking', 'Consulta el orden de los candidatos listos y confirma a los finalistas.'],
+    ['Decidir', 'Registra la decisión final sobre los finalistas.'],
+  ]
+
   return (
-    <TarjetaSeccion titulo="Accesos">
-      <ul className={`grid gap-2 ${dosColumnas ? 'sm:grid-cols-2' : ''}`}>
-        {destinos.map((d) => (
-          <li key={d.to}>
-            <Boton
-              as={Link}
-              to={d.to}
-              aria-label={d.grupo ? `${d.grupo}: ${d.label}` : undefined}
-              variante="contorno"
-              tamano="flexible"
-              className="w-full justify-start text-left"
+    <TarjetaSeccion titulo="Cómo avanza la selección">
+      <ol className="flex flex-col gap-4 text-sm text-slate-700 dark:text-sena-texto">
+        {pasos.map(([nombre, texto], i) => (
+          <li key={nombre} className="flex items-start gap-3">
+            <span
+              aria-hidden="true"
+              className="grid size-6 shrink-0 place-items-center rounded-full bg-sena-hundido text-xs font-semibold text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto"
             >
-              <Icono nombre={d.icono} className="size-5 shrink-0" />
-              <span className="min-w-0">
-                {d.label}
-                {d.grupo && (
-                  <span className={`block text-xs font-normal ${CLASE_TEXTO_SUAVE}`}>{d.grupo}</span>
-                )}
-              </span>
-            </Boton>
+              {i + 1}
+            </span>
+            <span className="min-w-0">
+              <span className="block font-semibold text-slate-800 dark:text-sena-texto">{nombre}</span>
+              <span className={CLASE_TEXTO_SUAVE}>{texto}</span>
+            </span>
           </li>
         ))}
-      </ul>
+      </ol>
     </TarjetaSeccion>
   )
 }

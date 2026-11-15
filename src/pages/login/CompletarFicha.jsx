@@ -14,7 +14,7 @@ import { mostrarAvisoGlobal, validarFicha } from '../../lib/validacionAcceso'
 // Para un Aspirante sin ficha: deja su código y se valida que exista. Asociar la
 // ficha NO lo convierte en aprendiz; el instructor le asigna el rol desde Usuarios.
 export default function CompletarFicha() {
-  const { user, authResolved, refrescar, logout } = useAuth()
+  const { user, authResolved, refrescar, logout, cerrandoSesion } = useAuth()
 
   const [codigo, setCodigo] = useState('')
   const [errores, setErrores] = useState({})
@@ -94,13 +94,13 @@ export default function CompletarFicha() {
           )}
         </Campo>
 
-        <Boton type="submit" tamano="flexible" disabled={enviando}>
+        <Boton type="submit" tamano="flexible" ocupado={enviando}>
           {enviando ? 'Guardando...' : 'Guardar y entrar'}
         </Boton>
       </form>
 
       <div className="mt-4 flex flex-col items-stretch gap-1">
-        <Boton variante="enlace" tamano="flexible" onClick={logout}>
+        <Boton variante="enlace" tamano="flexible" onClick={logout} ocupado={cerrandoSesion}>
           Cerrar sesión
         </Boton>
       </div>

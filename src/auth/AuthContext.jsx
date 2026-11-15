@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useState } from 'react'
+import { createContext, useCallback, useEffect, useRef, useState } from 'react'
 import * as authApi from '../api/auth'
 
 export const AuthContext = createContext(null)
@@ -63,12 +63,23 @@ export function AuthProvider({ children }) {
     return data.user
   }, [])
 
+  // Closing the session waits for the server (CSRF + POST). While it does, the
+  // buttons show "Cerrando sesión…" and ignore further clicks, so nobody has to
+  // click again and again wondering whether anything happened.
+  const [cerrandoSesion, setCerrandoSesion] = useState(false)
+  const cerrandoRef = useRef(false)
+
   const logout = useCallback(async () => {
+    if (cerrandoRef.current) return
+    cerrandoRef.current = true
+    setCerrandoSesion(true)
     try {
       await authApi.logout()
     } catch {
       // Even if the request fails, close the session in the browser.
     }
+    cerrandoRef.current = false
+    setCerrandoSesion(false)
     setUser(null)
   }, [])
 
@@ -82,7 +93,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, authResolved, errorRed, login, register, logout, refrescar }}
+      value={{ user, authResolved, errorRed, login, register, logout, cerrandoSesion, refrescar }}
     >
       {children}
     </AuthContext.Provider>

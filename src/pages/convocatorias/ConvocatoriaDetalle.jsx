@@ -6,8 +6,8 @@ import { mensajeError } from '../../api/mensajeError'
 import { useAuth } from '../../auth/useAuth'
 import DetalleConvocatoria from '../../components/convocatorias/DetalleConvocatoria'
 import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
+import { useConfirmacion } from '../../hooks/useConfirmacion'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
-import { IconoCandado, IconoLapiz } from '../../components/convocatorias/Iconos'
 import PanelDocumentosPostulacion from '../../components/postulacion/PanelDocumentosPostulacion'
 import Boton from '../../components/ui/Boton'
 import { MensajeError } from '../../components/ui/Mensaje'
@@ -19,9 +19,9 @@ import {
   textoVentana,
 } from '../../lib/ventanaPostulacion'
 import { CLASE_TARJETA } from '../../lib/estilos'
+import Icono from '../../components/ui/Icono'
+import Cargando from '../../components/ui/Cargando'
 
-const CLASE_BOTON =
-  'rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
 
 // Vista de solo lectura propia (componente DetalleConvocatoria.jsx). El wizard
 // queda únicamente para Nueva/Editar y no se toca aquí.
@@ -37,10 +37,13 @@ export default function ConvocatoriaDetalle() {
 function ContenidoDetalle({ id }) {
   const navigate = useNavigate()
   const { user, can } = useAuth()
+  const confirmar = useConfirmacion()
 
   const [detalle, setDetalle] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  // Sube al reintentar la carga: vuelve a pedir el detalle sin recargar la página.
+  const [intento, setIntento] = useState(0)
   // Para el aspirante cuyo detalle responde 404 (convocatoria ya no publicada):
   // se rescata el resumen embebido de /postulaciones en vez de un callejón.
   const [noPublicada, setNoPublicada] = useState(null)
@@ -97,7 +100,7 @@ function ContenidoDetalle({ id }) {
     return () => {
       activo = false
     }
-  }, [id, user?.role])
+  }, [id, user?.role, intento])
 
   // 201/200: el panel crea el borrador de forma silenciosa y avisa por acá para
   // reflejarlo sin recargar la convocatoria entera.
@@ -110,7 +113,7 @@ function ContenidoDetalle({ id }) {
   }
 
   if (cargando) {
-    return <p className="text-slate-500 dark:text-sena-texto-suave">Cargando convocatoria...</p>
+    return <Cargando>Cargando convocatoria…</Cargando>
   }
 
   // El aspirante postulado a una convocatoria que ya no está publicada (el
@@ -186,42 +189,44 @@ function ContenidoDetalle({ id }) {
         </div>
 
         <div className="flex gap-2">
-          <button type="button" onClick={() => navigate('/convocatorias')} className={CLASE_BOTON}>
-            ← Convocatorias
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/mis-postulaciones')}
-            className={CLASE_BOTON}
-          >
+          <Boton variante="fantasma" tamano="tactil" onClick={() => navigate('/convocatorias')}>
+            <Icono nombre="flechaIzquierda" className="size-4" />
+          Convocatorias
+          </Boton>
+          <Boton variante="contorno" tamano="tactil"
+            onClick={() => navigate('/mis-postulaciones')}>
             Ver mis postulaciones
-          </button>
+          </Boton>
         </div>
       </div>
     )
   }
 
   if (buscandoResumen) {
-    return (
-      <p className="text-slate-500 dark:text-sena-texto-suave">
-        Consultando tu postulación...
-      </p>
-    )
+    return <Cargando>Consultando tu postulación…</Cargando>
   }
 
   if (error || !detalle) {
     return (
-      <div className="flex flex-col gap-4">
-        <p role="alert" className="rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error || 'No se encontró la convocatoria.'}
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate('/convocatorias')}
-          className="self-start rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-        >
-          ← Volver
-        </button>
+      <div className="flex flex-col items-start gap-4">
+        <MensajeError className="w-full">{error || 'No se encontró la convocatoria.'}</MensajeError>
+        <div className="flex flex-wrap items-center gap-2">
+          <Boton
+            variante="contorno"
+            tamano="tactil"
+            onClick={() => {
+              setError('')
+              setCargando(true)
+              setIntento((n) => n + 1)
+            }}
+          >
+            Reintentar
+          </Boton>
+          <Boton variante="fantasma" tamano="tactil" onClick={() => navigate('/convocatorias')}>
+            <Icono nombre="flechaIzquierda" className="size-4" />
+            Volver
+          </Boton>
+        </div>
       </div>
     )
   }
@@ -299,7 +304,14 @@ function ContenidoDetalle({ id }) {
 
   const avanzarEstado = async () => {
     if (!paso) return
-    if (!window.confirm(`¿${paso.etiqueta} de "${detalle.nombre}"?`)) return
+    const ok = await confirmar({
+      titulo: paso.etiqueta,
+      mensaje: `¿Cerrar la convocatoria «${detalle.nombre}»? Esta acción avanza su estado y no se puede deshacer.`,
+      textoConfirmar: paso.etiqueta,
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return
 
     setAccionando(true)
     setErrorAccion('')
@@ -315,19 +327,18 @@ function ContenidoDetalle({ id }) {
   }
 
   // Mismas acciones y misma jerarquía que las tarjetas del listado: primero
-  // consultar (aquí ya se está), luego editar y por último cerrar.
-  const accionesGestion = puedeGestionar ? (
+  // consultar (aquí ya se está), luego editar y por último cerrar. Van DENTRO de la cabecera del detalle (junto
+  // al título y al estado), no en una fila suelta encima.
+  const hayAcciones = puedeGestionar && (editable || paso)
+  const accionesGestion = hayAcciones ? (
     <div className="flex flex-wrap items-center gap-2">
-      {errorAccion && <MensajeError>{errorAccion}</MensajeError>}
-
       {editable && (
         <Boton
-          variante="secundario"
-          tamano="sm"
-          className="shrink-0"
+          variante="contorno"
+          tamano="tactil"
+          className="flex-1 sm:flex-none"
           onClick={() => navigate(`/convocatorias/${detalle.id}/editar`)}
         >
-          <IconoLapiz className="h-4 w-4" />
           Editar
         </Boton>
       )}
@@ -335,13 +346,12 @@ function ContenidoDetalle({ id }) {
       {paso && (
         <Boton
           variante="peligroSuave"
-          tamano="sm"
-          className="ml-1 shrink-0"
-          disabled={accionando}
+          tamano="tactil"
+          className="flex-1 sm:flex-none"
+          ocupado={accionando}
           onClick={avanzarEstado}
         >
-          <IconoCandado className="h-4 w-4" />
-          {paso.etiqueta}
+          {accionando ? 'Cerrando…' : paso.etiqueta}
         </Boton>
       )}
     </div>
@@ -349,12 +359,10 @@ function ContenidoDetalle({ id }) {
 
   return (
     <>
-      {accionesGestion && (
-        <div className="flex flex-wrap items-center justify-end gap-2">{accionesGestion}</div>
-      )}
-
       <DetalleConvocatoria
         convocatoria={detalle}
+        accionesGestion={accionesGestion}
+        errorAccion={errorAccion}
         onVolver={() => navigate('/convocatorias')}
         panelDocumentos={
           mostrarPanel ? (

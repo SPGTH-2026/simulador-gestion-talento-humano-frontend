@@ -34,12 +34,12 @@ const OPERACIONES = {
   },
   codigo: {
     completa: true,
-    texto: 'Cargando la aplicación...',
+    texto: 'Cargando la aplicación…',
     larga: 'Cargar la aplicación está tardando más de lo habitual.',
   },
   pantalla: {
     completa: false,
-    texto: 'Cargando pantalla...',
+    texto: 'Cargando pantalla…',
     larga: 'Cargar esta pantalla está tardando más de lo habitual.',
   },
 }

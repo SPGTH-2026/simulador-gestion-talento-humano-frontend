@@ -8,7 +8,8 @@ const ESTILO_TITULO = CLASE_TITULO_SECCION
 // Resumen del paso: cuántos documentos obligatorios están listos y si el paso
 // queda completo. 'completo' lo decide el backend (todos los obligatorios
 // subidos o en 'no_aplica').
-export default function IndicadorCompletitud({ estado }) {
+// 'titulo' permite que quien revisa (instructor) vea «Estado de los documentos» y no «de tus documentos».
+export default function IndicadorCompletitud({ estado, titulo = 'Estado de tus documentos' }) {
   const { cumplidos, total } = progresoObligatorios(estado.documentos)
   const completo = Boolean(estado.completo)
   const porcentaje = total === 0 ? 100 : Math.round((cumplidos / total) * 100)
@@ -16,7 +17,7 @@ export default function IndicadorCompletitud({ estado }) {
   return (
     <section className={ESTILO_TARJETA}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className={ESTILO_TITULO}>Estado de tus documentos</h2>
+        <h2 className={ESTILO_TITULO}>{titulo}</h2>
         <span
           className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
             completo

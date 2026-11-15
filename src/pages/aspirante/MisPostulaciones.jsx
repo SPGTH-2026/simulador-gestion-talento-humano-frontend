@@ -6,8 +6,10 @@ import { useConfirmacion } from '../../hooks/useConfirmacion'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
 import EtiquetaVentana from '../../components/convocatorias/EtiquetaVentana'
 import Boton from '../../components/ui/Boton'
+import Paginacion from '../../components/ui/Paginacion'
+import Cargando from '../../components/ui/Cargando'
 import { estadoVentana, formatearFechaHora, textoVentana } from '../../lib/ventanaPostulacion'
-import { CLASE_META_DT, CLASE_TARJETA } from '../../lib/estilos'
+import { CLASE_META_DT, CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 
 // Botones de acción de una fila: 40 px de alto, 12 px de texto y separacion de
 // 8 px. El principal es el verde del sistema; el secundario, de contorno; el
@@ -110,7 +112,7 @@ function BloqueAcciones({
           <>
             <Boton
               variante="primario"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={enVuelo}
               onClick={() => irADocumentos(postulacion)}
@@ -119,7 +121,7 @@ function BloqueAcciones({
             </Boton>
             <Boton
               variante="peligroSuave"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={!publicada || enVuelo}
               onClick={() => cambiarEstado(postulacion, 'retirada', 'descartar')}
@@ -133,7 +135,7 @@ function BloqueAcciones({
           <>
             <Boton
               variante="primario"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={enVuelo}
               onClick={() => irADocumentos(postulacion)}
@@ -142,7 +144,7 @@ function BloqueAcciones({
             </Boton>
             <Boton
               variante="peligroSuave"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={!publicada || enVuelo}
               onClick={() => cambiarEstado(postulacion, 'retirada', 'retirar')}
@@ -155,8 +157,8 @@ function BloqueAcciones({
         {codigo === 'retirada' && (
           <>
             <Boton
-              variante="secundario"
-              tamano="sm"
+              variante="contorno"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={enVuelo}
               onClick={() => irADocumentos(postulacion)}
@@ -165,7 +167,7 @@ function BloqueAcciones({
             </Boton>
             <Boton
               variante="primario"
-              tamano="sm"
+              tamano="tactil"
               className={CLASE_ACCION}
               disabled={!ventanaAbierta || enVuelo}
               onClick={() => reabrir(postulacion)}
@@ -307,7 +309,7 @@ export default function MisPostulaciones() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">Mis postulaciones</h1>
+        <h1 className={CLASE_TITULO_PAGINA}>Mis postulaciones</h1>
         <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
           Completa y envía tus borradores, consulta tus postulaciones, retíralas o
           reábrelas mientras la convocatoria lo permita.
@@ -330,7 +332,7 @@ export default function MisPostulaciones() {
       )}
 
       {cargando ? (
-        <p className="text-slate-500 dark:text-sena-texto-suave">Cargando postulaciones...</p>
+        <Cargando>Cargando postulaciones…</Cargando>
       ) : postulaciones.length === 0 ? (
         // Sin postulaciones: mensaje claro con enlace al listado.
         <div className={`${CLASE_TARJETA} flex flex-col items-center gap-3 p-8 text-center`}>
@@ -427,35 +429,15 @@ export default function MisPostulaciones() {
         </>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600 dark:text-sena-texto-suave">
-        <span>
-          Página {meta.current_page ?? 1} de {totalPaginas} · {total} postulación(es)
-        </span>
-
-        {/* Anterior/Siguiente solo cuando hay más de una página. */}
-        {totalPaginas > 1 && (
-          <div className="flex gap-2">
-            <Boton
-              variante="secundario"
-              tamano="sm"
-              className="min-h-10"
-              disabled={(meta.current_page ?? 1) <= 1}
-              onClick={() => setPagina((p) => Math.max(1, p - 1))}
-            >
-              Anterior
-            </Boton>
-            <Boton
-              variante="secundario"
-              tamano="sm"
-              className="min-h-10"
-              disabled={(meta.current_page ?? 1) >= totalPaginas}
-              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-            >
-              Siguiente
-            </Boton>
-          </div>
-        )}
-      </div>
+      {/* Con una sola página solo se dice el total; Anterior/Siguiente aparecen si hay más. */}
+      <Paginacion
+        meta={{ ...meta, total, last_page: totalPaginas, current_page: meta.current_page ?? 1 }}
+        singular="postulación"
+        plural="postulaciones"
+        etiqueta="Paginación de postulaciones"
+        onPagina={setPagina}
+        className="px-1"
+      />
     </div>
   )
 }

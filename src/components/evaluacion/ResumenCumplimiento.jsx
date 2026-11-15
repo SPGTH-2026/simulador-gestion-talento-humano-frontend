@@ -18,7 +18,7 @@ export default function ResumenCumplimiento({
   cumplidos,
   total,
   sinResponder,
-  sinSubir,
+  sinCargar,
 }) {
   const completada = evaluacion?.estado === 'finalizada'
   const guardado = Math.round(evaluacion?.cumplimiento ?? 0)
@@ -74,11 +74,11 @@ export default function ResumenCumplimiento({
         </p>
       )}
 
-      {sinSubir > 0 && (
+      {sinCargar > 0 && (
         <p className={`mt-3 border-t border-sena-linea/70 pt-3 text-xs dark:border-sena-borde/50 ${CLASE_TEXTO_SUAVE}`}>
-          {sinSubir === 1
-            ? '1 documento sin subir por el aspirante.'
-            : `${sinSubir} documentos sin subir por el aspirante.`}
+          {sinCargar === 1
+            ? '1 documento sin cargar por el aspirante.'
+            : `${sinCargar} documentos sin cargar por el aspirante.`}
         </p>
       )}
     </section>

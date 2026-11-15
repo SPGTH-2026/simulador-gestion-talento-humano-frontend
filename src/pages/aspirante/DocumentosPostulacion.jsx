@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import EtiquetaPostulacion from '../../components/convocatorias/EtiquetaPostulacion'
 import PanelDocumentosPostulacion from '../../components/postulacion/PanelDocumentosPostulacion'
+import Boton from '../../components/ui/Boton'
+import Icono from '../../components/ui/Icono'
+import { CLASE_TITULO_PAGINA } from '../../lib/estilos'
 
-const CLASE_BOTON =
-  'self-start rounded border border-sena-azul/25 px-4 py-2 text-sm font-medium text-sena-azul hover:bg-sena-cielo/30 dark:border-sena-borde dark:text-sena-texto dark:hover:bg-sena-superficie-alta'
 
 // Envoltorio del paso de documentos/skills de UNA postulación propia. Todo el
 // contenido vive en PanelDocumentosPostulacion (mismo panel que usa el detalle
@@ -39,13 +40,14 @@ function Contenido({ postulacionId, modoCorreccion }) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
+        <Boton
+          variante="fantasma"
+          tamano="tactil"
           onClick={() => navigate(modoCorreccion ? '/mis-evaluaciones' : '/mis-postulaciones')}
-          className={CLASE_BOTON}
         >
-          {modoCorreccion ? '← Mis evaluaciones' : '← Mis postulaciones'}
-        </button>
+          <Icono nombre="flechaIzquierda" className="size-4" />
+          {modoCorreccion ? 'Mis evaluaciones' : 'Mis postulaciones'}
+        </Boton>
         {estado && (
           <EtiquetaPostulacion
             codigo={estado.postulacion?.estado?.codigo}
@@ -55,11 +57,11 @@ function Contenido({ postulacionId, modoCorreccion }) {
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-sena-texto">
+        <h1 className={CLASE_TITULO_PAGINA}>
           {modoCorreccion ? 'Corregir documentos' : 'Documentos de la postulación'}
         </h1>
         <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
-          {estado ? estado.convocatoria?.nombre : 'Cargando...'}
+          {estado ? estado.convocatoria?.nombre : 'Cargando…'}
         </p>
       </div>
 

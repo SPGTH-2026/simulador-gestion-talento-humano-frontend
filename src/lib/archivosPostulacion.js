@@ -9,7 +9,7 @@
 // leerse de ahí en vez de copiarse.
 
 export const TAMANO_MAXIMO_MB = 3
-export const TAMANO_MAXIMO_BYTES = TAMANO_MAXIMO_MB * 1024 * 1024
+const TAMANO_MAXIMO_BYTES = TAMANO_MAXIMO_MB * 1024 * 1024
 
 // Valida un archivo elegido en el cliente (PDF + tamaño máximo).
 // Devuelve { ok: true, nombre } o { ok: false, mensaje } con el mensaje en

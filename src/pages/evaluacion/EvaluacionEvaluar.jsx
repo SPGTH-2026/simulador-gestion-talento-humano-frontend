@@ -52,6 +52,9 @@ export default function EvaluacionEvaluar() {
   const aplicables = documentos.filter((d) => d.obligatorio && d.estado !== 'no_aplica')
   const excluidos = documentos.filter((d) => !(d.obligatorio && d.estado !== 'no_aplica'))
   const pesos = repartirPesos(aplicables)
+  // Obligatorios aplicables que el aspirante no ha cargado. El servidor no deja marcarlos «Cumple» ni finalizar con
+  // alguno faltante; sí deja guardar un borrador y pedir la corrección con el faltante marcado «No cumple».
+  const faltantes = aplicables.filter((d) => d.estado === 'pendiente')
 
   useEffect(() => {
     if (!postulacionId) return
@@ -67,10 +70,16 @@ export default function EvaluacionEvaluar() {
 
         if (ev.data.evaluacion) {
           setObservaciones(ev.data.evaluacion.observaciones ?? '')
-          setRespuestas(ev.data.evaluacion.perfil ?? {})
+          // Una evaluación anterior pudo dejar «Cumple» en un documento que hoy no tiene archivo: ese valor es inválido
+          // para el servidor y no se reenvía. No se reemplaza por «No cumple»: queda sin responder y lo decide el evaluador.
+          const perfil = { ...(ev.data.evaluacion.perfil ?? {}) }
+          for (const d of docs.data ?? []) {
+            if (d.obligatorio && d.estado === 'pendiente' && perfil[d.id] === true) delete perfil[d.id]
+          }
+          setRespuestas(perfil)
         }
         // Sin evaluación previa no se preselecciona nada: el evaluador decide
-        // Sí/No en cada requisito.
+        // Cumple / No cumple en cada requisito.
 
         setError('')
       })
@@ -89,7 +98,7 @@ export default function EvaluacionEvaluar() {
   const total = aplicables.length
   const cumplidos = aplicables.filter((d) => respuestas[d.id] === true).length
   const sinResponder = aplicables.filter((d) => respuestas[d.id] == null).length
-  const sinSubir = aplicables.filter((d) => d.estado === 'pendiente').length
+  const sinCargar = faltantes.length
   const pesoTotal = Object.values(pesos).reduce((acc, valor) => acc + valor, 0)
   const pesoObtenido = aplicables.reduce(
     (acc, d) => acc + (respuestas[d.id] === true ? (pesos[d.id] ?? 0) : 0),
@@ -105,13 +114,19 @@ export default function EvaluacionEvaluar() {
     setError('')
     setGuardando(true)
 
+    // Por seguridad, aunque el formulario no lo permita, nunca viaja «Cumple» de un documento sin archivo.
+    const faltanIds = new Set(faltantes.map((d) => d.id))
+    const perfil = Object.fromEntries(
+      Object.entries(respuestas).filter(([id, valor]) => !(valor === true && faltanIds.has(id))),
+    )
+
     let guardada
     try {
       const res = await guardarEvaluacion(postulacionId, {
         observaciones: observaciones || null,
         estado: estadoFinal,
         criterios: [{ criterio: 'Evaluación', puntaje: cumplimiento, ponderacion: 1 }],
-        perfil: respuestas,
+        perfil,
         cumplimiento,
       })
       setDato(res.data)
@@ -133,7 +148,7 @@ export default function EvaluacionEvaluar() {
       correccion_solicitada: {
         titulo: 'Solicitud enviada',
         mensaje:
-          'Se notificó al aspirante para que corrija los documentos marcados con «No». La evaluación queda en espera de su respuesta.',
+          'Se notificó al aspirante para que corrija los documentos marcados con «No cumple». La evaluación queda en espera de su respuesta.',
       },
       en_proceso: {
         titulo: 'Borrador guardado',
@@ -161,6 +176,7 @@ export default function EvaluacionEvaluar() {
   }
 
   const finalizar = async () => {
+    if (faltantes.length > 0) return // el botón ya está desactivado; el servidor también lo rechaza
     const pendientes =
       sinResponder > 0
         ? ` ${sinResponder === 1 ? '1 requisito sin responder contará' : `${sinResponder} requisitos sin responder contarán`} como no cumplido.`
@@ -211,11 +227,7 @@ export default function EvaluacionEvaluar() {
   }
 
   if (cargando) {
-    return (
-      <div role="status">
-        <Cargando>Cargando evaluación…</Cargando>
-      </div>
-    )
+    return <Cargando>Cargando evaluación…</Cargando>
   }
 
   if (!dato) {
@@ -273,7 +285,7 @@ export default function EvaluacionEvaluar() {
         ) : (
           <MensajeAviso>
             <strong>En espera de corrección del aspirante:</strong> se le pidió subsanar los documentos
-            marcados con «No».
+            marcados con «No cumple».
           </MensajeAviso>
         ))}
 
@@ -285,7 +297,7 @@ export default function EvaluacionEvaluar() {
             cumplidos={cumplidos}
             total={total}
             sinResponder={sinResponder}
-            sinSubir={sinSubir}
+            sinCargar={sinCargar}
           />
         </div>
 
@@ -298,7 +310,7 @@ export default function EvaluacionEvaluar() {
               Requisitos del perfil
             </h2>
             <p className={`mt-1 text-sm ${CLASE_TEXTO_SUAVE}`}>
-              Abre cada documento y marca si cumple el requisito. Solo cuentan los documentos
+              Abre cada documento y marca «Cumple» o «No cumple». Solo cuentan los documentos
               obligatorios y aplicables de la convocatoria.
             </p>
           </div>
@@ -356,6 +368,14 @@ export default function EvaluacionEvaluar() {
 
           {error && <MensajeError>{error}</MensajeError>}
 
+          {faltantes.length > 0 && (
+            <MensajeAviso>
+              <strong>No se puede finalizar:</strong> falta cargar{' '}
+              {faltantes.map((d) => d.nombre).join(', ')}. Marca «No cumple» en {faltantes.length === 1 ? 'ese documento' : 'esos documentos'},
+              explica en las observaciones qué debe corregir el aspirante y usa «Enviar a corrección». También puedes guardar un borrador.
+            </MensajeAviso>
+          )}
+
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
             <Boton
               ref={botonBorrador}
@@ -373,9 +393,16 @@ export default function EvaluacionEvaluar() {
               onClick={() => guardar('correccion_solicitada')}
               disabled={guardando}
             >
-              {guardando ? 'Enviando…' : 'Mandar a corregir'}
+              {guardando ? 'Enviando…' : 'Enviar a corrección'}
             </Boton>
-            <Boton ref={botonFinalizar} tamano="tactil" onClick={finalizar} disabled={guardando} className="whitespace-normal!">
+            <Boton
+              ref={botonFinalizar}
+              tamano="tactil"
+              onClick={finalizar}
+              disabled={guardando || faltantes.length > 0}
+              title={faltantes.length > 0 ? 'Falta cargar un documento obligatorio' : undefined}
+              className="whitespace-normal!"
+            >
               {guardando ? 'Guardando…' : 'Finalizar y enviar resultado'}
             </Boton>
           </div>

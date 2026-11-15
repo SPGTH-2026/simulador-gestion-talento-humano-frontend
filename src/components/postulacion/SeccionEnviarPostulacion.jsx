@@ -3,13 +3,12 @@ import { enviarPostulacion } from '../../api/postulaciones'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import Boton from '../ui/Boton'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
 const ESTILO_TITULO = CLASE_TITULO_SECCION
 
-const CLASE_ENVIAR =
-  'rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:cursor-not-allowed disabled:opacity-50'
 
 // Envío del BORRADOR a 'postulada'. Solo se muestra mientras la postulación está
 // en borrador y el paso es editable. Antes de enviar avisa qué falta (obligatorios
@@ -107,9 +106,9 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
       )}
 
       <div className="mt-3">
-        <button type="button" disabled={enviando} onClick={enviar} className={CLASE_ENVIAR}>
+        <Boton variante="primario" tamano="tactil" disabled={enviando} onClick={enviar}>
           {enviando ? 'Enviando...' : 'Enviar postulación'}
-        </button>
+        </Boton>
       </div>
     </section>
   )

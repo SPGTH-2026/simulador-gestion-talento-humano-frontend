@@ -181,7 +181,7 @@ export default function Registro() {
         )}
       </Campo>
 
-      <Boton type="submit" tamano="flexible" disabled={enviando} className="w-full">
+      <Boton type="submit" tamano="flexible" ocupado={enviando} className="w-full">
         {enviando ? 'Creando cuenta...' : 'Crear cuenta'}
       </Boton>
 

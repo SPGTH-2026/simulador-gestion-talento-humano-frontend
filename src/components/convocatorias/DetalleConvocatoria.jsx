@@ -3,13 +3,11 @@ import EtiquetaEstado from './EtiquetaEstado'
 import EtiquetaPostulacion from './EtiquetaPostulacion'
 import EtiquetaDocumento from '../ui/EtiquetaDocumento'
 import Boton from '../ui/Boton'
+import Icono from '../ui/Icono'
 import Pestanas from '../ui/Pestanas'
+import { MensajeError } from '../ui/Mensaje'
 import { useAuth } from '../../auth/useAuth'
-import {
-  IconoCalendario,
-  IconoDocumento,
-  IconoMaletin,
-} from './Iconos'
+import { IconoDocumento } from './Iconos'
 import { ETIQUETAS_DOCUMENTO } from '../../lib/documentosConvocatoria'
 import { veIdentificador } from '../../lib/convocatorias'
 import {
@@ -19,6 +17,7 @@ import {
   CLASE_META_DT,
   CLASE_TARJETA,
   CLASE_TARJETA_PLANA,
+  CLASE_TITULO_PAGINA,
   CLASE_TITULO_SECCION,
 } from '../../lib/estilos'
 
@@ -59,7 +58,7 @@ function hay(valor) {
 
 // ── Bloques de contenido reutilizables ────────────────────────────────────
 
-// Título de sección: barra verde a la izquierda, igual en todas las pestañas.
+// Título de sección: el estándar del sistema (CLASE_TITULO_SECCION), igual en todas las pestañas.
 function TituloSeccion({ children, className = '' }) {
   return <h3 className={`${CLASE_TITULO_SECCION} ${className}`.trim()}>{children}</h3>
 }
@@ -92,34 +91,13 @@ function ListaLineas({ lineas }) {
   )
 }
 
-// Celda de la banda de fechas: UNA fila baja, contenido centrado. El icono va a
-// la izquierda del par etiqueta/valor para ahorrar alto sin perder el anclaje
-// visual; relleno vertical mínimo. Las celdas son idénticas (sin color de
-// acento). El radio del contenedor lo respeta el overflow-hidden de la banda.
-function CeldaFecha({ etiqueta, valor }) {
-  return (
-    <div className="flex items-center justify-center gap-2 px-3 py-1.5">
-      <span className="text-sena" aria-hidden="true">
-        <IconoCalendario className="h-4 w-4" />
-      </span>
-      <div className="min-w-0 text-left">
-        <dt className={`${CLASE_META_DT} leading-tight`}>{etiqueta}</dt>
-        <dd className={`${CLASE_META_DD} mt-0 leading-tight`}>{valor}</dd>
-      </div>
-    </div>
-  )
-}
-
-// Fila de la lista de condiciones: fila baja (py-1), la etiqueta ocupa un ancho
-// FIJO (40 %) y el valor va justo a continuación, en negrita. Cada fila lleva su
-// línea inferior con el token sena-separador (más marcado que el borde de la
-// tarjeta). En una rejilla responsive no se puede omitir solo la última fila
-// visible sin romper en algún breakpoint, así que la línea es uniforme en todas.
+// Dato de la lista de condiciones: etiqueta pequeña arriba y valor en negrita debajo, con su línea inferior (token
+// sena-separador). Apilados caben en columnas angostas sin partir las etiquetas largas («Tipo de convocatoria»).
 function FilaCondicion({ etiqueta, valor }) {
   return (
-    <div className="flex items-baseline gap-3 border-b border-sena-separador py-1">
-      <dt className={`${CLASE_META_DT} w-2/5 shrink-0`}>{etiqueta}</dt>
-      <dd className={`${CLASE_META_DD} mt-0 min-w-0 flex-1 break-words`}>{valor}</dd>
+    <div className="flex flex-col gap-0.5 border-b border-sena-separador py-2">
+      <dt className={CLASE_META_DT}>{etiqueta}</dt>
+      <dd className={`${CLASE_META_DD} mt-0 min-w-0 break-words`}>{valor}</dd>
     </div>
   )
 }
@@ -141,6 +119,9 @@ export default function DetalleConvocatoria({
   onVolver,
   panelDocumentos = null,
   accionInferior = null,
+  // Acciones de quien gestiona (Editar, Cerrar) y el error de la última: van dentro de la cabecera.
+  accionesGestion = null,
+  errorAccion = '',
 }) {
   const c = convocatoria
   const { user, can } = useAuth()
@@ -193,6 +174,7 @@ export default function DetalleConvocatoria({
   // Orden temático: primero "del cargo" (Área, tipos) y después "condiciones
   // laborales" (Modalidad, Vacantes, salario). Sin subtítulos: el orden agrupa.
   const datosCondiciones = [
+    ...fechasCondiciones,
     { etiqueta: 'Área', valor: c?.area },
     { etiqueta: 'Tipo de convocatoria', valor: c?.tipo_convocatoria?.nombre },
     { etiqueta: 'Tipo de empleo', valor: c?.tipo_empleo?.nombre },
@@ -226,16 +208,16 @@ export default function DetalleConvocatoria({
         Esta convocatoria no pide documentos.
       </p>
     ) : (
-      <ul className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2">
+      <ul className="mt-2 grid grid-cols-1 gap-2 @xl:grid-cols-2">
         {documentos.map((documento) => (
           <li
             key={documento.id}
-            className={`${CLASE_CAJA_SUAVE} flex items-center gap-2 px-3 py-2`}
+            className={`${CLASE_CAJA_SUAVE} flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2`}
           >
             <span className="shrink-0 text-sena" aria-hidden="true">
               <IconoDocumento className="h-4 w-4" />
             </span>
-            <span className="min-w-0 flex-1 text-sm font-medium text-slate-700 [overflow-wrap:anywhere] dark:text-sena-texto">
+            <span className="min-w-32 flex-1 text-sm font-medium text-slate-700 [overflow-wrap:anywhere] dark:text-sena-texto">
               {documento.nombre}
             </span>
             {/* Peso del documento en la evaluación de esta convocatoria. Solo
@@ -262,29 +244,23 @@ export default function DetalleConvocatoria({
   // Escala de espacios única: gap-3 entre tarjetas, p-4 dentro, mt-2 tras el
   // subtítulo. Compacto se logra con espacios y alturas, nunca bajando la
   // tipografía (contenido 14 px, etiquetas 12 px).
+  // Una sola columna de lectura: condiciones primero (lo que se consulta), después el cargo (lo que se lee) y al final
+  // los documentos. Antes eran dos columnas y, con una descripción corta, la izquierda quedaba con un hueco enorme.
+  // Dentro de cada tarjeta, las rejillas se adaptan al ancho de su contenedor ('@container') y no al de la pantalla.
   const contenidoDescripcion = (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {/* a) Condiciones de la convocatoria: UNA sola tarjeta, primera de la
           pestaña. Arriba la banda de fechas (una fila baja); debajo la lista de
           datos en rejilla de 3 columnas. */}
       <section className={`${CLASE_TARJETA_PLANA} p-4`}>
         <TituloSeccion>Condiciones de la convocatoria</TituloSeccion>
 
-        {/* Banda de fechas: un solo contenedor dividido en celdas del MISMO
-            ancho por divisores marcados (sena-separador). En móvil se apilan con
-            divisor horizontal. */}
-        {fechasCondiciones.length > 0 && (
-          <dl className="mt-2 grid grid-cols-1 divide-y divide-sena-separador overflow-hidden rounded-lg border border-sena-separador sm:grid-flow-col sm:auto-cols-fr sm:divide-x sm:divide-y-0">
-            {fechasCondiciones.map((fila) => (
-              <CeldaFecha key={fila.etiqueta} etiqueta={fila.etiqueta} valor={fila.valor} />
-            ))}
-          </dl>
-        )}
+      <div className="@container">
 
         {/* Lista de datos: 3 columnas en pantalla ancha (7 datos -> 3 filas), 2
             en tableta y 1 en móvil. Sin subtítulos: el orden temático agrupa. */}
         {datosCondiciones.length > 0 && (
-          <dl className="mt-2 grid grid-cols-1 gap-x-6 md:grid-cols-2 xl:grid-cols-3">
+          <dl className="mt-3 grid grid-cols-2 gap-x-6 @3xl:grid-cols-3 @5xl:grid-cols-4">
             {datosCondiciones.map((fila) => (
               <FilaCondicion
                 key={fila.etiqueta}
@@ -294,6 +270,7 @@ export default function DetalleConvocatoria({
             ))}
           </dl>
         )}
+      </div>
       </section>
 
       {/* c) Descripción del cargo. */}
@@ -381,7 +358,7 @@ export default function DetalleConvocatoria({
             ? 'Documentos que debe entregar el postulante.'
             : 'Debes adjuntar cada documento obligatorio en PDF para enviar tu postulación.'}
         </p>
-        {listaDocumentos}
+        <div className="@container">{listaDocumentos}</div>
       </section>
     </div>
   )
@@ -394,13 +371,10 @@ export default function DetalleConvocatoria({
   const contenidoDocumentos = (
     <div className="flex flex-col gap-5">
       <div>
-        <button
-          type="button"
-          onClick={() => setPestanaActiva('descripcion')}
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-        >
-          <span aria-hidden="true">←</span> Volver a descripción
-        </button>
+        <Boton variante="fantasma" tamano="tactil" onClick={() => setPestanaActiva('descripcion')} className="-ml-4">
+          <Icono nombre="flechaIzquierda" className="size-4" />
+          Volver a descripción
+        </Boton>
       </div>
       {panelDocumentos}
     </div>
@@ -429,54 +403,48 @@ export default function DetalleConvocatoria({
     .filter((parte) => hay(parte) && String(parte).trim() !== titulo.trim())
     .join(' · ')
 
+  // Cargo, área y número de aspirantes (este último solo para gestión) en un solo texto: si la línea se parte, lo hace
+  // sin dejar un separador suelto al inicio.
+  const datosLinea = [
+    subtitulo,
+    c?.postulantes != null && esGestion ? `${c.postulantes} ${c.postulantes === 1 ? 'aspirante' : 'aspirantes'}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
       {/* Volver arriba a la izquierda, fuera de la cabecera. */}
-      <button
-        type="button"
-        onClick={onVolver}
-        className="inline-flex items-center gap-1.5 self-start rounded-md px-2 py-1 text-sm font-medium text-sena-azul transition-colors hover:bg-sena-cielo/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40 dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
-      >
-        <span aria-hidden="true">←</span> Volver
-      </button>
+      <Boton variante="fantasma" tamano="tactil" onClick={onVolver} className="-ml-4 self-start">
+        <Icono nombre="flechaIzquierda" className="size-4" />
+        Volver
+      </Boton>
 
       {/* Cabecera: icono en cuadro azul claro, cargo como título, código y
           subtítulo, y el estado real a la derecha. */}
-      <header className={`${CLASE_TARJETA} flex flex-wrap items-center gap-3 p-4`}>
-        <span
-          aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sena-cielo/40 text-sena-azul dark:bg-sena-superficie-alta dark:text-sena-texto"
-        >
-          <IconoMaletin className="h-5 w-5" />
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-bold leading-snug text-sena-azul dark:text-sena-texto sm:text-xl">
-            {titulo}
-          </h1>
-          {/* El identificador (CONV-AAAA-NNN) es un dato de gestión: solo lo
-              ve la lista blanca (instructor, super admin y el subrol
-              gestor_convocatorias). */}
-          {muestraCodigo && (
-            <p className="mt-0.5 font-mono text-xs text-slate-500 dark:text-sena-texto-suave">
-              {c?.codigo}
+      <header className={`${CLASE_TARJETA} flex flex-col gap-4 p-5`}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+          <div className="min-w-0">
+            <h1 className={`${CLASE_TITULO_PAGINA} text-balance [overflow-wrap:anywhere]`}>{titulo}</h1>
+            {/* Estado, identificador (dato de gestión: solo lo ve la lista blanca de instructor, super admin y el subrol
+                gestor_convocatorias), cargo y área, y el número de aspirantes (también de gestión: el aspirante no debe
+                ver cuántas personas se han postulado), todo en una misma línea. */}
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600 dark:text-sena-texto-suave">
+              <EtiquetaEstado codigo={c?.estado?.codigo} nombre={c?.estado?.nombre} />
+              <span>
+                {muestraCodigo && <span className="font-mono text-xs">{c?.codigo}</span>}
+                {muestraCodigo && datosLinea && ' · '}
+                {datosLinea}
+              </span>
             </p>
-          )}
-          {subtitulo && (
-            <p className="mt-0.5 text-sm text-slate-600 dark:text-sena-texto-suave">{subtitulo}</p>
-          )}
+          </div>
+
+          {/* Acciones de gestión junto al título: en escritorio a la derecha, sin una franja aparte; en móvil debajo,
+              repartidas a todo el ancho. */}
+          {accionesGestion && <div className="sm:shrink-0">{accionesGestion}</div>}
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          {/* Dato de gestión: solo llega a quien puede gestionar. El aspirante no
-              debe ver cuántas personas se han postulado. */}
-          {c?.postulantes != null && esGestion && (
-            <span className="text-xs text-slate-500 dark:text-sena-texto-suave">
-              {c.postulantes} {c.postulantes === 1 ? 'aspirante' : 'aspirantes'}
-            </span>
-          )}
-          <EtiquetaEstado codigo={c?.estado?.codigo} nombre={c?.estado?.nombre} />
-        </div>
+        {errorAccion && <MensajeError>{errorAccion}</MensajeError>}
       </header>
 
       {/* Con panel de postulación hay dos pestañas, con todos los paneles
@@ -515,8 +483,13 @@ function BarraInferior({ accion }) {
   if (!accion) return null
 
   return (
-    <div className={`${CLASE_TARJETA} flex flex-wrap items-center justify-between gap-3 px-4 py-2.5`}>
-      <p className="min-w-0 text-sm text-slate-600 dark:text-sena-texto-suave">
+    // Por debajo de 'lg' la barra queda fija al borde inferior de la pantalla: la acción principal siempre está a mano,
+    // aunque la descripción sea larga. Sigue en el flujo, así que al final de la página no tapa nada. En móvil solo
+    // explica el motivo cuando la acción está bloqueada; la ayuda larga se muestra desde 'sm'.
+    <div
+      className={`${CLASE_TARJETA} flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 max-lg:sticky max-lg:-bottom-5 max-lg:z-10 max-lg:shadow-[0_-6px_16px_-8px_rgba(0,0,0,0.25)]`}
+    >
+      <p className={`min-w-0 text-sm text-slate-600 dark:text-sena-texto-suave ${accion?.deshabilitado ? '' : 'max-sm:hidden'}`}>
         {accion?.deshabilitado ? accion.motivo : accion?.ayuda}
       </p>
 
@@ -527,7 +500,7 @@ function BarraInferior({ accion }) {
           )}
           <Boton
             variante="primario"
-            tamano="sm"
+            tamano="tactil"
             disabled={accion.deshabilitado}
             title={accion.motivo || undefined}
             onClick={accion.onClick}

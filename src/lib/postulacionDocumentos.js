@@ -9,7 +9,6 @@
 
 export const MAX_DOCUMENTOS_ADICIONALES = 5
 export const MAX_SKILLS = 30
-export const MAX_SKILL_NOMBRE = 100
 export const MAX_TITULO_ADICIONAL = 120
 export const MAX_NOTA_ADICIONAL = 500
 
@@ -21,13 +20,6 @@ export const CODIGO_LIBRETA_MILITAR = 'libreta_militar'
 // convocatoria / declaradas.
 export function normalizarSkill(texto) {
   return String(texto ?? '').trim().toLowerCase()
-}
-
-// ¿La convocatoria pide la libreta militar? Se mira la lista de documentos del
-// estado (cada uno trae su código). Así no dependemos de 'requiere_sexo', que
-// solo dice si FALTA registrar el sexo.
-export function pideLibreta(documentos) {
-  return (documentos ?? []).some((d) => d.parametro?.codigo === CODIGO_LIBRETA_MILITAR)
 }
 
 // Motivo por el que el paso NO es editable ('' si sí lo es). Se apoya en el
@@ -45,7 +37,7 @@ export function motivoNoEditable(estado) {
 
   switch (estado.ventana) {
     case 'antes':
-      return 'La convocatoria aún no está abierta. Podrás subir documentos cuando abra.'
+      return 'La convocatoria aún no está abierta. Podrás cargar documentos cuando abra.'
     case 'cerrada':
       return 'La convocatoria ya cerró. Tus documentos quedaron solo para consulta.'
     case 'no_publicada':

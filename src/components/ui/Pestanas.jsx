@@ -24,6 +24,9 @@ export default function Pestanas({
   etiquetaAccesible = 'Secciones',
   activaId,
   onCambiar,
+  // Separación entre la barra y el panel: 'gap-4' por defecto; una pantalla que necesite el contenido más
+  // cerca de las pestañas pasa su propia clase (por ejemplo 'flex flex-col gap-3').
+  className = 'flex flex-col gap-4',
 }) {
   const [activaInterna, setActivaInterna] = useState(pestanas[0]?.id ?? null)
   const refs = useRef({})
@@ -78,7 +81,7 @@ export default function Pestanas({
   const idActivo = pestanas[indiceActivo]?.id
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={className}>
       {/* La barra se desplaza dentro de su propio contenedor: en móvil las
           pestañas se deslizan sin arrastrar la página entera. overflow-y-hidden
           evita que el -mb-px de las pestañas genere una barra vertical de 1 px
@@ -104,7 +107,7 @@ export default function Pestanas({
               tabIndex={seleccionada ? 0 : -1}
               onClick={() => seleccionar(pestana.id)}
               onKeyDown={(e) => alTeclear(e, indice)}
-              className={`-mb-px flex shrink-0 items-center gap-2 rounded-t-md border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sena/40 ${
+              className={`-mb-px flex min-h-11 shrink-0 items-center gap-2 rounded-t-md border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sena/40 ${
                 seleccionada
                   ? 'border-sena text-sena-azul dark:border-sena dark:text-sena-texto'
                   : 'border-transparent text-slate-600 hover:border-sena-linea hover:text-sena-azul dark:text-sena-texto-suave dark:hover:border-sena-borde dark:hover:text-sena-texto'
