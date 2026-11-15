@@ -28,7 +28,10 @@ export default function AuthLayout() {
 
   return (
     <TarjetaAuth>
-      <Outlet />
+      {/* Entrada suave: tras cerrar sesión el login aparece sin un corte brusco. */}
+      <div className="entrada-suave">
+        <Outlet />
+      </div>
     </TarjetaAuth>
   )
 }

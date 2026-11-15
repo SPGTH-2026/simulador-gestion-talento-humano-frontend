@@ -26,3 +26,17 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+
+# Copias de datos o volcados de base: nunca al repositorio
+*.sql
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+
+# Herramientas de asistencia locales
+/.claude
+/.codex
+/.cursor

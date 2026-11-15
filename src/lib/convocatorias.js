@@ -11,13 +11,13 @@
 //
 // Se resuelve SIEMPRE por código de estado (nunca por id ni por nombre).
 
-export const PASOS_CANDADO = {
+const PASOS_CANDADO = {
   publicada: { etiqueta: 'Cerrar convocatoria', destino: 'en_proceso' },
   en_proceso: { etiqueta: 'Cerrar convocatoria', destino: 'cerrada' },
 }
 
 /** Estados en los que la convocatoria todavía se puede editar. */
-export const ESTADOS_EDITABLES = ['borrador', 'publicada']
+const ESTADOS_EDITABLES = ['borrador', 'publicada']
 
 /**
  * Siguiente paso del candado para una convocatoria, o null si ya está

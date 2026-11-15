@@ -1,6 +1,6 @@
-// Barra de progreso de una subida. 'valor' va de 0 a 100. Se muestra dentro de la
+// Barra de progreso de una carga. 'valor' va de 0 a 100. Se muestra dentro de la
 // tarjeta del documento mientras el archivo se envía, con el porcentaje real.
-export default function BarraProgreso({ valor = 0, etiqueta = 'Subiendo documento' }) {
+export default function BarraProgreso({ valor = 0, etiqueta = 'Cargando documento' }) {
   const porcentaje = Math.min(100, Math.max(0, Math.round(valor)))
 
   return (

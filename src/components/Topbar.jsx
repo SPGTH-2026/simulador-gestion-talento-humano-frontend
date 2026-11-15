@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { CLASE_BOTON_ICONO, CLASE_TEXTO_SUAVE } from '../lib/estilos'
+import { NOTIFICACIONES_DISPONIBLES } from '../config/menu'
 import { migasDe } from '../lib/migas'
 import DatosUsuario from './DatosUsuario'
 import ThemeToggle from './ThemeToggle'
 import Icono from './ui/Icono'
+import Rueda from './ui/Rueda'
 
 // Ruta de navegación: dónde está el usuario dentro del menú. En móvil caben
 // dos líneas: el tramo anterior, pequeño y con enlace si lo tiene, sobre la
@@ -64,7 +66,7 @@ function Migas() {
 // cuenta y el cierre de sesión pasan al pie del cajón. Desde 'sm' vuelven a la
 // barra: tema, notificaciones, usuario con su rol y ficha, y cerrar sesión.
 export default function Topbar({ onAbrirMenu }) {
-  const { logout, can } = useAuth()
+  const { logout, cerrandoSesion, can } = useAuth()
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sena-linea bg-sena-lienzo px-3 dark:border-sena-borde/40 dark:bg-sena-noche sm:px-6 lg:px-8">
@@ -73,7 +75,7 @@ export default function Topbar({ onAbrirMenu }) {
         type="button"
         onClick={onAbrirMenu}
         aria-label="Abrir menú"
-        className="-ml-1 grid size-11 shrink-0 place-items-center rounded-lg text-slate-700 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto dark:hover:bg-white/10 lg:hidden"
+        className="-ml-1 grid size-11 shrink-0 place-items-center rounded-lg text-slate-700 transition-[color,background-color,scale] duration-150 hover:bg-sena-hundido hover:text-sena-azul active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100 dark:text-sena-texto dark:hover:bg-white/10 lg:hidden"
       >
         <Icono nombre="menu" className="size-6" />
       </button>
@@ -85,7 +87,7 @@ export default function Topbar({ onAbrirMenu }) {
           <ThemeToggle />
         </div>
 
-        {can('propio:notificaciones') && (
+        {NOTIFICACIONES_DISPONIBLES && can('propio:notificaciones') && (
           <Link to="/notificaciones" className={CLASE_BOTON_ICONO} aria-label="Notificaciones">
             <Icono nombre="campana" />
           </Link>
@@ -97,11 +99,13 @@ export default function Topbar({ onAbrirMenu }) {
           <button
             type="button"
             onClick={logout}
-            aria-label="Cerrar sesión"
-            className="ml-1 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-sena-hundido hover:text-sena-azul motion-reduce:transition-none dark:text-sena-texto dark:hover:bg-white/10 dark:hover:text-white lg:min-h-10"
+            disabled={cerrandoSesion}
+            aria-busy={cerrandoSesion || undefined}
+            aria-label={cerrandoSesion ? 'Cerrando sesión' : 'Cerrar sesión'}
+            className="ml-1 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-slate-700 transition-[color,background-color,scale] duration-150 hover:bg-sena-hundido hover:text-sena-azul active:scale-[0.96] disabled:cursor-progress disabled:opacity-70 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 dark:text-sena-texto dark:hover:bg-white/10 dark:hover:text-white lg:min-h-10"
           >
-            <Icono nombre="salir" />
-            <span className="hidden lg:inline">Cerrar sesión</span>
+            {cerrandoSesion ? <Rueda className="size-5" /> : <Icono nombre="salir" />}
+            <span className="hidden lg:inline">{cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar sesión'}</span>
           </button>
         </div>
       </div>

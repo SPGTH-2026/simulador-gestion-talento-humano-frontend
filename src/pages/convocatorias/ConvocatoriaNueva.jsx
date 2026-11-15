@@ -42,7 +42,8 @@ export default function ConvocatoriaNueva() {
     navigate('/convocatorias')
   }
 
-  const guardar = async (datos) => {
+  // 'etapa' es el paso en el que estaba quien guarda: la pantalla de edición se abre en ese mismo paso.
+  const guardar = async (datos, etapa) => {
     if (!datos.nombre?.trim()) {
       setErrores({ nombre: 'Escribe el nombre de la convocatoria para guardar el borrador.' })
       return
@@ -55,7 +56,13 @@ export default function ConvocatoriaNueva() {
     try {
       const res = await crearConvocatoria(datos)
       setSucio(false)
-      navigate(`/convocatorias/${res.data.id}/editar`, { replace: true })
+      navigate(`/convocatorias/${res.data.id}/editar`, {
+        replace: true,
+        state: {
+          etapa,
+          exito: 'Borrador guardado. Puedes seguir completando los pasos desde aquí; la convocatoria ya existe.',
+        },
+      })
     } catch (e) {
       setErrores(erroresDeCampo(e))
       setError(mensajeError(e))
@@ -64,7 +71,7 @@ export default function ConvocatoriaNueva() {
     }
   }
 
-  const publicar = async (datos) => {
+  const publicar = async (datos, etapa) => {
     if (!datos.nombre?.trim()) {
       setErrores({ nombre: 'Escribe el nombre de la convocatoria antes de publicar.' })
       return
@@ -87,7 +94,14 @@ export default function ConvocatoriaNueva() {
         // por campo que devolvió la validación de publicación.
         navigate(`/convocatorias/${id}/editar`, {
           replace: true,
-          state: { errores: erroresDeCampo(e), error: mensajeError(e) },
+          state: {
+            etapa,
+            errores: erroresDeCampo(e),
+            error: mensajeError(e),
+            aviso:
+              'La convocatoria quedó guardada como borrador con todo lo que escribiste, pero no se pudo publicar. ' +
+              'Corrige lo que se indica y pulsa «Publicar convocatoria» de nuevo desde esta misma pantalla: no se crea otra.',
+          },
         })
       }
     } catch (e) {

@@ -1,25 +1,6 @@
 // Iconos SVG en línea (sin dependencias), al estilo de Topbar.jsx. Cada botón
 // de acción lleva su tooltip: visible al pasar el mouse o al enfocar con teclado.
 
-export function IconoOjo({ className = 'h-5 w-5' }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-      <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-    </svg>
-  )
-}
-
 export function IconoLapiz() {
   return (
     <svg
@@ -76,43 +57,7 @@ export function IconoDocumento() {
 }
 
 // Flecha hacia abajo: solo para DESCARGAR.
-export function IconoDescarga({ className = 'h-5 w-5' }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-    </svg>
-  )
-}
-
 // Flecha hacia arriba: para SUBIR o REEMPLAZAR.
-export function IconoSubir({ className = 'h-5 w-5' }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M7.5 7.5 12 3m0 0 4.5 4.5M12 3v13.5" />
-    </svg>
-  )
-}
-
 export function IconoBasura() {
   return (
     <svg
@@ -183,25 +128,6 @@ export function IconoUsuarios({ className = 'h-4 w-4' }) {
       aria-hidden="true"
     >
       <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-    </svg>
-  )
-}
-
-export function IconoMaletin({ className = 'h-4 w-4' }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M20.25 14.15v4.073a2.25 2.25 0 0 1-2.25 2.25h-12a2.25 2.25 0 0 1-2.25-2.25V14.15M20.25 14.15a2.25 2.25 0 0 1 0-4.5m0 4.5a2.25 2.25 0 0 0 0-4.5M3.75 14.15a2.25 2.25 0 0 0 0-4.5m0 4.5a2.25 2.25 0 0 1 0-4.5m0 0V6.75A2.25 2.25 0 0 1 6 4.5h12a2.25 2.25 0 0 1 2.25 2.25v2.9M3.75 9.65v2.9" />
-      <path d="M9 4.5V3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V4.5" />
     </svg>
   )
 }
