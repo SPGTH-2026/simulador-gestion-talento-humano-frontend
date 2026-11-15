@@ -31,6 +31,7 @@ const Reportes = lazy(() => import('./pages/reportes/Reportes'))
 const Supervision = lazy(() => import('./pages/supervision/Supervision'))
 const MisPostulaciones = lazy(() => import('./pages/aspirante/MisPostulaciones'))
 const DocumentosPostulacion = lazy(() => import('./pages/aspirante/DocumentosPostulacion'))
+const CorreccionesPostulacion = lazy(() => import('./pages/aspirante/CorreccionesPostulacion'))
 const MisDocumentos = lazy(() => import('./pages/aspirante/MisDocumentos'))
 const MisEvaluaciones = lazy(() => import('./pages/aspirante/MisEvaluaciones'))
 const Notificaciones = lazy(() => import('./pages/aspirante/Notificaciones'))
@@ -111,6 +112,7 @@ export default function AppRouter() {
             {/* Paso de documentos/skills de UNA postulación propia. Va aquí
                 porque el backend lo protege con el permiso 'propio:documentos'. */}
             <Route path="postulaciones/:id/documentos" element={<DocumentosPostulacion />} />
+            <Route path="postulaciones/:id/correcciones" element={<CorreccionesPostulacion />} />
           </Route>
           <Route element={<PermissionRoute permiso="propio:evaluaciones" />}>
             <Route path="mis-evaluaciones" element={<MisEvaluaciones />} />
