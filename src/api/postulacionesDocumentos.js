@@ -163,3 +163,19 @@ export async function mensajeErrorBlob(error) {
     return ''
   }
 }
+
+// Corrección solicitada por el evaluador para una postulación propia: la evaluación
+// (con sus decisiones por documento) o null si no hay corrección pendiente.
+export const obtenerCorreccion = (postulacionId) =>
+  client.get('/mis-evaluaciones').then((res) => {
+    const lista = res.data?.data ?? []
+    return (
+      lista.find(
+        (e) => Number(e.postulacion_id) === Number(postulacionId) && e.estado === 'correccion_solicitada',
+      ) ?? null
+    )
+  })
+
+// El aspirante confirma que reemplazó todos los documentos marcados para corregir.
+export const enviarCorreccion = (postulacionId) =>
+  client.post(`/postulaciones/${postulacionId}/correccion/enviar`).then((res) => res.data.data)
