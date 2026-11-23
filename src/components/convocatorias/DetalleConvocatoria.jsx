@@ -370,12 +370,7 @@ export default function DetalleConvocatoria({
   // y una segunda pestaña solo la repetiría.
   const contenidoDocumentos = (
     <div className="flex flex-col gap-5">
-      <div>
-        <Boton variante="fantasma" tamano="tactil" onClick={() => setPestanaActiva('descripcion')} className="-ml-4">
-          <Icono nombre="flechaIzquierda" className="size-4" />
-          Volver a descripción
-        </Boton>
-      </div>
+      {/* Sin «Volver a descripción»: las pestañas de arriba ya llevan de una sección a la otra y el botón lo repetía. */}
       {panelDocumentos}
     </div>
   )
@@ -483,11 +478,13 @@ function BarraInferior({ accion }) {
   if (!accion) return null
 
   return (
-    // Por debajo de 'lg' la barra queda fija al borde inferior de la pantalla: la acción principal siempre está a mano,
-    // aunque la descripción sea larga. Sigue en el flujo, así que al final de la página no tapa nada. En móvil solo
-    // explica el motivo cuando la acción está bloqueada; la ayuda larga se muestra desde 'sm'.
+    // Solo en pantallas de teléfono ('max-sm') la barra queda fija al borde inferior: ahí es una sola línea compacta (el
+    // texto de ayuda se oculta) y la acción principal siempre está a mano aunque la descripción sea larga. Desde 'sm'
+    // (tableta y escritorio) va en el flujo, al final de la página: fija ocupaba dos líneas y tapaba el contenido que se
+    // estaba leyendo. En ambos casos sigue en el flujo, así que al final de la página no tapa nada. En móvil solo explica
+    // el motivo cuando la acción está bloqueada; la ayuda larga se muestra desde 'sm'.
     <div
-      className={`${CLASE_TARJETA} flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 max-lg:sticky max-lg:-bottom-5 max-lg:z-10 max-lg:shadow-[0_-6px_16px_-8px_rgba(0,0,0,0.25)]`}
+      className={`${CLASE_TARJETA} flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2.5 max-sm:sticky max-sm:-bottom-5 max-sm:z-10 max-sm:shadow-[0_-6px_16px_-8px_rgba(0,0,0,0.25)]`}
     >
       <p className={`min-w-0 text-sm text-slate-600 dark:text-sena-texto-suave ${accion?.deshabilitado ? '' : 'max-sm:hidden'}`}>
         {accion?.deshabilitado ? accion.motivo : accion?.ayuda}
@@ -495,8 +492,12 @@ function BarraInferior({ accion }) {
 
       {accion && (
         <div className="flex flex-wrap items-center gap-2">
+          {/* En teléfono la barra queda fija y debe ser de una sola línea: la etiqueta se oculta ahí (el estado ya se
+              ve en la página) y queda solo la acción principal. */}
           {accion.insignia && accion.codigoEstado && (
-            <EtiquetaPostulacion codigo={accion.codigoEstado} nombre={accion.nombreEstado} />
+            <span className="max-sm:hidden">
+              <EtiquetaPostulacion codigo={accion.codigoEstado} nombre={accion.nombreEstado} />
+            </span>
           )}
           <Boton
             variante="primario"

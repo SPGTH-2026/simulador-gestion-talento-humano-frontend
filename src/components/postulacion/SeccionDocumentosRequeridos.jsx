@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { validarArchivoPostulacion, TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
 import { ETIQUETAS_DOCUMENTO, esObligatorioFijo } from '../../lib/documentosConvocatoria'
-import { CODIGO_LIBRETA_MILITAR, formatearTamano } from '../../lib/postulacionDocumentos'
+import { CODIGO_LIBRETA_MILITAR, formatearTamano, idFilaDocumento } from '../../lib/postulacionDocumentos'
 import { formatearFechaHora } from '../../lib/ventanaPostulacion'
-import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
-import EtiquetaDocumento from '../ui/EtiquetaDocumento'
+import { CLASE_CAJA_SUAVE, CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
+import MarcaObligatorio from '../ui/MarcaObligatorio'
 import {
   subirDocumento,
   eliminarDocumento,
@@ -13,6 +13,7 @@ import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import BarraProgreso from '../ui/BarraProgreso'
 import Boton from '../ui/Boton'
+import Icono from '../ui/Icono'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
@@ -35,6 +36,8 @@ export default function SeccionDocumentosRequeridos({
   onError,
   correccion = null,
   soloCorreccion = false,
+  // Hay una corrección vigente: el backend solo deja reemplazar los documentos marcados y no permite eliminar.
+  bloqueoCorreccion = false,
 }) {
   const documentos = vista.documentos ?? []
   const sexoMujer = sexo?.codigo === 'mujer'
@@ -97,7 +100,9 @@ export default function SeccionDocumentosRequeridos({
       )
       // Mostrar el archivo de inmediato, sin esperar a onRecargar().
       setArchivosSubidos((prev) => ({ ...prev, [clave]: resultado }))
-      onRecargar() // sincroniza en segundo plano, sin bloquear
+      // Se espera la relectura del estado: el indicador sigue hasta que la pantalla (y el botón de enviar) reflejan
+      // el documento, en vez de soltarse antes y dejar un intervalo con datos viejos.
+      await onRecargar()
     } catch (e) {
       // 422 por archivo, tipo de documento o libreta militar: se pinta en la fila.
       const deCampo = erroresDeCampo(e)
@@ -105,6 +110,12 @@ export default function SeccionDocumentosRequeridos({
       setErrores((prev) => ({ ...prev, [clave]: mensaje }))
     } finally {
       marcarEnVuelo(clave, false)
+      // El avance solo existe mientras se sube: así eliminar después no muestra una barra vieja.
+      setProgreso((prev) => {
+        const siguiente = { ...prev }
+        delete siguiente[clave]
+        return siguiente
+      })
     }
   }
 
@@ -127,7 +138,7 @@ export default function SeccionDocumentosRequeridos({
     limpiarError(codigo)
     try {
       await eliminarDocumento(await pidSeguro(), documento.id)
-      onRecargar()
+      await onRecargar()
     } catch (e) {
       onError(mensajeError(e))
     } finally {
@@ -144,9 +155,20 @@ export default function SeccionDocumentosRequeridos({
   return (
     <section className={ESTILO_TARJETA}>
       <h2 className={ESTILO_TITULO}>Documentos requeridos</h2>
-      <p className="mt-2 text-xs text-slate-500 dark:text-sena-texto-suave">
-        Solo se aceptan archivos PDF de máximo {TAMANO_MAXIMO_MB} MB.
-      </p>
+      <div className={`${CLASE_CAJA_SUAVE} mt-3 flex items-start gap-2.5 px-3 py-2.5`}>
+        <Icono nombre="documentos" className="mt-0.5 size-5 shrink-0 text-sena-azul dark:text-sena-acento" />
+        <p className="text-sm text-slate-700 dark:text-sena-texto">
+          <strong className="font-semibold">Solo PDF, máximo {TAMANO_MAXIMO_MB} MB por archivo.</strong>{' '}
+          {soloCorreccion ? (
+            'Reemplaza únicamente los documentos marcados por el evaluador.'
+          ) : (
+            <>
+              Los campos marcados con <span className="font-semibold text-peligro">*</span> son obligatorios para enviar
+              tu postulación. Un documento obligatorio no se elimina: se reemplaza por otro archivo.
+            </>
+          )}
+        </p>
+      </div>
 
       <ul className="mt-3 flex flex-col divide-y divide-slate-100 dark:divide-sena-borde">
         {documentos.map((documento) => {
@@ -169,6 +191,11 @@ export default function SeccionDocumentosRequeridos({
           const noAplica = noAplicaReal || (esLibreta && sexoMujer)
           const bloqueoLibreta = esLibreta && (sexoMujer || sinSexo)
           const puedeEditar = editable && !enProceso
+          // Con una corrección vigente, un documento NO marcado no se toca (regla del servidor).
+          const bloqueadoPorCorreccion = bloqueoCorreccion && !marcado
+          const motivoCorreccion = bloqueadoPorCorreccion
+            ? 'Durante la corrección solo puedes reemplazar los documentos marcados por el evaluador.'
+            : ''
           // La libreta se muestra siempre que se pueda editar (deshabilitada si
           // no aplica); el resto de documentos no se muestran si el backend los
           // marcó 'no_aplica'.
@@ -186,12 +213,16 @@ export default function SeccionDocumentosRequeridos({
                 : ''
 
           return (
-            <li key={parametro.id} className="flex flex-col gap-2 py-3">
+            <li key={parametro.id} id={idFilaDocumento(parametro.id)} className="flex scroll-mt-24 flex-col gap-2 py-3">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-sena-texto">
                     {parametro.nombre}
-                    <EtiquetaDocumento obligatorio={esObligatorio} />
+                    {esObligatorio ? (
+                      <MarcaObligatorio />
+                    ) : (
+                      <span className="text-sm font-normal text-slate-600 dark:text-sena-texto-suave">(opcional)</span>
+                    )}
                     {ETIQUETAS_DOCUMENTO[codigo] && (
                       <span className={CLASE_ETIQUETA}>{ETIQUETAS_DOCUMENTO[codigo]}</span>
                     )}
@@ -208,32 +239,40 @@ export default function SeccionDocumentosRequeridos({
                   </p>
 
                   {(estadoDoc === 'subido' || archivosSubidos[clave]) && archivoMostrar && (
-                    <p className="mt-0.5 break-words text-xs text-slate-500 dark:text-sena-texto-suave">
-                      {archivoMostrar.nombre_original} · {formatearTamano(archivoMostrar.tamano_bytes)}
-                      {archivoMostrar.subido_en && <> · Cargado el {formatearFechaHora(archivoMostrar.subido_en)}</>}
-                    </p>
-                  )}
-                  {puedeEditar && yaCargado && esObligatorio && archivoMostrar && (
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-sena-texto-suave">
-                      Es obligatorio: no se elimina, solo se reemplaza por otro archivo.
-                    </p>
+                    // Ficha del archivo cargado: icono en verde de estado «listo», nombre en una línea propia y debajo,
+                    // más discreto, tamaño y fecha. Ocupa dos líneas fijas por documento, sin importar cuántos haya, y
+                    // la regla de los obligatorios se explica una sola vez en la leyenda de arriba, no en cada fila.
+                    <div className="mt-1.5 flex min-w-0 items-start gap-2">
+                      <Icono nombre="documentos" className="mt-0.5 size-4 shrink-0 text-exito" />
+                      <div className="min-w-0">
+                        <p className="break-words text-sm font-medium text-slate-700 dark:text-sena-texto">
+                          {archivoMostrar.nombre_original}
+                        </p>
+                        <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
+                          {formatearTamano(archivoMostrar.tamano_bytes)}
+                          {archivoMostrar.subido_en && <> · Cargado el {formatearFechaHora(archivoMostrar.subido_en)}</>}
+                        </p>
+                      </div>
+                    </div>
                   )}
                   {estadoDoc === 'pendiente' && !bloqueoLibreta && (
-                    <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-400">
+                    <p className="mt-0.5 text-sm text-amber-700 dark:text-amber-400">
                       Pendiente por cargar
                     </p>
                   )}
                   {noAplica && !esLibreta && (
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-sena-texto-suave">
+                    <p className="mt-0.5 text-sm text-slate-600 dark:text-sena-texto-suave">
                       No aplica
                     </p>
                   )}
+                  {motivoCorreccion && puedeEditar && (
+                    <p className="mt-0.5 text-sm text-slate-600 dark:text-sena-texto-suave">{motivoCorreccion}</p>
+                  )}
                   {motivoLibreta && (
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-sena-texto-suave">
+                    <p className="mt-0.5 text-sm text-slate-600 dark:text-sena-texto-suave">
                       {motivoLibreta}
                     </p>
                   )}
-                  {enProceso && <BarraProgreso valor={progreso[clave] ?? 0} />}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -248,8 +287,9 @@ export default function SeccionDocumentosRequeridos({
 
                   {mostrarSubir && (
                     <Boton variante="contorno" tamano="tactil"
-                      disabled={bloqueoLibreta || enProceso}
-                      title={bloqueoLibreta ? motivoLibreta : undefined}
+                      ocupado={enProceso}
+                      disabled={bloqueoLibreta || bloqueadoPorCorreccion || enProceso}
+                      title={bloqueoLibreta ? motivoLibreta : motivoCorreccion || undefined}
                       onClick={() => refsInput.current[clave]?.click()}>
                       <span className="inline-flex items-center gap-1.5">
                         {enProceso
@@ -263,7 +303,7 @@ export default function SeccionDocumentosRequeridos({
                     </Boton>
                   )}
 
-                  {puedeEditar && !soloCorreccion && estadoDoc === 'subido' && !esObligatorio && (
+                  {puedeEditar && !soloCorreccion && !bloqueoCorreccion && estadoDoc === 'subido' && !esObligatorio && (
                     <Boton variante="peligroSuave" tamano="tactil"
                       disabled={enProceso}
                       onClick={() => eliminar(archivoMostrar, clave)}>
@@ -273,8 +313,14 @@ export default function SeccionDocumentosRequeridos({
                 </div>
               </div>
 
+              {/* Barra a todo el ancho de la fila (antes quedaba en la columna del nombre y se veía mucho más corta que
+                  la de completitud y las de skills y adicionales). */}
+              {enProceso && progreso[clave] != null && (
+                <BarraProgreso valor={progreso[clave]} etiqueta="Cargando documento" className="mt-0" />
+              )}
+
               {error && (
-                <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+                <p role="alert" className="text-sm text-red-600 dark:text-red-400">
                   {error}
                 </p>
               )}
@@ -299,7 +345,7 @@ export default function SeccionDocumentosRequeridos({
         })}
 
         {(documentos.length === 0 || (soloCorreccion && !hayMarcados)) && (
-          <li className="py-3 text-sm text-slate-500 dark:text-sena-texto-suave">
+          <li className="py-3 text-sm text-slate-600 dark:text-sena-texto-suave">
             {soloCorreccion
               ? 'No tienes documentos marcados para corregir.'
               : 'Esta convocatoria no pide documentos.'}

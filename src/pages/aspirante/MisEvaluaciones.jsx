@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import useAvisoTransitorio from '../../hooks/useAvisoTransitorio'
 import { useAuth } from '../../auth/useAuth'
 import { misEvaluaciones } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
@@ -16,7 +17,7 @@ import Boton from '../../components/ui/Boton'
 import Cargando from '../../components/ui/Cargando'
 import Dialogo from '../../components/ui/Dialogo'
 import Icono from '../../components/ui/Icono'
-import { MensajeAviso, MensajeError, MensajeExito } from '../../components/ui/Mensaje'
+import Mensaje, { MensajeAviso, MensajeError, MensajeExito } from '../../components/ui/Mensaje'
 import Paginacion from '../../components/ui/Paginacion'
 import {
   CLASE_CAJA_SUAVE,
@@ -107,6 +108,63 @@ function DecisionDocumento({ decision, reemplazado }) {
     <EtiquetaConIcono tono="peligro" icono={<IconoX className="size-3.5" />}>
       Corregir
     </EtiquetaConIcono>
+  )
+}
+
+// Qué puede hacer el aspirante con una corrección pedida. El estado lo calcula el servidor (correccion_estado: vigente,
+// enviada, vencida o inactiva): el botón solo existe cuando de verdad se puede corregir, también con la convocatoria
+// cerrada, y en los demás casos se explica el motivo.
+function EstadoCorreccion({ evaluacion, onCerrar }) {
+  const estado = evaluacion.correccion_estado
+  const limite = evaluacion.fecha_limite_correccion
+  const puedeCorregir = estado === 'vigente' && Boolean(evaluacion.postulacion_id)
+
+  if (estado === 'enviada') {
+    return (
+      <Mensaje tipo="info" className="mt-4">
+        <strong>Enviaste la corrección</strong>
+        {evaluacion.correccion_enviada_at ? ` el ${formatearFechaHora(evaluacion.correccion_enviada_at)}` : ''}. El
+        evaluador la revisará.
+      </Mensaje>
+    )
+  }
+
+  if (estado === 'vencida') {
+    return (
+      <MensajeAviso className="mt-4">
+        <strong>El plazo para corregir terminó</strong>
+        {limite ? ` el ${formatearFechaHora(limite)}` : ''}. Ya no puedes reemplazar los documentos marcados.
+      </MensajeAviso>
+    )
+  }
+
+  if (!puedeCorregir) {
+    return (
+      <MensajeAviso className="mt-4">
+        <strong>El evaluador pidió corregir</strong> documentos, pero la postulación ya no está activa y no se puede
+        corregir.
+      </MensajeAviso>
+    )
+  }
+
+  return (
+    <MensajeAviso className="mt-4 flex flex-col items-start gap-2">
+      <span>
+        <strong>El evaluador pidió corregir</strong> los documentos marcados con «Corregir».
+      </span>
+      {limite && (
+        <span className="text-sm font-medium">Plazo para corregir: hasta el {formatearFechaHora(limite)}.</span>
+      )}
+      <Boton
+        as={Link}
+        to={`/postulaciones/${evaluacion.postulacion_id}/correcciones`}
+        onClick={onCerrar}
+        variante="contorno"
+        tamano="tactil"
+      >
+        Ir a corregir mis documentos
+      </Boton>
+    </MensajeAviso>
   )
 }
 
@@ -215,34 +273,7 @@ function DetalleEvaluacion({ evaluacion, documentos, estadoDocumentos, onCerrar 
         </div>
       )}
 
-      {evaluacion.estado === 'correccion_solicitada' && (
-        <MensajeAviso className="mt-4 flex flex-col items-start gap-2">
-          <span>
-            <strong>El evaluador pidió corregir</strong> los documentos marcados con «Corregir».
-          </span>
-          {evaluacion.correccion_enviada_at && (
-            <p className="text-xs text-slate-600 dark:text-sena-texto-suave">
-              Corrección enviada el {formatearFechaHora(evaluacion.correccion_enviada_at)}. El evaluador la revisará.
-            </p>
-          )}
-          {evaluacion.fecha_limite_correccion && !evaluacion.correccion_enviada_at && (
-            <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-              Plazo para corregir: hasta el {formatearFechaHora(evaluacion.fecha_limite_correccion)}.
-            </p>
-          )}
-          {evaluacion.postulacion_id && !evaluacion.correccion_enviada_at && (
-            <Boton
-              as={Link}
-              to={`/postulaciones/${evaluacion.postulacion_id}/correcciones`}
-              onClick={onCerrar}
-              variante="contorno"
-              tamano="tactil"
-            >
-              Ir a corregir mis documentos
-            </Boton>
-          )}
-        </MensajeAviso>
-      )}
+      {evaluacion.estado === 'correccion_solicitada' && <EstadoCorreccion evaluacion={evaluacion} onCerrar={onCerrar} />}
 
       <Boton tamano="tactil" onClick={onCerrar} className="mt-5 w-full">
         Cerrar
@@ -255,7 +286,13 @@ export default function MisEvaluaciones() {
   const { can } = useAuth()
   const location = useLocation()
   // Aviso que llega desde otra página (p. ej. tras enviar la corrección).
-  const [exito] = useState(location.state?.exito ?? '')
+  // Confirmación breve: se retira sola (con pausa al pasar el puntero o el foco) y no reaparece al recargar.
+  const navigate = useNavigate()
+  const [exito, setExito] = useState(() => (location.state?.exito ? { texto: location.state.exito } : null))
+  const pausaExito = useAvisoTransitorio(exito, () => setExito(null))
+  useEffect(() => {
+    if (location.state?.exito) navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
   const [evaluaciones, setEvaluaciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -355,7 +392,11 @@ export default function MisEvaluaciones() {
         <p className={CLASE_SUBTITULO_PAGINA}>Consulta el estado y el resultado de cada evaluación.</p>
       </div>
 
-      {exito && <MensajeExito>{exito}</MensajeExito>}
+      {exito && (
+        <div {...pausaExito}>
+          <MensajeExito>{exito.texto}</MensajeExito>
+        </div>
+      )}
 
       {error && (
         <div className="flex flex-col items-start gap-3">

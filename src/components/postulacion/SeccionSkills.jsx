@@ -19,7 +19,7 @@ const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 const ESTILO_TITULO = CLASE_TITULO_SECCION
 
 const ESTILO_GRUPO =
-  'text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave'
+  'text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-sena-texto-suave'
 
 
 const CLASE_ETIQUETA =
@@ -35,9 +35,10 @@ const origenTexto = (origen) =>
       ? 'Del catálogo'
       : 'Propia'
 
-// Una fila de skill: nombre + Sí/No (las filas de solo lectura NO tienen
-// Sí/No) y, cuando está declarada, el estado Certificada/Declarada con sus
-// acciones.
+// Una fila de skill, en dos renglones para que las acciones no se amontonen:
+//  1. nombre + etiquetas, y a la derecha Sí/No (las filas de solo lectura NO tienen Sí/No).
+//  2. cuando está declarada, el certificado: a la izquierda su estado/nombre y a la derecha sus acciones
+//     (Ver, Reemplazar, Quitar o Cargar certificado), siempre visibles.
 //
 // `sinSiNo` marca las filas que NO se pueden marcar ni desmarcar: son las
 // declaradas antes del cambio (del catálogo o propias). Se muestran tal cual,
@@ -62,19 +63,29 @@ function FilaSkill({
 }) {
   const activa = Boolean(declarada)
   const certificado = declarada?.certificado || (declarada?.id ? certificadosSubidos?.[declarada.id] : null)
-  const ocupada =
-    enVuelo === clave ||
-    (activa && (enVuelo === `cert-${declarada.id}` || enVuelo === `skill-${declarada.id}`))
+  const subiendoCert = activa && enVuelo === `cert-${declarada.id}`
+  // Guardando el Sí/No de ESTA fila (declarar o quitar la skill): la rueda va en la opción que se aplica.
+  const guardandoSiNo = enVuelo === clave || (activa && enVuelo === `skill-${declarada.id}`)
+  const puedeEditarCert = editable && !sinSiNo
+  // Hay algo en curso que NO es el guardado de esta fila: sus controles se bloquean. El propio Sí/No de la fila no se
+  // deshabilita mientras guarda (perdería el foco del teclado): se marca como ocupado.
+  const otraOperacion = Boolean(enVuelo) && !guardandoSiNo
+  // Con el envío al 100 % el archivo ya llegó y el servidor sigue trabajando: se dice «Procesando…».
+  const procesandoCert = subiendoCert && (progresoCert ?? 0) >= 100
+  const textoCarga = procesandoCert ? 'Procesando…' : 'Cargando…'
 
   return (
     <li className="flex flex-col gap-2 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-sena-texto">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-sena-texto">
           {nombre}
-          {activa && <span className={CLASE_ETIQUETA}>{origenTexto(declarada.origen)}</span>}
+          {/* El origen solo se indica donde ayuda: las skills de la convocatoria ya lo dicen en su encabezado. */}
+          {activa && declarada.origen !== 'convocatoria' && (
+            <span className={CLASE_ETIQUETA}>{origenTexto(declarada.origen)}</span>
+          )}
           {activa && (
             <span className={certificado ? CLASE_CERTIFICADA : CLASE_ETIQUETA}>
-              {certificado ? 'Certificada' : 'Declarada'}
+              {certificado ? 'Certificado cargado' : 'Declarada'}
             </span>
           )}
           {sinSiNo && (
@@ -82,63 +93,80 @@ function FilaSkill({
           )}
         </p>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {!sinSiNo && (
-            <RespuestaSiNo
-              pregunta={`¿Declaras «${nombre}»?`}
-              valor={activa}
-              onChange={(declarar) => (declarar ? onActivar() : onDesactivar())}
-              deshabilitadoSi={!editable || Boolean(enVuelo) || Boolean(tope && !activa)}
-              deshabilitadoNo={!editable || Boolean(enVuelo) || !activa}
-            />
-          )}
+        {!sinSiNo && (
+          <RespuestaSiNo
+            pregunta={`¿Declaras «${nombre}»?`}
+            valor={activa}
+            onChange={(declarar) => (declarar ? onActivar() : onDesactivar())}
+            ocupado={guardandoSiNo}
+            deshabilitadoSi={!editable || otraOperacion || Boolean(tope && !activa)}
+            deshabilitadoNo={!editable || otraOperacion}
+          />
+        )}
+      </div>
 
-          {activa && (
-            certificado ? (
+      {activa && (
+        <div className="flex flex-col gap-2 rounded-lg bg-sena-fondo/50 px-3 py-2 dark:bg-sena-noche/40">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <p className="min-w-0 break-words text-sm text-slate-600 dark:text-sena-texto-suave">
+            {certificado
+              ? certificado.nombre_original ?? 'Certificado cargado'
+              : puedeEditarCert
+                ? 'Certificado opcional: aún no cargaste uno.'
+                : 'Sin certificado.'}
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {certificado ? (
               <>
-                <Boton variante="contorno" tamano="tactil" disabled={ocupada} onClick={onDescargar}>
+                <Boton variante="contorno" tamano="tactil" disabled={Boolean(enVuelo)} onClick={onDescargar}>
                   Ver
                 </Boton>
-                {editable && !sinSiNo && (
-                  <Boton variante="contorno" tamano="tactil"
+                {puedeEditarCert && (
+                  <Boton
+                    variante="contorno"
+                    tamano="tactil"
+                    ocupado={subiendoCert}
                     disabled={Boolean(enVuelo)}
-                    onClick={onAdjuntar}>
-                    <span className="inline-flex items-center gap-1.5">
-                      Reemplazar
-                    </span>
+                    onClick={onAdjuntar}
+                    aria-label={`Reemplazar certificado de ${nombre}`}
+                  >
+                    {subiendoCert ? textoCarga : 'Reemplazar'}
                   </Boton>
                 )}
-                {editable && !sinSiNo && (
-                  <Boton variante="peligroSuave" tamano="tactil"
-                    disabled={ocupada}
-                    onClick={onQuitarCertificado}>
-                    Quitar certificado
+                {puedeEditarCert && (
+                  <Boton
+                    variante="peligroSuave"
+                    tamano="tactil"
+                    disabled={Boolean(enVuelo)}
+                    onClick={onQuitarCertificado}
+                    aria-label={`Quitar certificado de ${nombre}`}
+                  >
+                    Quitar
                   </Boton>
                 )}
               </>
             ) : (
-              editable &&
-              !sinSiNo && (
-                <Boton variante="contorno" tamano="tactil"
+              puedeEditarCert && (
+                <Boton
+                  variante="contorno"
+                  tamano="tactil"
+                  ocupado={subiendoCert}
                   disabled={Boolean(enVuelo)}
-                  onClick={onAdjuntar}>
-                  <span className="inline-flex items-center gap-1.5">
-                    {ocupada ? 'Cargando…' : 'Cargar certificado'}
-                  </span>
+                  onClick={onAdjuntar}
+                  aria-label={`Cargar certificado de ${nombre}`}
+                >
+                  {subiendoCert ? textoCarga : 'Cargar certificado'}
                 </Boton>
               )
-            ))}
+            )}
+          </div>
         </div>
-      </div>
 
-      {certificado?.nombre_original && (
-        <p className="break-words text-xs text-slate-500 dark:text-sena-texto-suave">
-          {certificado.nombre_original}
-        </p>
-      )}
-
-      {activa && enVuelo === `cert-${declarada.id}` && (
-        <BarraProgreso valor={progresoCert ?? 0} etiqueta="Cargando certificado" />
+        {/* Una sola barra, dentro de la franja del certificado: avance real del envío y, al llegar al 100 %,
+            «Procesando…» hasta que el servidor confirma y la pantalla se actualiza. */}
+        {subiendoCert && <BarraProgreso valor={progresoCert ?? 0} etiqueta="Enviando certificado" className="mt-0" />}
+        </div>
       )}
 
       <input
@@ -153,9 +181,6 @@ function FilaSkill({
           e.target.value = ''
         }}
       />
-      {activa && enVuelo === `cert-${declarada.id}` && (
-        <BarraProgreso valor={progresoCert ?? 0} etiqueta="Cargando certificado" />
-      )}
     </li>
   )
 }
@@ -173,13 +198,12 @@ export default function SeccionSkills({
   editable,
   asegurar,
   onRecargar,
-  onError,
 }) {
   const declaradas = vista.skills ?? []
   const requeridas = vista.skills_convocatoria ?? []
 
   const [error, setError] = useState('')
-  // clave de la operación en vuelo: `req-...` | `skill-<id>` | `cert-<id>`
+  // clave de la operación en vuelo: `req-...` | `skill-<id>` | `cert-<id>` | `quitarcert-<id>`
   const [enVuelo, setEnVuelo] = useState(null)
   // Porcentaje (0-100) de la subida del certificado en curso.
   const [progresoCert, setProgresoCert] = useState(0)
@@ -187,6 +211,34 @@ export default function SeccionSkills({
   // inmediato sin esperar a que onRecargar() vuelva a traer todo el estado.
   const [certificadosSubidos, setCertificadosSubidos] = useState({})
   const refsCertificado = useRef({})
+  // Cerrojo síncrono: 'enVuelo' es estado y solo cambia en el siguiente render; dos clics seguidos (o el Sí/No y un
+  // certificado) podrían colarse en ese intervalo y enviar la operación dos veces. La referencia lo impide.
+  const cerrojo = useRef(false)
+
+  // Ejecuta UNA operación a la vez: marca 'enVuelo', corre la tarea y la libera siempre. 'tarea' decide qué espera:
+  // en declarar y quitar espera también la recarga del estado, así el indicador sigue hasta que la pantalla cambia.
+  const ejecutar = async (clave, tarea, mensajeDe) => {
+    if (cerrojo.current) return false
+    cerrojo.current = true
+    setEnVuelo(clave)
+    setError('')
+    try {
+      return (await tarea()) !== false
+    } catch (e) {
+      setError(mensajeDe(e))
+      // Un fallo de red puede llegar DESPUÉS de que el servidor aplicó el cambio: se vuelve a leer el estado real
+      // para que la pantalla no quede desfasada (y el siguiente clic no actúe sobre algo que ya no existe).
+      try {
+        await onRecargar()
+      } catch {
+        /* el panel ya muestra su propio error de lectura */
+      }
+      return false
+    } finally {
+      cerrojo.current = false
+      setEnVuelo(null)
+    }
+  }
 
   // Cuando la vista se actualiza (onRecargar terminó), limpiamos los locales.
   useEffect(() => {
@@ -210,36 +262,34 @@ export default function SeccionSkills({
   // de forma silenciosa justo antes de guardar.
   const pidSeguro = async () => vista.postulacion?.id ?? (await asegurar()).postulacionId
 
-  const declarar = async (clave, formaDe) => {
-    if (!editable || enVuelo) return false
-    setEnVuelo(clave)
-    setError('')
-    try {
-      const { postulacionId, estado } = await asegurar()
-      const forma = formaDe(estado)
+  const declarar = (clave, formaDe) => {
+    if (!editable) return false
+    return ejecutar(
+      clave,
+      async () => {
+        const { postulacionId, estado } = await asegurar()
+        const forma = formaDe(estado)
 
-      // Sin forma válida no se manda nada (el backend solo admite la skill
-      // de la convocatoria, por id).
-      if (!forma) return false
+        // Sin forma válida no se manda nada (el backend solo admite la skill
+        // de la convocatoria, por id).
+        if (!forma) return false
 
-      await declararSkill(postulacionId, forma)
-      onRecargar()
-      return true
-    } catch (e) {
-      const deCampo = erroresDeCampo(e)
-      setError(
-        deCampo.convocatoria_skill_id || deCampo.nombre || deCampo.parametro_id || mensajeError(e),
-      )
-      return false
-    } finally {
-      setEnVuelo(null)
-    }
+        await declararSkill(postulacionId, forma)
+        // Se espera la recarga: el Sí/No y «Cargar certificado» cambian cuando llega el estado real.
+        await onRecargar()
+        return true
+      },
+      (e) => {
+        const deCampo = erroresDeCampo(e)
+        return deCampo.convocatoria_skill_id || deCampo.nombre || deCampo.parametro_id || mensajeError(e)
+      },
+    )
   }
 
   const confirmar = useConfirmacion()
 
   const quitar = async (skill) => {
-    if (!editable || enVuelo) return
+    if (!editable || cerrojo.current) return
     const ok = await confirmar({
       titulo: 'Quitar skill',
       mensaje: `¿Estás seguro de quitar la skill "${skill.nombre}"?`,
@@ -248,16 +298,14 @@ export default function SeccionSkills({
       peligro: true,
     })
     if (!ok) return
-    setEnVuelo(`skill-${skill.id}`)
-    setError('')
-    try {
-      await eliminarSkill(await pidSeguro(), skill.id)
-      onRecargar()
-    } catch (e) {
-      onError(mensajeError(e))
-    } finally {
-      setEnVuelo(null)
-    }
+    await ejecutar(
+      `skill-${skill.id}`,
+      async () => {
+        await eliminarSkill(await pidSeguro(), skill.id)
+        await onRecargar()
+      },
+      mensajeError,
+    )
   }
 
   const elegirCertificado = async (skill, archivo) => {
@@ -266,26 +314,25 @@ export default function SeccionSkills({
       setError(validacion.mensaje)
       return
     }
-    setEnVuelo(`cert-${skill.id}`)
     setProgresoCert(0)
-    setError('')
-    try {
-      const resultado = await subirCertificado(await pidSeguro(), skill.id, archivo, setProgresoCert)
-      // Mostrar el certificado de inmediato, sin esperar a onRecargar().
-      if (resultado?.certificado) {
-        setCertificadosSubidos((prev) => ({ ...prev, [skill.id]: resultado.certificado }))
-      }
-      onRecargar() // sincroniza en segundo plano
-    } catch (e) {
-      const deCampo = erroresDeCampo(e)
-      setError(deCampo.archivo || mensajeError(e))
-    } finally {
-      setEnVuelo(null)
-    }
+    await ejecutar(
+      `cert-${skill.id}`,
+      async () => {
+        // El envío informa su avance real; al 100 % el archivo ya está en el servidor y la barra pasa a
+        // «Procesando…» hasta que responde. La respuesta trae el certificado guardado: con ella la franja ya
+        // muestra el estado real, así que no se espera la recarga (corre en segundo plano).
+        const resultado = await subirCertificado(await pidSeguro(), skill.id, archivo, setProgresoCert)
+        if (resultado?.certificado) {
+          setCertificadosSubidos((prev) => ({ ...prev, [skill.id]: resultado.certificado }))
+        }
+        onRecargar()
+      },
+      (e) => erroresDeCampo(e).archivo || mensajeError(e),
+    )
   }
 
   const quitarCertificadoDe = async (skill) => {
-    if (!editable || enVuelo) return
+    if (!editable || cerrojo.current) return
     const ok = await confirmar({
       titulo: 'Quitar certificado',
       mensaje: `¿Estás seguro de quitar el certificado de "${skill.nombre}"? La skill se conserva.`,
@@ -294,16 +341,14 @@ export default function SeccionSkills({
       peligro: true,
     })
     if (!ok) return
-    setEnVuelo(`cert-${skill.id}`)
-    setError('')
-    try {
-      await quitarCertificado(await pidSeguro(), skill.id)
-      onRecargar()
-    } catch (e) {
-      onError(mensajeError(e))
-    } finally {
-      setEnVuelo(null)
-    }
+    await ejecutar(
+      `quitarcert-${skill.id}`,
+      async () => {
+        await quitarCertificado(await pidSeguro(), skill.id)
+        await onRecargar()
+      },
+      mensajeError,
+    )
   }
 
   // "Ver" certificado: el PDF lo abre PanelDocumentosPostulacion (evento document:view).
@@ -338,13 +383,13 @@ export default function SeccionSkills({
     <section className={ESTILO_TARJETA}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className={ESTILO_TITULO}>Skills</h2>
-        <span className="text-xs text-slate-500 dark:text-sena-texto-suave">
+        <span className="text-xs text-slate-600 dark:text-sena-texto-suave">
           {declaradas.length} de {MAX_SKILLS}
         </span>
       </div>
 
       {requeridas.length > 0 && (
-        <p className="mt-2 text-xs text-slate-500 dark:text-sena-texto-suave">
+        <p className="mt-2 text-sm text-slate-600 dark:text-sena-texto-suave">
           Marca las que tengas de las que pide la convocatoria. Todas son
           opcionales y ninguna bloquea el envío. Con "Sí" puedes adjuntar un
           certificado si lo quieres (opcional).
@@ -403,7 +448,7 @@ export default function SeccionSkills({
       {viejas.length > 0 && (
         <div className="mt-4">
           <p className={ESTILO_GRUPO}>Declaradas antes</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-sena-texto-suave">
+          <p className="mt-1 text-sm text-slate-600 dark:text-sena-texto-suave">
             Registradas cuando la postulación todavía permitía agregar
             habilidades propias o del catálogo. Se conservan, pero ya no se
             pueden editar ni quitar.
@@ -427,13 +472,13 @@ export default function SeccionSkills({
       )}
 
       {error && (
-        <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-400">
+        <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
           {error}
         </p>
       )}
 
       {tope && (
-        <p className="mt-3 text-xs text-slate-500 dark:text-sena-texto-suave">
+        <p className="mt-3 text-sm text-slate-600 dark:text-sena-texto-suave">
           Alcanzaste el máximo de {MAX_SKILLS} skills.
         </p>
       )}

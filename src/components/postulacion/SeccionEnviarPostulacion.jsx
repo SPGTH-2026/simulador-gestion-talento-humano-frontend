@@ -1,40 +1,65 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { enviarPostulacion } from '../../api/postulaciones'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
+import { ID_SECCION_SEXO, idFilaDocumento } from '../../lib/postulacionDocumentos'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import Boton from '../ui/Boton'
+import Icono from '../ui/Icono'
 
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
 const ESTILO_TITULO = CLASE_TITULO_SECCION
 
+// Lleva a la fila del documento (o a la sección de sexo) y deja el foco en su primera acción disponible, para que
+// quien navega con teclado no tenga que buscarla. Con movimiento reducido no hay desplazamiento animado.
+function irA(id) {
+  const destino = document.getElementById(id)
+  if (!destino) return
+  const reducido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  destino.scrollIntoView({ behavior: reducido ? 'auto' : 'smooth', block: 'center' })
+  destino.querySelector('button:not(:disabled), input:not(:disabled)')?.focus({ preventScroll: true })
+}
 
 // Envío del BORRADOR a 'postulada'. Solo se muestra mientras la postulación está
-// en borrador y el paso es editable. Antes de enviar avisa qué falta (obligatorios
-// pendientes + el sexo si aplica) con los datos del GET de estado; si el 422 trae
-// `faltantes[]` (con motivo), también lo pinta. Una operación en vuelo.
+// en borrador y el paso es editable.
 //
-// Si el 422 NO es por faltantes (estado desactualizado, p. ej. ya no está en
-// borrador), se muestra el mensaje del backend y se pide recargar el estado.
+// El botón se deshabilita mientras falte algo obligatorio que la pantalla ya conoce (documentos obligatorios sin
+// subir y el sexo si la convocatoria pide libreta). Así no se abre la confirmación ni se envía una petición que el
+// servidor va a rechazar. Hay UN solo aviso con los pendientes, y cada uno lleva a su fila.
+//
+// El servidor sigue validando. Si responde 422 con `faltantes[]` porque la información cambió después de cargar la
+// página, se relee el estado y esos faltantes se suman al MISMO aviso (no se pinta un segundo recuadro). Los demás
+// fallos (red, estado desactualizado) conservan su mensaje y el botón queda disponible para reintentar.
 export default function SeccionEnviarPostulacion({ estado, onExito, onError, onRecargar }) {
   const postulacionId = estado.postulacion.id
+  const idAviso = useId()
   const [enviando, setEnviando] = useState(false)
-  // faltantes del 422: [{ codigo, nombre, motivo? }]
-  const [faltantes, setFaltantes] = useState(null)
+  // Faltantes del 422 junto con el estado en que se recibieron: valen mientras el estado no cambie; al releerlo, el
+  // aviso pasa a calcularse solo con lo que la pantalla ya conoce.
+  const [rechazo, setRechazo] = useState(null)
 
-  // Aviso previo, con el propio GET de estado: obligatorios sin subir (los
-  // 'no_aplica', como la libreta de una mujer, no cuentan) y el sexo pendiente.
+  // Obligatorios sin subir (los 'no_aplica', como la libreta de una mujer, no cuentan) y el sexo pendiente.
   const pendientes = (estado.documentos ?? []).filter(
-    (d) => d.obligatorio && d.estado === 'pendiente',
+    (d) => d.obligatorio && d.estado !== 'subido' && d.estado !== 'no_aplica',
   )
   const avisoSexo = Boolean(estado.requiere_sexo)
-  const hayPendientes = pendientes.length > 0 || avisoSexo
+
+  // Faltantes que dijo el servidor y la pantalla aún no lista (no repite los que ya están en `pendientes`).
+  const nombresLocales = new Set(pendientes.map((d) => d.parametro.nombre))
+  const delServidor =
+    rechazo && rechazo.estado === estado
+      ? rechazo.lista.filter((f) => !nombresLocales.has(f.nombre))
+      : []
+  const hayPendientes = pendientes.length > 0 || avisoSexo || delServidor.length > 0
+  // El encabezado avisa del cambio mientras quede algo pendiente después de un rechazo del servidor.
+  const desactualizado = Boolean(rechazo) && hayPendientes
 
   const confirmar = useConfirmacion()
 
   const enviar = async () => {
-    if (enviando) return
+    // Con algo pendiente no se abre la confirmación ni se manda nada.
+    if (enviando || hayPendientes) return
     const ok = await confirmar({
       titulo: 'Enviar postulación',
       mensaje:
@@ -45,21 +70,22 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
     if (!ok) return
 
     setEnviando(true)
-    setFaltantes(null)
+    setRechazo(null)
     try {
       const postulacion = await enviarPostulacion(postulacionId)
       onExito(postulacion)
     } catch (e) {
-      // 422 con la lista `faltantes` (nombre + motivo). Si no viene, se cae al
-      // mensaje de errors.documentos/postulacion o al genérico.
+      // 422 con la lista `faltantes`: el estado de la pantalla estaba desactualizado. Se relee y se muestra el
+      // resumen actualizado en el aviso único.
       const lista = e.response?.data?.faltantes
       if (e.response?.status === 422 && Array.isArray(lista) && lista.length > 0) {
-        setFaltantes(lista)
+        setRechazo({ lista, estado })
+        await onRecargar?.()
       } else {
         const deCampo = erroresDeCampo(e)
         onError(deCampo.documentos || deCampo.postulacion || mensajeError(e))
-        // Estado desactualizado (ya no está en borrador, etc.): resincroniza.
-        onRecargar?.()
+        // Estado desactualizado (ya no está en borrador, etc.): resincroniza. Un error de red no lo necesita.
+        if (e.response) await onRecargar?.()
       }
     } finally {
       setEnviando(false)
@@ -70,44 +96,72 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
     <section className={ESTILO_TARJETA}>
       <h2 className={ESTILO_TITULO}>Enviar la postulación</h2>
 
-      <p className="mt-2 text-xs text-slate-500 dark:text-sena-texto-suave">
+      <p className="mt-2 text-sm text-slate-600 dark:text-sena-texto-suave">
         Mientras no la envíes, tu postulación se guarda como borrador. Al enviarla
         pasa a "Postulada" y se valida que los documentos obligatorios estén
         completos.
       </p>
 
-      {hayPendientes && (
-        <div className="mt-3 rounded bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-          <p className="font-semibold">Antes de enviar, completa:</p>
-          <ul className="mt-1 list-disc pl-4">
-            {pendientes.map((documento) => (
-              <li key={documento.parametro.id}>{documento.parametro.nombre}</li>
-            ))}
-            {avisoSexo && <li>Indica tu sexo para saber si aplica la libreta militar.</li>}
-          </ul>
-        </div>
-      )}
-
-      {faltantes && (
+      {hayPendientes ? (
+        // Un solo aviso. Si venía de un rechazo del servidor se anuncia como alerta; si no, es información.
         <div
-          role="alert"
-          className="mt-3 rounded bg-red-100 p-3 text-xs text-red-700 dark:bg-red-950 dark:text-red-300"
+          id={idAviso}
+          role={desactualizado ? 'alert' : 'status'}
+          className="mt-3 rounded-lg border border-aviso/30 bg-aviso/10 p-3 text-sm text-aviso"
         >
-          <p className="font-semibold">No se pudo enviar: faltan documentos obligatorios.</p>
-          <ul className="mt-1 list-disc pl-4">
-            {faltantes.map((faltante) => (
+          <p className="flex items-start gap-2 font-semibold">
+            <Icono nombre="alerta" className="mt-0.5 size-4 shrink-0" />
+            {desactualizado
+              ? 'La información cambió y todavía falta esto. Revisa el resumen y vuelve a intentarlo:'
+              : 'Antes de enviar, completa:'}
+          </p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {pendientes.map((documento) => (
+              <li key={documento.parametro.id} className="flex flex-wrap items-center justify-between gap-x-3">
+                <span>{documento.parametro.nombre}</span>
+                <Boton
+                  variante="enlace"
+                  tamano="tactil"
+                  onClick={() => irA(idFilaDocumento(documento.parametro.id))}
+                  aria-label={`Ir al documento ${documento.parametro.nombre}`}
+                >
+                  Ir al documento
+                </Boton>
+              </li>
+            ))}
+            {delServidor.map((faltante) => (
               <li key={faltante.codigo ?? faltante.nombre}>
                 {faltante.nombre}
                 {faltante.motivo ? ` (${faltante.motivo})` : ''}
               </li>
             ))}
+            {avisoSexo && (
+              <li className="flex flex-wrap items-center justify-between gap-x-3">
+                <span>Indica tu sexo para saber si aplica la libreta militar.</span>
+                <Boton variante="enlace" tamano="tactil" onClick={() => irA(ID_SECCION_SEXO)}>
+                  Ir a Datos del aspirante
+                </Boton>
+              </li>
+            )}
           </ul>
         </div>
+      ) : (
+        <p className="mt-3 flex items-center gap-2 text-sm text-exito">
+          <Icono nombre="check" className="size-4 shrink-0" />
+          Tus documentos obligatorios están completos. Ya puedes enviar la postulación.
+        </p>
       )}
 
       <div className="mt-3">
-        <Boton variante="primario" tamano="tactil" disabled={enviando} onClick={enviar}>
-          {enviando ? 'Enviando...' : 'Enviar postulación'}
+        <Boton
+          variante="primario"
+          tamano="tactil"
+          ocupado={enviando}
+          disabled={hayPendientes}
+          aria-describedby={hayPendientes ? idAviso : undefined}
+          onClick={enviar}
+        >
+          {enviando ? 'Enviando…' : 'Enviar postulación'}
         </Boton>
       </div>
     </section>

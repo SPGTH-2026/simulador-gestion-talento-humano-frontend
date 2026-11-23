@@ -65,3 +65,8 @@ export function progresoObligatorios(documentos) {
   ).length
   return { cumplidos, total: obligatorios.length }
 }
+
+// Identificadores de las filas a las que lleva «Ir al documento» en el aviso de envío: los ponen la lista de documentos
+// requeridos y la sección de sexo, y los usa el aviso para desplazarse hasta ellos.
+export const idFilaDocumento = (parametroId) => `documento-requerido-${parametroId}`
+export const ID_SECCION_SEXO = 'seccion-sexo'

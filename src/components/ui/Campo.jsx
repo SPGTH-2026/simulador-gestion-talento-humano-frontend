@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { CLASE_LABEL } from '../../lib/estilos'
 import Icono from './Icono'
+import MarcaObligatorio from './MarcaObligatorio'
 
 // Campo de formulario: etiqueta (con * si es obligatorio), el control y, si
 // llega, el mensaje de error debajo.
@@ -26,7 +27,7 @@ export default function Campo({
       <label className={`${CLASE_LABEL} ${className}`.trim()}>
         <span>
           {etiqueta}
-          {requerido && <span className="text-peligro"> *</span>}
+          {requerido && <MarcaObligatorio />}
         </span>
         {children}
         {error && <span className="text-xs text-peligro">{error}</span>}
@@ -42,7 +43,7 @@ export default function Campo({
     <div className={`${CLASE_LABEL} ${className}`.trim()}>
       <label htmlFor={id}>
         {etiqueta}
-        {requerido && <span className="text-peligro"> *</span>}
+        {requerido && <MarcaObligatorio />}
       </label>
       {children({ id, describedby, invalid: Boolean(error) })}
       {ayuda && (

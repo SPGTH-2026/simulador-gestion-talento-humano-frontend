@@ -109,6 +109,18 @@ export default function EvaluacionEvaluar() {
   // Documentos que el aspirante reemplazó después de que se le pidió corregir.
   const actualizados = dato?.evaluacion?.documentos_actualizados ?? []
   const enCorreccion = dato?.evaluacion?.estado === 'correccion_solicitada'
+  // Estado de la corrección según el servidor. «Enviar a corrección» solo está disponible si no hay una ronda en curso ni
+  // una terminada: abrir otra ronda tras vencer el plazo o recibir la respuesta aún no está definido, así que no se
+  // ofrece (reutilizaría un plazo ya vencido). El servidor también rechaza la solicitud repetida.
+  const estadoCorreccion = dato?.evaluacion?.correccion_estado ?? null
+  const motivoSinCorreccion =
+    {
+      vigente: 'Ya hay una corrección pendiente: espera a que el aspirante responda antes de pedir otra.',
+      enviada:
+        'El aspirante ya respondió la corrección. Revisa los documentos y finaliza la evaluación; pedir otra corrección todavía no está disponible.',
+      vencida:
+        'El plazo de la corrección venció. Pedir otra corrección todavía no está disponible; puedes finalizar la evaluación.',
+    }[estadoCorreccion] ?? ''
 
   const guardar = async (estadoFinal) => {
     setError('')
@@ -376,6 +388,12 @@ export default function EvaluacionEvaluar() {
             </MensajeAviso>
           )}
 
+          {motivoSinCorreccion && (
+            <p id="motivo-sin-correccion" className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
+              {motivoSinCorreccion}
+            </p>
+          )}
+
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
             <Boton
               ref={botonBorrador}
@@ -391,7 +409,8 @@ export default function EvaluacionEvaluar() {
               variante="contorno"
               tamano="tactil"
               onClick={() => guardar('correccion_solicitada')}
-              disabled={guardando}
+              disabled={guardando || Boolean(motivoSinCorreccion)}
+              aria-describedby={motivoSinCorreccion ? 'motivo-sin-correccion' : undefined}
             >
               {guardando ? 'Enviando…' : 'Enviar a corrección'}
             </Boton>
