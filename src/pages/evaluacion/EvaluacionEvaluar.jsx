@@ -56,6 +56,13 @@ export default function EvaluacionEvaluar() {
         </div>
       </header>
 
+      {evaluacion?.reabierta && (
+        <MensajeAviso>
+          <strong>Evaluación reabierta.</strong> {evaluacion.reabierta.motivo} Antes de finalizarla, confirma que el
+          resultado sigue siendo válido: si lo finalizas de nuevo, la selección usará el documento actualizado.
+        </MensajeAviso>
+      )}
+
       {enCorreccion &&
         (actualizados.length > 0 ? (
           <Mensaje tipo="info">
