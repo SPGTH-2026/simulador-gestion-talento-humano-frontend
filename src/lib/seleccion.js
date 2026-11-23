@@ -58,6 +58,28 @@ export const textoNota = (valor) => (valor == null ? null : String(valor).replac
 // Lo que escribe la persona ("8,5", "8.50") a lo que acepta el servidor ("8.5").
 export const notaParaServidor = (texto) => String(texto ?? '').trim().replace(',', '.')
 
+// Valida el texto de una nota de 0 a 10 inclusive, con coma o punto y hasta dos decimales. NUNCA corrige en silencio: si el
+// texto no es una nota válida devuelve el motivo y quien llama lo muestra; solo una nota válida se normaliza (coma a
+// punto) para la API.
+//  - 'enEdicion': mientras se escribe, un separador sin decimales («8,») todavía no es un error; al salir del campo o al
+//    enviar sí lo es.
+export function validarNota(texto, { enEdicion = false } = {}) {
+  const t = String(texto ?? '').trim()
+  if (t === '') return { ok: false, mensaje: 'Escribe la nota (de 0 a 10, con hasta dos decimales).' }
+  if (/[^\d.,]/.test(t)) return { ok: false, mensaje: 'La nota solo puede llevar números y un separador decimal (coma o punto).' }
+  if ((t.match(/[.,]/g) ?? []).length > 1) return { ok: false, mensaje: 'Usa un solo separador decimal (coma o punto).' }
+  if (/[.,]$/.test(t)) {
+    return enEdicion
+      ? { ok: false, mensaje: '', pendiente: true }
+      : { ok: false, mensaje: 'Completa los decimales o quita el separador.' }
+  }
+  if (/^[.,]/.test(t)) return { ok: false, mensaje: 'Escribe la parte entera, por ejemplo 0,5.' }
+  if (/[.,]\d{3,}/.test(t)) return { ok: false, mensaje: 'Usa como máximo dos decimales.' }
+  const [entera] = t.split(/[.,]/)
+  if (entera.length > 2 || Number(t.replace(',', '.')) > 10) return { ok: false, mensaje: 'La nota debe estar entre 0 y 10.' }
+  return { ok: true, valor: t.replace(',', '.') }
+}
+
 // Resultado adicional: pendiente de configurar y sin actividades son cosas distintas, y ninguna es un 0.
 export const ESTADO_RESULTADO = {
   pendiente_de_configurar: 'Pendiente de configurar',
@@ -82,9 +104,9 @@ export const formatoFecha = (iso) =>
 // (mínimo, máximo, obligatorio) llegan en inglés: se traducen aquí, sin tocar el resto de los mensajes.
 export const traducirError = (mensaje) => {
   if (typeof mensaje !== 'string') return mensaje
-  const minimo = mensaje.match(/must be at least (\d+) characters/)
+  const minimo = mensaje.match(/must be at least (d+) characters/)
   if (minimo) return `Debe tener al menos ${minimo[1]} caracteres.`
-  const maximo = mensaje.match(/(?:must not be greater than|may not be greater than) (\d+) characters/)
+  const maximo = mensaje.match(/(?:must not be greater than|may not be greater than) (d+) characters/)
   if (maximo) return `No puede superar los ${maximo[1]} caracteres.`
   if (/field is required/.test(mensaje)) return 'Este campo es obligatorio.'
   return mensaje

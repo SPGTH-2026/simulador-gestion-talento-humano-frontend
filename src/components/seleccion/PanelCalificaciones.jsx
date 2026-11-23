@@ -20,6 +20,7 @@ import {
   formatoFecha,
   hoyBogota,
   notaParaServidor,
+  validarNota,
   textoNota,
   traducirError,
   traducirErrores,
@@ -57,8 +58,18 @@ function FormularioNota({ actividad, existente, bloqueado = false, onGuardar, on
 
   const cambiar = (campo) => (e) => {
     setValores((v) => ({ ...v, [campo]: e.target.value }))
-    setErrores((previo) => ({ ...previo, [campo]: undefined }))
+    // La nota se valida mientras se escribe o se pega: un texto inválido se señala de inmediato y nunca se corrige solo.
+    const texto = e.target.value
+    const nota = campo === 'nota' && texto.trim() !== '' ? validarNota(texto, { enEdicion: true }) : null
+    setErrores((previo) => ({ ...previo, [campo]: nota && !nota.ok && nota.mensaje ? nota.mensaje : undefined }))
     setErrorGeneral('')
+  }
+
+  // Al salir del campo también se señala una nota incompleta («8,»).
+  const validarNotaAlSalir = () => {
+    if (valores.nota.trim() === '') return
+    const nota = validarNota(valores.nota)
+    setErrores((previo) => ({ ...previo, nota: nota.ok ? undefined : nota.mensaje }))
   }
 
   // Al corregir, sin ningún cambio no hay nada que enviar (el servidor lo trataría como reenvío idéntico).
@@ -71,8 +82,9 @@ function FormularioNota({ actividad, existente, bloqueado = false, onGuardar, on
   const enviar = async (e) => {
     e.preventDefault()
     if (guardando) return
-    if (valores.nota.trim() === '') {
-      setErrores({ nota: 'Escribe la nota (de 0 a 10, con hasta dos decimales).' })
+    const nota = validarNota(valores.nota)
+    if (!nota.ok) {
+      setErrores({ nota: nota.mensaje })
       return
     }
     setGuardando(true)
@@ -80,7 +92,7 @@ function FormularioNota({ actividad, existente, bloqueado = false, onGuardar, on
     setErrorGeneral('')
     try {
       await onGuardar(actividad.id, {
-        nota: notaParaServidor(valores.nota),
+        nota: nota.valor,
         fecha_realizacion: valores.fecha_realizacion,
         observacion: valores.observacion.trim() === '' ? null : valores.observacion.trim(),
         ...(corrigiendo && valores.motivo.trim() !== '' && { motivo: valores.motivo.trim() }),
@@ -107,6 +119,7 @@ function FormularioNota({ actividad, existente, bloqueado = false, onGuardar, on
               autoFocus
               value={valores.nota}
               onChange={cambiar('nota')}
+              onBlur={validarNotaAlSalir}
               disabled={inactivo}
               aria-describedby={describedby}
               aria-invalid={invalid || undefined}
