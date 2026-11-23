@@ -1,46 +1,46 @@
 import { CLASE_CAJA_SUAVE, CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
-import { formatearFechaHora } from '../../lib/ventanaPostulacion'
+import { ESTADO_RONDA, MENSAJES_CERRADOS, nombreRonda, textoPlazo } from '../../lib/correcciones'
 import Boton from '../ui/Boton'
 import Etiqueta from '../ui/Etiqueta'
 import Icono from '../ui/Icono'
 
-// Estados de la corrección que entrega el servidor (`correccion_estado`). La pantalla no recalcula la regla: solo la
-// rotula. 'vigente' es el único en que se puede corregir.
-const ESTADOS = {
-  vigente: { tono: 'aviso', texto: (limite) => (limite ? `Plazo hasta el ${formatearFechaHora(limite)}` : 'Corrección vigente') },
-  enviada: { tono: 'exito', texto: () => 'Corrección enviada' },
-  vencida: { tono: 'peligro', texto: () => 'Plazo vencido' },
-  inactiva: { tono: 'neutral', texto: () => 'Sin efecto' },
-}
-
-// Qué le dice la pantalla al aspirante cuando ya no hay nada que corregir.
-const MENSAJES_CERRADOS = {
-  enviada: (enviada) =>
-    `Enviaste la corrección${enviada ? ` el ${formatearFechaHora(enviada)}` : ''}. El evaluador la revisará.`,
-  vencida: () => 'El plazo para corregir terminó. Los documentos ya no se pueden reemplazar desde aquí.',
-  inactiva: () => 'Tu postulación ya no está activa, por eso no se puede corregir.',
-}
-
-// Resumen de la corrección pedida: quién la pidió y qué dijo, hasta cuándo hay plazo y cuántos documentos marcados ya
-// se reemplazaron DESPUÉS de la solicitud (un archivo que ya existía antes no cuenta: eso lo decide el servidor).
-export function ResumenCorreccion({ correccion, total, corregidos }) {
-  const estado = correccion.correccion_estado
-  const datos = ESTADOS[estado] ?? ESTADOS.inactiva
+// Resumen de la ronda de corrección: quién la pidió y qué dijo, hasta cuándo hay plazo (fecha y hora exactas) y cuántos
+// documentos marcados ya se reemplazaron DESPUÉS de la solicitud (un archivo que ya existía no cuenta: lo decide el
+// servidor). Si hubo rondas anteriores, queda su historial.
+export function ResumenCorreccion({ resumen, total, corregidos }) {
+  const ronda = resumen.ronda_actual
+  const datos = ESTADO_RONDA[ronda.estado] ?? ESTADO_RONDA.sin_plazo
   const porcentaje = total === 0 ? 0 : Math.round((corregidos / total) * 100)
-  const mensajeCerrado = MENSAJES_CERRADOS[estado]
+  const mensajeCerrado = MENSAJES_CERRADOS[ronda.estado]
+  const anteriores = (resumen.historial ?? []).slice(0, -1)
 
   return (
     <section className={`${CLASE_TARJETA} flex flex-col gap-3 p-4`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className={CLASE_TITULO_SECCION}>Corrección solicitada por el evaluador</h2>
-        <Etiqueta tono={datos.tono}>{datos.texto(correccion.fecha_limite_correccion)}</Etiqueta>
+        <h2 className={CLASE_TITULO_SECCION}>
+          Corrección solicitada por el evaluador
+          <span className="ml-2 text-sm font-normal text-slate-600 dark:text-sena-texto-suave">
+            {nombreRonda(ronda)}
+            {ronda.tipo === 'ordinaria' ? ` de ${resumen.ordinarias_max}` : ''}
+          </span>
+        </h2>
+        <Etiqueta tono={datos.tono}>{datos.texto}</Etiqueta>
       </div>
 
-      {correccion.observaciones && (
+      <p className="text-sm font-medium text-slate-700 dark:text-sena-texto">
+        {textoPlazo(ronda)}
+        {ronda.estado === 'vigente' && (
+          <span className="font-normal text-slate-600 dark:text-sena-texto-suave"> (hora de Colombia)</span>
+        )}
+      </p>
+
+      {ronda.observaciones && (
         <div className={`${CLASE_CAJA_SUAVE} p-3`}>
-          <p className="text-sm font-medium text-sena-azul dark:text-sena-texto">Observaciones del evaluador</p>
+          <p className="text-sm font-medium text-sena-azul dark:text-sena-texto">
+            Observaciones{ronda.solicitada_por?.name ? ` de ${ronda.solicitada_por.name}` : ' del evaluador'}
+          </p>
           <p className="mt-1 whitespace-pre-line text-sm text-slate-700 dark:text-sena-texto-suave">
-            {correccion.observaciones}
+            {ronda.observaciones}
           </p>
         </div>
       )}
@@ -73,18 +73,33 @@ export function ResumenCorreccion({ correccion, total, corregidos }) {
 
       {mensajeCerrado && (
         <p className="flex items-start gap-2 text-sm text-slate-700 dark:text-sena-texto-suave">
-          <Icono nombre={estado === 'enviada' ? 'check' : 'alerta'} className="mt-0.5 size-4 shrink-0" />
-          {mensajeCerrado(correccion.correccion_enviada_at)}
+          <Icono nombre={ronda.estado === 'respondida' ? 'check' : 'alerta'} className="mt-0.5 size-4 shrink-0" />
+          {mensajeCerrado(ronda)}
         </p>
+      )}
+
+      {anteriores.length > 0 && (
+        <details className="text-sm text-slate-700 dark:text-sena-texto-suave">
+          <summary className="cursor-pointer font-medium text-sena-azul dark:text-sena-texto">
+            Rondas anteriores ({anteriores.length})
+          </summary>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {anteriores.map((anterior) => (
+              <li key={anterior.id ?? `${anterior.tipo}-${anterior.numero}`}>
+                <span className="font-medium">{nombreRonda(anterior)}:</span> {textoPlazo(anterior)}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </section>
   )
 }
 
-// Envío de la corrección: solo existe mientras la corrección está vigente. Se habilita cuando todos los documentos
-// marcados fueron reemplazados; si falta alguno, lo dice.
-export function EnvioCorreccion({ correccion, total, corregidos, enviando, onEnviar }) {
-  if (correccion.correccion_estado !== 'vigente') return null
+// Envío de la corrección: solo existe mientras la ronda está vigente. Se habilita cuando todos los documentos marcados
+// fueron reemplazados; si falta alguno, lo dice.
+export function EnvioCorreccion({ resumen, total, corregidos, enviando, onEnviar }) {
+  if (resumen.ronda_actual?.estado !== 'vigente') return null
 
   const faltan = total - corregidos
   const completo = faltan <= 0

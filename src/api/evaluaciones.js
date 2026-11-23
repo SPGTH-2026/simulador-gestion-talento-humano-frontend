@@ -19,6 +19,12 @@ export const obtenerEvaluacion = (postulacionId) =>
 export const guardarEvaluacion = (postulacionId, datos) =>
   client.put(`/evaluaciones/${postulacionId}`, datos).then((res) => res.data)
 
+// POST /api/evaluaciones/{postulacionId}/correcciones/autorizacion  body { justificacion }
+//   Autoriza UNA ronda excepcional de corrección (Instructor en sus fichas, Superadmin en todas). Devuelve el resumen
+//   de rondas actualizado: { data: { correccion } }.
+export const autorizarReapertura = (postulacionId, justificacion) =>
+  client.post(`/evaluaciones/${postulacionId}/correcciones/autorizacion`, { justificacion }).then((res) => res.data)
+
 // GET /api/mis-evaluaciones  -> { data: [...] }  (aspirante: sus evaluaciones)
 export const misEvaluaciones = () =>
   client.get('/mis-evaluaciones').then((res) => res.data)

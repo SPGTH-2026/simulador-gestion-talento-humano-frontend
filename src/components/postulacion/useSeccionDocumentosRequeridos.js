@@ -3,6 +3,7 @@ import { validarArchivoPostulacion } from '../../lib/archivosPostulacion'
 import { subirDocumento, eliminarDocumento } from '../../api/postulacionesDocumentos'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import { reglasCorreccionDocumento } from '../../lib/reglasCorreccionDocumentos'
 
 // Lógica de SeccionDocumentosRequeridos: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
 export function useSeccionDocumentosRequeridos({ vista,
@@ -20,6 +21,9 @@ export function useSeccionDocumentosRequeridos({ vista,
   const sinSexo = !sexo?.codigo
   // Documentos que el evaluador marcó con "Corregir" (correccion.marcados).
   const hayMarcados = documentos.some((d) => correccion?.marcados?.has(d.parametro.id))
+  // Reglas por documento según la corrección vigente (mismas que aplica el servidor).
+  const reglasDe = (parametroId) =>
+    reglasCorreccionDocumento({ bloqueoCorreccion, marcado: Boolean(correccion?.marcados?.has(parametroId)) })
 
   // códigos de los documentos con una petición EN VUELO. Un Set permite que
   // varias filas trabajen a la vez sin pisarse (una operación por documento).
@@ -62,6 +66,11 @@ export function useSeccionDocumentosRequeridos({ vista,
   const pidSeguro = async () => vista.postulacion?.id ?? (await asegurar()).postulacionId
 
   const elegirArchivo = async (clave, parametro, archivo) => {
+    const regla = reglasDe(parametro.id)
+    if (regla.bloqueadoReemplazo) {
+      setErrores((prev) => ({ ...prev, [clave]: regla.motivoReemplazo }))
+      return
+    }
     const validacion = validarArchivoPostulacion(archivo)
     if (!validacion.ok) {
       setErrores((prev) => ({ ...prev, [clave]: validacion.mensaje }))
@@ -99,7 +108,12 @@ export function useSeccionDocumentosRequeridos({ vista,
 
   const confirmar = useConfirmacion()
 
-  const eliminar = async (documento, codigo) => {
+  const eliminar = async (documento, codigo, parametroId) => {
+    const regla = reglasDe(parametroId)
+    if (regla.eliminarBloqueado) {
+      onError(regla.motivoEliminar)
+      return
+    }
     const nombre = documento?.archivo?.nombre_original ?? documento?.nombre_original
     const ok = await confirmar({
       titulo: 'Eliminar documento',
@@ -149,6 +163,7 @@ export function useSeccionDocumentosRequeridos({ vista,
       pidSeguro,
       progreso,
       refsInput,
+      reglasDe,
       setArchivosSubidos,
       setEnVuelo,
       setErrores,

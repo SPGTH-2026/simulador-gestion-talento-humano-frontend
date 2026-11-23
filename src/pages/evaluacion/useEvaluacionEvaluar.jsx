@@ -96,18 +96,10 @@ export function useEvaluacionEvaluar() {
   // Documentos que el aspirante reemplazó después de que se le pidió corregir.
   const actualizados = dato?.evaluacion?.documentos_actualizados ?? []
   const enCorreccion = dato?.evaluacion?.estado === 'correccion_solicitada'
-  // Estado de la corrección según el servidor. «Enviar a corrección» solo está disponible si no hay una ronda en curso ni
-  // una terminada: abrir otra ronda tras vencer el plazo o recibir la respuesta aún no está definido, así que no se
-  // ofrece (reutilizaría un plazo ya vencido). El servidor también rechaza la solicitud repetida.
-  const estadoCorreccion = dato?.evaluacion?.correccion_estado ?? null
-  const motivoSinCorreccion =
-    {
-      vigente: 'Ya hay una corrección pendiente: espera a que el aspirante responda antes de pedir otra.',
-      enviada:
-        'El aspirante ya respondió la corrección. Revisa los documentos y finaliza la evaluación; pedir otra corrección todavía no está disponible.',
-      vencida:
-        'El plazo de la corrección venció. Pedir otra corrección todavía no está disponible; puedes finalizar la evaluación.',
-    }[estadoCorreccion] ?? ''
+  // Rondas de corrección de la POSTULACIÓN (compartidas entre evaluadores): las reglas las aplica el servidor y la pantalla
+  // solo explica por qué «Enviar a corrección» está disponible o bloqueado (ver PanelRondasCorreccion).
+  const correccion = dato?.correccion ?? null
+  const puedePedirCorreccion = correccion ? Boolean(correccion.puede_solicitar) : true
 
   const guardar = async (estadoFinal) => {
     setError('')
@@ -252,20 +244,20 @@ export function useEvaluacionEvaluar() {
       confirmar,
       convocatoria,
       cumplidos,
+      correccion,
       cumplimiento,
       dato,
       documentos,
       enCorreccion,
       error,
       errorDocumento,
-      estadoCorreccion,
       evaluacion,
       excluidos,
       faltantes,
       finalizar,
       guardando,
       guardar,
-      motivoSinCorreccion,
+      puedePedirCorreccion,
       navigate,
       observaciones,
       pesoObtenido,

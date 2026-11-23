@@ -1,3 +1,4 @@
+import { isValidElement } from 'react'
 import { usePanelDocumentosPostulacion } from './usePanelDocumentosPostulacion'
 import { postularse } from '../../api/postulaciones'
 import { CLASE_CAJA_SUAVE } from '../../lib/estilos'
@@ -36,6 +37,7 @@ export default function PanelDocumentosPostulacion({
   onCorreccionEnviada,
 }) {
   const ctx = usePanelDocumentosPostulacion({ postulacionId, convocatoria, documentosConvocatoria, skillsConvocatoriaNombres, miPostulacion, onEstadoChange, onPostulacionCreada, onEnviado, onVerDocumentos, modoCorreccion, onCorreccionEnviada })
+  if (isValidElement(ctx)) return ctx
   const { alGuardarSexo, asegurar, aviso, correccion, correccionVigente, corregidos, editable, editableSexo, enviandoCorreccion, enviarCorreccionAhora, error, esBorrador, esRetirada, estado, infoCorreccion, marcados, motivo, motivoVolver, puedeVolver, reactivando, recargar, setError, sexo, vista, volverAPostularme } = ctx
   return (
     <div className="flex flex-col gap-4">
@@ -80,7 +82,7 @@ export default function PanelDocumentosPostulacion({
       )}
 
       {modoCorreccion && correccion && (
-        <ResumenCorreccion correccion={correccion} total={marcados.size} corregidos={corregidos} />
+        <ResumenCorreccion resumen={correccion.correccion} total={marcados.size} corregidos={corregidos} />
       )}
 
       <SeccionDocumentosRequeridos
@@ -97,7 +99,7 @@ export default function PanelDocumentosPostulacion({
 
       {modoCorreccion && correccion && (
         <EnvioCorreccion
-          correccion={correccion}
+          resumen={correccion.correccion}
           total={marcados.size}
           corregidos={corregidos}
           enviando={enviandoCorreccion}

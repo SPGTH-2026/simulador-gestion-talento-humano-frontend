@@ -1,7 +1,8 @@
 import { useVistaDocumentos } from './useVistaDocumentos'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { isValidElement, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { postularse, cambiarEstadoPostulacion } from '../../api/postulaciones'
-import { estadoDocumentos, obtenerPerfil, obtenerCorreccion, enviarCorreccion, abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulacionesDocumentos'
+import { useLecturaEstado } from './useLecturaEstado'
+import { obtenerPerfil, obtenerCorreccion, enviarCorreccion, abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulacionesDocumentos'
 import { mensajeError } from '../../api/mensajeError'
 import { useAuth } from '../../auth/useAuth'
 import { estadoVentana } from '../../lib/ventanaPostulacion'
@@ -47,26 +48,15 @@ export function usePanelDocumentosPostulacion({ postulacionId = null,
     }
   }, [idPostulacion, user?.role])
 
-  // Documentos marcados con "No" por el evaluador, y los que ya se reemplazaron.
-  const marcados = useMemo(
-    () =>
-      new Set(
-        Object.entries(correccion?.perfil ?? {})
-          .filter(([clave, valor]) => valor === false && clave.startsWith('doc-'))
-          .map(([clave]) => Number(clave.slice(4))),
-      ),
-    [correccion],
-  )
-  const reemplazados = useMemo(
-    () => new Set((correccion?.documentos_actualizados ?? []).map((clave) => Number(String(clave).slice(4)))),
-    [correccion],
-  )
+  // Salen de la RONDA actual (la fija el servidor): los marcados al pedirla y los que ya cambiaron de archivo desde entonces.
+  // Un archivo que ya existía antes de la solicitud no cuenta como corregido.
+  const ronda = correccion?.correccion?.ronda_actual ?? null
+  const marcados = useMemo(() => new Set((ronda?.documentos_marcados ?? []).map(Number)), [ronda])
+  const reemplazados = useMemo(() => new Set((ronda?.documentos_reemplazados ?? []).map(Number)), [ronda])
   const infoCorreccion = correccion ? { marcados, reemplazados } : null
-  // La vigencia la decide el servidor (correccion_estado): pedida, sin enviar, con plazo y postulación activos. La
+  // La vigencia la decide el servidor (estado de la ronda): pedida, sin responder, con plazo y postulación activos. La
   // pantalla no la recalcula, así coincide siempre con lo que el servidor va a aceptar.
-  const correccionVigente = correccion?.correccion_estado === 'vigente'
-  // Documentos marcados que YA se reemplazaron desde la solicitud (regla del servidor: archivo actualizado después de
-  // pedir la corrección). Un archivo que ya existía antes no cuenta. Se cuenta solo dentro de los marcados.
+  const correccionVigente = ronda?.estado === 'vigente'
   const corregidos = [...marcados].filter((id) => reemplazados.has(id)).length
 
   const enviarCorreccionAhora = async () => {
@@ -90,16 +80,16 @@ export function usePanelDocumentosPostulacion({ postulacionId = null,
     [onEstadoChange],
   )
 
-  // Estado de la postulación (si existe). Se relee en cada id nuevo.
+  const { leerEstado, registrarCreada, idVigente, yaLeido } = useLecturaEstado(aplicarEstado, idInicial)
+
+  // Estado de la postulación (si existe). Se relee en cada id nuevo, salvo en un borrador recién creado: su estado ya se aplicó.
   useEffect(() => {
-    if (!idPostulacion) return undefined
+    if (!idPostulacion || yaLeido(idPostulacion)) return undefined
 
     let activo = true
-    estadoDocumentos(idPostulacion)
-      .then((data) => {
-        if (!activo) return
-        aplicarEstado(data)
-        setError('')
+    leerEstado(idPostulacion)
+      .then(() => {
+        if (activo) setError('')
       })
       .catch((e) => {
         if (activo) setError(mensajeError(e))
@@ -108,7 +98,7 @@ export function usePanelDocumentosPostulacion({ postulacionId = null,
     return () => {
       activo = false
     }
-  }, [idPostulacion, aplicarEstado])
+  }, [idPostulacion, leerEstado, yaLeido])
 
   // Perfil (sexo): es del usuario y funciona sin postulación.
   useEffect(() => {
@@ -154,25 +144,24 @@ export function usePanelDocumentosPostulacion({ postulacionId = null,
     return () => window.removeEventListener('document:view', abrirEnPestana)
   }, [idPostulacion])
   const recargar = useCallback(() => {
-    if (!idPostulacion) return Promise.resolve()
+    // El id sale del ref: tras crear el borrador, este «recargar» puede ser el del render anterior (sin id en su closure).
+    const id = idVigente()
+    if (!id) return Promise.resolve()
     // La corrección (qué documentos ya se reemplazaron) se relee JUNTO con el estado: así «N de M corregidos» y el botón de
     // enviar cambian a la vez que el documento, no unos segundos después.
     const correccionNueva =
       user?.role === 'aspirante'
-        ? obtenerCorreccion(idPostulacion)
+        ? obtenerCorreccion(id)
             .then(setCorreccion)
             .catch(() => {})
         : Promise.resolve()
     return Promise.all([
-      estadoDocumentos(idPostulacion)
-        .then((data) => {
-          aplicarEstado(data)
-          setError('')
-        })
+      leerEstado(id)
+        .then(() => setError(''))
         .catch((e) => setError(mensajeError(e))),
       correccionNueva,
     ])
-  }, [idPostulacion, aplicarEstado, user?.role])
+  }, [idVigente, leerEstado, user?.role])
 
   // Borrador silencioso: garantiza una postulación y devuelve su id + el estado
   // fresco. Si ya existe (también si está retirada: editar no cambia el estado)
@@ -190,8 +179,8 @@ export function usePanelDocumentosPostulacion({ postulacionId = null,
       // Primero el estado y DESPUÉS el id. Si el id se pone antes, el panel
       // muestra "Cargando tus datos…" mientras llega el estado y desmonta la
       // sección de documentos en plena subida (se perdía el progreso y el archivo).
-      const fresco = await estadoDocumentos(postulacion.id).catch(() => null)
-      if (fresco) aplicarEstado(fresco)
+      const fresco = await leerEstado(postulacion.id).catch(() => null)
+      registrarCreada(postulacion.id, Boolean(fresco))
       setIdPostulacion(postulacion.id)
       setError('')
       return { postulacionId: postulacion.id, estado: fresco }
@@ -201,7 +190,7 @@ export function usePanelDocumentosPostulacion({ postulacionId = null,
 
     creandoRef.current = promesa
     return promesa
-  }, [idPostulacion, estado, convocatoria, onPostulacionCreada, aplicarEstado])
+  }, [idPostulacion, estado, convocatoria, onPostulacionCreada, leerEstado, registrarCreada])
 
   // "Volver a postularme": PATCH estado 'postulada' (retirada -> postulada). El
   // backend valida ventana y obligatorios; si faltan, la postulación queda retirada.
@@ -228,6 +217,8 @@ export function usePanelDocumentosPostulacion({ postulacionId = null,
   const ventana = estado?.ventana ?? estadoVentana(convocatoria)
 
   const usevistadocumentosBloque = useVistaDocumentos({ convocatoria, correccionVigente, documentosConvocatoria, error, estado, idPostulacion, modoCorreccion, pideLibretaConv, sexo, skillsConvocatoriaNombres, user, ventana })
+  // Mientras carga el estado (o si falla el acceso), useVistaDocumentos devuelve la propia pantalla (un elemento de React).
+  if (isValidElement(usevistadocumentosBloque)) return usevistadocumentosBloque
   const { codigo, editable, editableSexo, esAspirante, esBorrador, esPropia, esRetirada, faltan, motivo, motivoVolver, puedeEscribir, puedeVolver, vista } = usevistadocumentosBloque
   const alGuardarSexo = (sexoNuevo) => {
     setPerfil((prev) => ({ ...(prev ?? {}), sexo: sexoNuevo }))

@@ -39,6 +39,28 @@ export function formatearFechaHora(iso) {
   }).format(fecha)
 }
 
+// Fecha y hora EXACTAS en la hora de Colombia, para los plazos de corrección: «23/11/2026 14:35». Las fechas llegan en
+// UTC; aquí se muestran siempre en America/Bogota, sin depender de la zona del navegador.
+export function formatearFechaHoraExacta(iso) {
+  if (!iso) return '—'
+  const fecha = new Date(iso)
+  if (Number.isNaN(fecha.getTime())) return '—'
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat('es-CO', {
+      timeZone: 'America/Bogota',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(fecha)
+      .map((p) => [p.type, p.value]),
+  )
+  return `${partes.day}/${partes.month}/${partes.year} ${partes.hour}:${partes.minute}`
+}
+
 function soloFecha(valor) {
   return valor ? String(valor).slice(0, 10) : null
 }

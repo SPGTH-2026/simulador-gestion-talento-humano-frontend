@@ -1,5 +1,6 @@
-﻿import { useEffect, useRef, useState } from 'react'
+﻿import { isValidElement, useEffect, useRef, useState } from 'react'
 import { useEvaluacionEvaluar } from './useEvaluacionEvaluar'
+import PanelRondasCorreccion from './PanelRondasCorreccion'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { listaDocumentos } from '../../api/documentos'
 import { obtenerEvaluacion, guardarEvaluacion } from '../../api/evaluaciones'
@@ -29,7 +30,9 @@ import { repartirPesos } from '../../lib/evaluacion'
 
 export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, cumplidos, cumplimiento, documentos, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, motivoSinCorreccion, observaciones, pesos, respuestas, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
+  if (isValidElement(ctx)) return ctx
+  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, correccion, cumplidos, cumplimiento, documentos, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
       {volverAlListado}
@@ -165,11 +168,7 @@ export default function EvaluacionEvaluar() {
             </MensajeAviso>
           )}
 
-          {motivoSinCorreccion && (
-            <p id="motivo-sin-correccion" className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
-              {motivoSinCorreccion}
-            </p>
-          )}
+          <PanelRondasCorreccion correccion={correccion} postulacionId={postulacionId} onActualizada={setDato} />
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
             <Boton
@@ -186,10 +185,14 @@ export default function EvaluacionEvaluar() {
               variante="contorno"
               tamano="tactil"
               onClick={() => guardar('correccion_solicitada')}
-              disabled={guardando || Boolean(motivoSinCorreccion)}
-              aria-describedby={motivoSinCorreccion ? 'motivo-sin-correccion' : undefined}
+              disabled={guardando || !puedePedirCorreccion}
+              aria-describedby={correccion ? 'motivo-sin-correccion' : undefined}
             >
-              {guardando ? 'Enviando…' : 'Enviar a corrección'}
+              {guardando
+                ? 'Enviando…'
+                : correccion?.tipo_siguiente === 'excepcional'
+                  ? 'Enviar a corrección (excepcional)'
+                  : 'Enviar a corrección'}
             </Boton>
             <Boton
               ref={botonFinalizar}

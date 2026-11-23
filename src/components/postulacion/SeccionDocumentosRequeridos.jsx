@@ -31,8 +31,8 @@ export default function SeccionDocumentosRequeridos({
   // Hay una corrección vigente: el backend solo deja reemplazar los documentos marcados y no permite eliminar.
   bloqueoCorreccion = false,
 }) {
-  const ctx = useSeccionDocumentosRequeridos({ vista, editable, sexo, asegurar, onRecargar, onError, correccion, soloCorreccion })
-  const { archivosSubidos, documentos, elegirArchivo, eliminar, enVuelo, errores, hayMarcados, progreso, refsInput, sexoMujer, sinSexo, ver } = ctx
+  const ctx = useSeccionDocumentosRequeridos({ vista, editable, sexo, asegurar, onRecargar, onError, correccion, soloCorreccion, bloqueoCorreccion })
+  const { archivosSubidos, documentos, elegirArchivo, eliminar, enVuelo, errores, hayMarcados, progreso, refsInput, reglasDe, sexoMujer, sinSexo, ver } = ctx
   return (
     <section className={ESTILO_TARJETA}>
       <h2 className={ESTILO_TITULO}>Documentos requeridos</h2>
@@ -73,10 +73,8 @@ export default function SeccionDocumentosRequeridos({
           const bloqueoLibreta = esLibreta && (sexoMujer || sinSexo)
           const puedeEditar = editable && !enProceso
           // Con una corrección vigente, un documento NO marcado no se toca (regla del servidor).
-          const bloqueadoPorCorreccion = bloqueoCorreccion && !marcado
-          const motivoCorreccion = bloqueadoPorCorreccion
-            ? 'Durante la corrección solo puedes reemplazar los documentos marcados por el evaluador.'
-            : ''
+          const { bloqueadoReemplazo: bloqueadoPorCorreccion, motivoReemplazo: motivoCorreccion, eliminarBloqueado, motivoEliminar } =
+            reglasDe(parametro.id)
           // La libreta se muestra siempre que se pueda editar (deshabilitada si
           // no aplica); el resto de documentos no se muestran si el backend los
           // marcó 'no_aplica'.
@@ -149,6 +147,10 @@ export default function SeccionDocumentosRequeridos({
                   {motivoCorreccion && puedeEditar && (
                     <p className="mt-0.5 text-sm text-slate-600 dark:text-sena-texto-suave">{motivoCorreccion}</p>
                   )}
+                  {/* Un opcional cargado y marcado no se elimina durante la corrección: se explica en vez de ocultar el botón sin más. */}
+                  {!motivoCorreccion && puedeEditar && eliminarBloqueado && !esObligatorio && estadoDoc === 'subido' && (
+                    <p className="mt-0.5 text-sm text-slate-600 dark:text-sena-texto-suave">{motivoEliminar}</p>
+                  )}
                   {motivoLibreta && (
                     <p className="mt-0.5 text-sm text-slate-600 dark:text-sena-texto-suave">
                       {motivoLibreta}
@@ -184,10 +186,10 @@ export default function SeccionDocumentosRequeridos({
                     </Boton>
                   )}
 
-                  {puedeEditar && !soloCorreccion && !bloqueoCorreccion && estadoDoc === 'subido' && !esObligatorio && (
+                  {puedeEditar && !soloCorreccion && !eliminarBloqueado && estadoDoc === 'subido' && !esObligatorio && (
                     <Boton variante="peligroSuave" tamano="tactil"
                       disabled={enProceso}
-                      onClick={() => eliminar(archivoMostrar, clave)}>
+                      onClick={() => eliminar(archivoMostrar, clave, parametro.id)}>
                       {enProceso ? 'Eliminando...' : 'Eliminar'}
                     </Boton>
                   )}

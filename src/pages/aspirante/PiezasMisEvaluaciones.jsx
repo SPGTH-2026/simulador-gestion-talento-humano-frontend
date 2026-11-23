@@ -8,7 +8,7 @@ import Icono from '../../components/ui/Icono'
 import Mensaje, { MensajeAviso } from '../../components/ui/Mensaje'
 import { CLASE_CAJA_SUAVE, CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { ESTADO_DOCUMENTO, formatearPeso } from '../../lib/evaluacion'
-import { formatearFechaHora } from '../../lib/ventanaPostulacion'
+import { MENSAJES_CERRADOS, nombreRonda, textoPlazo } from '../../lib/correcciones'
 
 // El contrato puede traer el aspirante como texto o como objeto.
 
@@ -89,38 +89,39 @@ export function DecisionDocumento({ decision, reemplazado }) {
   )
 }
 
-// Qué puede hacer el aspirante con una corrección pedida. El estado lo calcula el servidor (correccion_estado: vigente,
-// enviada, vencida o inactiva): el botón solo existe cuando de verdad se puede corregir, también con la convocatoria
-// cerrada, y en los demás casos se explica el motivo.
+// Qué puede hacer el aspirante con la corrección de su postulación. El estado de la ronda lo calcula el servidor
+// (vigente, respondida, vencida o sin plazo registrado): el botón solo existe cuando de verdad se puede responder, también
+// con la convocatoria cerrada, y en los demás casos se explica el motivo con fecha y hora exactas (hora de Colombia).
 export function EstadoCorreccion({ evaluacion, onCerrar }) {
-  const estado = evaluacion.correccion_estado
-  const limite = evaluacion.fecha_limite_correccion
-  const puedeCorregir = estado === 'vigente' && Boolean(evaluacion.postulacion_id)
+  const resumen = evaluacion.correccion
+  const ronda = resumen?.ronda_actual
+  if (!ronda) return null
 
-  if (estado === 'enviada') {
+  // Solicitudes antiguas simultáneas de varios evaluadores: el administrador las revisa antes de convertirlas.
+  if (resumen.motivo === 'solape') {
     return (
-      <Mensaje tipo="info" className="mt-4">
-        <strong>Enviaste la corrección</strong>
-        {evaluacion.correccion_enviada_at ? ` el ${formatearFechaHora(evaluacion.correccion_enviada_at)}` : ''}. El
-        evaluador la revisará.
-      </Mensaje>
+      <MensajeAviso className="mt-4">
+        <strong>En revisión:</strong> tu postulación tiene solicitudes de corrección anteriores que el equipo está revisando.
+        Por ahora no se pueden responder desde aquí.
+      </MensajeAviso>
     )
   }
 
-  if (estado === 'vencida') {
+  const puedeCorregir = ronda.estado === 'vigente' && Boolean(evaluacion.postulacion_id)
+  const titulo = `${nombreRonda(ronda)}${ronda.tipo === 'ordinaria' ? ` de ${resumen.ordinarias_max}` : ''}`
+
+  if (ronda.estado === 'respondida') {
     return (
-      <MensajeAviso className="mt-4">
-        <strong>El plazo para corregir terminó</strong>
-        {limite ? ` el ${formatearFechaHora(limite)}` : ''}. Ya no puedes reemplazar los documentos marcados.
-      </MensajeAviso>
+      <Mensaje tipo="info" className="mt-4">
+        <strong>{titulo}:</strong> {MENSAJES_CERRADOS.respondida(ronda)}
+      </Mensaje>
     )
   }
 
   if (!puedeCorregir) {
     return (
       <MensajeAviso className="mt-4">
-        <strong>El evaluador pidió corregir</strong> documentos, pero la postulación ya no está activa y no se puede
-        corregir.
+        <strong>{titulo}:</strong> {(MENSAJES_CERRADOS[ronda.estado] ?? MENSAJES_CERRADOS.sin_plazo)(ronda)}
       </MensajeAviso>
     )
   }
@@ -128,11 +129,11 @@ export function EstadoCorreccion({ evaluacion, onCerrar }) {
   return (
     <MensajeAviso className="mt-4 flex flex-col items-start gap-2">
       <span>
-        <strong>El evaluador pidió corregir</strong> los documentos marcados con «Corregir».
+        <strong>{titulo}:</strong> el evaluador pidió corregir los documentos marcados con «Corregir».
       </span>
-      {limite && (
-        <span className="text-sm font-medium">Plazo para corregir: hasta el {formatearFechaHora(limite)}.</span>
-      )}
+      <span className="text-sm font-medium">
+        {textoPlazo(ronda)} (hora de Colombia).
+      </span>
       <Boton
         as={Link}
         to={`/postulaciones/${evaluacion.postulacion_id}/correcciones`}
@@ -251,7 +252,9 @@ export function DetalleEvaluacion({ evaluacion, documentos, estadoDocumentos, on
         </div>
       )}
 
-      {evaluacion.estado === 'correccion_solicitada' && <EstadoCorreccion evaluacion={evaluacion} onCerrar={onCerrar} />}
+      {(evaluacion.estado === 'correccion_solicitada' || evaluacion.correccion?.ronda_actual?.estado === 'vigente') && (
+        <EstadoCorreccion evaluacion={evaluacion} onCerrar={onCerrar} />
+      )}
 
       <Boton tamano="tactil" onClick={onCerrar} className="mt-5 w-full">
         Cerrar
