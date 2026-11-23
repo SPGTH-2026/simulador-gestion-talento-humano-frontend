@@ -1,5 +1,4 @@
 import { IconoX } from '../../../components/convocatorias/Iconos'
-import Boton from '../../../components/ui/Boton'
 import Campo from '../../../components/ui/Campo'
 import { CLASE_CAMPO, CLASE_TARJETA_PLANA } from '../../../lib/estilos'
 

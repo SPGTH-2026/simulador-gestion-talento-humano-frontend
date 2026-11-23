@@ -1,12 +1,6 @@
-﻿import { isValidElement, useEffect, useRef, useState } from 'react'
+﻿import { isValidElement } from 'react'
 import { useEvaluacionEvaluar } from './useEvaluacionEvaluar'
 import PanelRondasCorreccion from './PanelRondasCorreccion'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { listaDocumentos } from '../../api/documentos'
-import { obtenerEvaluacion, guardarEvaluacion } from '../../api/evaluaciones'
-import { mensajeError } from '../../api/mensajeError'
-import { abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulacionesDocumentos'
-import { IconoFlechaIzquierda } from '../../components/convocatorias/Iconos'
 import AvatarIniciales from '../../components/evaluacion/AvatarIniciales'
 import {
   EtiquetaConIcono,
@@ -16,9 +10,7 @@ import RequisitoEvaluacion from '../../components/evaluacion/RequisitoEvaluacion
 import ResumenCumplimiento from '../../components/evaluacion/ResumenCumplimiento'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
-import Cargando from '../../components/ui/Cargando'
 import Mensaje, { MensajeAviso, MensajeError } from '../../components/ui/Mensaje'
-import { useConfirmacion } from '../../hooks/useConfirmacion'
 import {
   CLASE_CAMPO,
   CLASE_TARJETA,
@@ -26,13 +18,12 @@ import {
   CLASE_TEXTO_PARTIDO,
   CLASE_TEXTO_SUAVE,
 } from '../../lib/estilos'
-import { repartirPesos } from '../../lib/evaluacion'
 
 export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, correccion, cumplidos, cumplimiento, documentos, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
       {volverAlListado}
