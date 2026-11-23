@@ -1,28 +1,12 @@
-import { useEffect, useId, useRef, useState } from 'react'
-import { designarReferencia, obtenerReferencia } from '../../api/seleccion'
-import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
+import { usePanelReferencia } from './usePanelReferencia'
 import { EtiquetaConIcono } from '../evaluacion/PresentacionEvaluacion'
 import Boton from '../ui/Boton'
 import Campo from '../ui/Campo'
 import Etiqueta from '../ui/Etiqueta'
 import Icono from '../ui/Icono'
 import { MensajeAviso, MensajeError, MensajeExito } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
-import {
-  CLASE_CAJA_SUAVE,
-  CLASE_CAMPO,
-  CLASE_TEXTO_FUERTE,
-  CLASE_TEXTO_PARTIDO,
-  CLASE_TEXTO_SUAVE,
-} from '../../lib/estilos'
-import {
-  RESULTADO_EVALUACION,
-  estadoDocumental,
-  formatoFecha,
-  textoCumplimiento,
-  traducirError,
-  traducirErrores,
-} from '../../lib/seleccion'
+import { CLASE_CAJA_SUAVE, CLASE_CAMPO, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
+import { RESULTADO_EVALUACION, formatoFecha, textoCumplimiento } from '../../lib/seleccion'
 
 function EtiquetaResultado({ resultado }) {
   const r = RESULTADO_EVALUACION[resultado] ?? { texto: resultado, tono: 'neutral', icono: 'reloj' }
@@ -37,122 +21,8 @@ function EtiquetaResultado({ resultado }) {
 // quien la monta decide con 'puedeDesignar' (el backend igual responde 403 a los demás). Se pide la primera
 // vez que se abre la pestaña ('activo'), no al abrir el detalle ni por fila.
 export default function PanelReferencia({ convocatoriaId, postulacionId, activo, onCambio }) {
-  const idGrupo = useId()
-  const [abierta, setAbierta] = useState(false)
-  if (activo && !abierta) setAbierta(true)
-
-  const [estado, setEstado] = useState({ fase: 'cargando', datos: null, error: '' })
-  const [intento, setIntento] = useState(0)
-  const [elegida, setElegida] = useState(null)
-  const [justificacion, setJustificacion] = useState('')
-  const [guardando, setGuardando] = useState(false)
-  const [errores, setErrores] = useState({})
-  const [errorGeneral, setErrorGeneral] = useState('')
-  const [guardada, setGuardada] = useState(false)
-  const montado = useRef(false)
-
-  useEffect(() => {
-    montado.current = true
-    return () => {
-      montado.current = false
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!abierta) return undefined
-    let vigente = true
-    obtenerReferencia(convocatoriaId, postulacionId)
-      .then((res) => {
-        if (vigente) setEstado({ fase: 'listo', datos: res.data, error: '' })
-      })
-      .catch((e) => {
-        if (vigente) setEstado((previo) => ({ ...previo, fase: 'error', error: mensajeError(e) }))
-      })
-    return () => {
-      vigente = false
-    }
-  }, [abierta, convocatoriaId, postulacionId, intento])
-
-  const reintentar = () => {
-    setEstado((previo) => ({ ...previo, fase: 'cargando', error: '' }))
-    setIntento((n) => n + 1)
-  }
-
-  if (!abierta) return null
-  const { fase, datos, error } = estado
-
-  if (fase === 'error' && !datos) {
-    return (
-      <div className="flex flex-col items-start gap-3">
-        <MensajeError>{error}</MensajeError>
-        <Boton variante="contorno" tamano="tactil" onClick={reintentar}>
-          Reintentar
-        </Boton>
-      </div>
-    )
-  }
-  if (!datos) {
-    return (
-      <p role="status" className={`flex items-center gap-2 py-8 text-sm ${CLASE_TEXTO_SUAVE}`}>
-        <Rueda /> Cargando evaluaciones…
-      </p>
-    )
-  }
-
-  const { evaluaciones, referencia } = datos
-  const doc = estadoDocumental(datos.estado_documental)
-  // El servidor solo admite designar cuando hay varias evaluaciones elegibles o cuando la referencia dejó de ser vigente.
-  const invalidada = referencia != null && !referencia.vigente
-  const necesita = evaluaciones.length > 1 || invalidada
-  const puedeGuardar = necesita && elegida != null && justificacion.trim().length > 0
-
-  const editarJustificacion = (e) => {
-    setJustificacion(e.target.value)
-    setErrores((previo) => ({ ...previo, justificacion: undefined }))
-    setErrorGeneral('')
-    setGuardada(false)
-  }
-
-  const guardar = async (e) => {
-    e.preventDefault()
-    if (!puedeGuardar || guardando) return
-    if (justificacion.trim().length < 10) {
-      setErrores({ justificacion: 'La justificación debe tener al menos 10 caracteres.' })
-      return
-    }
-    setGuardando(true)
-    setErrores({})
-    setErrorGeneral('')
-    setGuardada(false)
-    try {
-      const res = await designarReferencia(convocatoriaId, postulacionId, {
-        evaluacion_id: elegida,
-        justificacion: justificacion.trim(),
-      })
-      if (!montado.current) return
-      setEstado({ fase: 'listo', datos: res.data, error: '' })
-      setElegida(null)
-      setJustificacion('')
-      setGuardada(true)
-      // La fila y el detalle toman lo que devolvió el servidor, no un cálculo local.
-      onCambio?.({
-        id: postulacionId,
-        estado_documental: res.data.estado_documental,
-        cumplimiento: res.data.cumplimiento,
-        referenciaCambio: true,
-      })
-    } catch (err) {
-      if (!montado.current) return
-      const porCampo = erroresDeCampo(err)
-      const conocidos = ['justificacion', 'evaluacion_id']
-      setErrores(traducirErrores(Object.fromEntries(Object.entries(porCampo).filter(([k]) => conocidos.includes(k)))))
-      const sueltos = Object.entries(porCampo).filter(([k]) => !conocidos.includes(k))
-      setErrorGeneral(sueltos.length > 0 ? traducirError(sueltos[0][1]) : Object.keys(porCampo).length === 0 ? mensajeError(err) : '')
-    } finally {
-      if (montado.current) setGuardando(false)
-    }
-  }
-
+  const ctx = usePanelReferencia({ convocatoriaId, postulacionId, activo, onCambio })
+  const { datos, doc, editarJustificacion, elegida, error, errorGeneral, errores, estado, evaluaciones, fase, guardada, guardando, guardar, idGrupo, invalidada, justificacion, necesita, puedeGuardar, referencia, reintentar, setElegida, setErrores } = ctx
   return (
     <div className="@container flex flex-col gap-4">
       {fase === 'error' && (

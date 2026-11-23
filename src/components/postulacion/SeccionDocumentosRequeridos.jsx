@@ -1,16 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
-import { validarArchivoPostulacion, TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
+import { useSeccionDocumentosRequeridos } from './useSeccionDocumentosRequeridos'
+import { TAMANO_MAXIMO_MB } from '../../lib/archivosPostulacion'
 import { ETIQUETAS_DOCUMENTO, esObligatorioFijo } from '../../lib/documentosConvocatoria'
 import { CODIGO_LIBRETA_MILITAR, formatearTamano, idFilaDocumento } from '../../lib/postulacionDocumentos'
 import { formatearFechaHora } from '../../lib/ventanaPostulacion'
 import { CLASE_CAJA_SUAVE, CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
 import MarcaObligatorio from '../ui/MarcaObligatorio'
-import {
-  subirDocumento,
-  eliminarDocumento,
-} from '../../api/postulacionesDocumentos'
-import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
-import { useConfirmacion } from '../../hooks/useConfirmacion'
 import BarraProgreso from '../ui/BarraProgreso'
 import Boton from '../ui/Boton'
 import Icono from '../ui/Icono'
@@ -18,8 +12,6 @@ import Icono from '../ui/Icono'
 const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
 const ESTILO_TITULO = CLASE_TITULO_SECCION
-
-
 
 const CLASE_ETIQUETA =
   'rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave'
@@ -39,119 +31,8 @@ export default function SeccionDocumentosRequeridos({
   // Hay una corrección vigente: el backend solo deja reemplazar los documentos marcados y no permite eliminar.
   bloqueoCorreccion = false,
 }) {
-  const documentos = vista.documentos ?? []
-  const sexoMujer = sexo?.codigo === 'mujer'
-  const sinSexo = !sexo?.codigo
-  // Documentos que el evaluador marcó con "Corregir" (correccion.marcados).
-  const hayMarcados = documentos.some((d) => correccion?.marcados?.has(d.parametro.id))
-
-  // códigos de los documentos con una petición EN VUELO. Un Set permite que
-  // varias filas trabajen a la vez sin pisarse (una operación por documento).
-  const [enVuelo, setEnVuelo] = useState(() => new Set())
-  // progreso[clave] = porcentaje (0-100) de la subida en curso de ese documento.
-  const [progreso, setProgreso] = useState({})
-  // archivosSubidos[clave] = documento recién subido, para mostrarlo de inmediato
-  // sin esperar a que onRecargar() vuelva a traer todo el estado.
-  const [archivosSubidos, setArchivosSubidos] = useState({})
-  // errores[clave] = mensaje de validación o del backend.
-  // 'clave' es el código del documento o, si es nuevo y no tiene, su id.
-  const [errores, setErrores] = useState({})
-  const refsInput = useRef({})
-
-  // Cuando la vista se actualiza (onRecargar terminó), limpiamos los archivos
-  // locales: el estado del servidor ya los incluye.
-  useEffect(() => {
-    if (vista?.documentos) setArchivosSubidos({})
-  }, [vista])
-
-  const marcarEnVuelo = (codigo, activo) =>
-    setEnVuelo((prev) => {
-      const siguiente = new Set(prev)
-      if (activo) siguiente.add(codigo)
-      else siguiente.delete(codigo)
-      return siguiente
-    })
-
-  const limpiarError = (codigo) =>
-    setErrores((prev) => {
-      const siguiente = { ...prev }
-      delete siguiente[codigo]
-      return siguiente
-    })
-
-  // La postulación ya existe (la fila tiene archivo o la vista trae su id);
-  // si no, el borrador se crea de forma silenciosa justo antes de guardar.
-  const pidSeguro = async () => vista.postulacion?.id ?? (await asegurar()).postulacionId
-
-  const elegirArchivo = async (clave, parametro, archivo) => {
-    const validacion = validarArchivoPostulacion(archivo)
-    if (!validacion.ok) {
-      setErrores((prev) => ({ ...prev, [clave]: validacion.mensaje }))
-      return
-    }
-
-    marcarEnVuelo(clave, true)
-    setProgreso((prev) => ({ ...prev, [clave]: 0 }))
-    limpiarError(clave)
-    try {
-      const { postulacionId } = await asegurar()
-      const resultado = await subirDocumento(postulacionId, parametro, archivo, (porcentaje) =>
-        setProgreso((prev) => ({ ...prev, [clave]: porcentaje })),
-      )
-      // Mostrar el archivo de inmediato, sin esperar a onRecargar().
-      setArchivosSubidos((prev) => ({ ...prev, [clave]: resultado }))
-      // Se espera la relectura del estado: el indicador sigue hasta que la pantalla (y el botón de enviar) reflejan
-      // el documento, en vez de soltarse antes y dejar un intervalo con datos viejos.
-      await onRecargar()
-    } catch (e) {
-      // 422 por archivo, tipo de documento o libreta militar: se pinta en la fila.
-      const deCampo = erroresDeCampo(e)
-      const mensaje = deCampo.codigo || deCampo.parametro_id || deCampo.archivo || mensajeError(e)
-      setErrores((prev) => ({ ...prev, [clave]: mensaje }))
-    } finally {
-      marcarEnVuelo(clave, false)
-      // El avance solo existe mientras se sube: así eliminar después no muestra una barra vieja.
-      setProgreso((prev) => {
-        const siguiente = { ...prev }
-        delete siguiente[clave]
-        return siguiente
-      })
-    }
-  }
-
-  const confirmar = useConfirmacion()
-
-  const eliminar = async (documento, codigo) => {
-    const nombre = documento?.archivo?.nombre_original ?? documento?.nombre_original
-    const ok = await confirmar({
-      titulo: 'Eliminar documento',
-      mensaje: nombre
-        ? `¿Estás seguro de eliminar "${nombre}"? Podrás volver a cargarlo.`
-        : '¿Estás seguro de eliminar este documento? Podrás volver a cargarlo.',
-      textoConfirmar: 'Eliminar',
-      textoCancelar: 'Cancelar',
-      peligro: true,
-    })
-    if (!ok) return
-
-    marcarEnVuelo(codigo, true)
-    limpiarError(codigo)
-    try {
-      await eliminarDocumento(await pidSeguro(), documento.id)
-      await onRecargar()
-    } catch (e) {
-      onError(mensajeError(e))
-    } finally {
-      marcarEnVuelo(codigo, false)
-    }
-  }
-
-  // "Ver": el PDF lo abre PanelDocumentosPostulacion (evento document:view).
-  const ver = (documento) =>
-    window.dispatchEvent(new CustomEvent('document:view', {
-      detail: { documentoId: documento.id, nombre: documento.nombre_original },
-    }))
-
+  const ctx = useSeccionDocumentosRequeridos({ vista, editable, sexo, asegurar, onRecargar, onError, correccion, soloCorreccion })
+  const { archivosSubidos, documentos, elegirArchivo, eliminar, enVuelo, errores, hayMarcados, progreso, refsInput, sexoMujer, sinSexo, ver } = ctx
   return (
     <section className={ESTILO_TARJETA}>
       <h2 className={ESTILO_TITULO}>Documentos requeridos</h2>

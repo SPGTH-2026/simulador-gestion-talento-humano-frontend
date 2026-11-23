@@ -44,7 +44,7 @@ export default function PanelFinalistas({ convocatoriaId, activo = true, invalid
   useEffect(() => {
     if (!abierta || !activo) return undefined
     const clave = `${pagina}|${intento}|${invalidacion}`
-    if (cargadoClave.current === clave) return undefined
+    // Sin atajo por «ya cargada» (ver PanelRanking): evita que una página quede en «cargando» tras volver atrás.
     let vigente = true
     finalistasConvocatoria(convocatoriaId, { page: pagina })
       .then((res) => {
