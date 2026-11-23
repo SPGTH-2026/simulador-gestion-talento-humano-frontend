@@ -27,6 +27,8 @@ const MENSAJES_ERROR = {
 
 const MENSAJE_EXITO = {
   contrasena: 'Tu contraseña fue actualizada. Ahora puedes iniciar sesión.',
+  // Clave que usa RecuperarContrasena al terminar (/login?contrasena=restablecida).
+  restablecida: 'Tu contraseña fue restablecida. Ahora puedes iniciar sesión.',
   registro: 'Tu cuenta fue creada correctamente. Inicia sesión para verificar tu correo.',
 }
 

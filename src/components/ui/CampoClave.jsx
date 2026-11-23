@@ -53,7 +53,7 @@ export default function CampoClave({
               aria-controls={id}
               className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-md text-slate-600 transition-[color,scale] duration-150 hover:text-sena-azul active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100 dark:text-sena-texto-suave dark:hover:text-white"
             >
-              <Icono nombre={visible ? 'ojoOculto' : 'supervision'} />
+              <Icono nombre={visible ? 'ojoOculto' : 'ojo'} />
             </button>
           )}
         </div>

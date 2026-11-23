@@ -29,7 +29,6 @@ const SeleccionDecidir = lazy(() => import('./pages/seleccion/SeleccionDecidir')
 const Usuarios = lazy(() => import('./pages/usuarios/Usuarios'))
 const FichasListado = lazy(() => import('./pages/fichas/FichasListado'))
 const Reportes = lazy(() => import('./pages/reportes/Reportes'))
-const Supervision = lazy(() => import('./pages/supervision/Supervision'))
 const MisPostulaciones = lazy(() => import('./pages/aspirante/MisPostulaciones'))
 const DocumentosPostulacion = lazy(() => import('./pages/aspirante/DocumentosPostulacion'))
 const CorreccionesPostulacion = lazy(() => import('./pages/aspirante/CorreccionesPostulacion'))
@@ -101,9 +100,6 @@ export default function AppRouter() {
           </Route>
           <Route element={<PermissionRoute permiso="reportes:ver" />}>
             <Route path="reportes" element={<Reportes />} />
-          </Route>
-          <Route element={<PermissionRoute permiso="supervision:gestionar" />}>
-            <Route path="supervision" element={<Supervision />} />
           </Route>
 
           <Route element={<PermissionRoute permiso="propio:postulaciones" />}>

@@ -7,6 +7,7 @@ import Tarjeta from '../../components/ui/Tarjeta'
 import Campo from '../../components/ui/Campo'
 import Paginacion from '../../components/ui/Paginacion'
 import Cargando from '../../components/ui/Cargando'
+import useDebounce from '../../lib/useDebounce'
 import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import { Link } from 'react-router-dom'
@@ -16,6 +17,8 @@ export default function DocumentosListado() {
   const [fichas, setFichas] = useState([])
   const [fichaId, setFichaId] = useState('')
   const [busqueda, setBusqueda] = useState('')
+  // La búsqueda pide al servidor solo cuando el usuario deja de escribir (no en cada tecla).
+  const busquedaDiferida = useDebounce(busqueda, 300)
   const [, setPagina] = useState(1)
   const [aspirantes, setAspirantes] = useState([])
   const [meta, setMeta] = useState({})
@@ -37,7 +40,7 @@ export default function DocumentosListado() {
     try {
       const params = { page }
       if (fichaId) params.ficha_id = fichaId
-      if (busqueda.trim()) params.search = busqueda.trim()
+      if (busquedaDiferida.trim()) params.search = busquedaDiferida.trim()
 
       const data = await listaAspirantes(params)
       setAspirantes(data.data)
@@ -49,15 +52,16 @@ export default function DocumentosListado() {
     } finally {
       setCargando(false)
     }
-  }, [fichaId, busqueda])
+  }, [fichaId, busquedaDiferida])
 
   useEffect(() => {
     cargarFichas()
-  }, [])
+  }, [cargarFichas])
 
+  // cargarAspirantes cambia exactamente cuando cambian la ficha o la búsqueda diferida.
   useEffect(() => {
     cargarAspirantes(1)
-  }, [fichaId, busqueda])
+  }, [cargarAspirantes])
 
   const cambiarPagina = (nueva) => {
     if (nueva < 1 || nueva > (meta?.last_page ?? 1)) return

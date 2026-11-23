@@ -116,7 +116,8 @@ export function dispararDescarga(blob, nombre) {
   document.body.appendChild(enlace)
   enlace.click()
   enlace.remove()
-  URL.revokeObjectURL(url)
+  // Revocar en el mismo tick puede cancelar la descarga en algunos navegadores (Safari): se libera después.
+  setTimeout(() => URL.revokeObjectURL(url), 60000)
 }
 
 // Abre un archivo del backend en una pestaña nueva.
@@ -166,15 +167,21 @@ export async function mensajeErrorBlob(error) {
 
 // Corrección solicitada por el evaluador para una postulación propia: la evaluación
 // (con sus decisiones por documento) o null si no hay corrección pendiente.
+// Pide solo las evaluaciones de ESTA postulación con corrección pedida (el servidor filtra; no se baja todo el listado).
 export const obtenerCorreccion = (postulacionId) =>
-  client.get('/mis-evaluaciones').then((res) => {
-    const lista = res.data?.data ?? []
-    return (
-      lista.find(
-        (e) => Number(e.postulacion_id) === Number(postulacionId) && e.estado === 'correccion_solicitada',
-      ) ?? null
-    )
-  })
+  client
+    .get('/mis-evaluaciones', {
+      params: { postulacion_id: Number(postulacionId), estado: 'correccion_solicitada' },
+    })
+    .then((res) => {
+      const lista = res.data?.data ?? []
+      // La lista viene con la más reciente primero: la que cuenta es la última ronda pedida.
+      return (
+        lista.find(
+          (e) => Number(e.postulacion_id) === Number(postulacionId) && e.estado === 'correccion_solicitada',
+        ) ?? null
+      )
+    })
 
 // El aspirante confirma que reemplazó todos los documentos marcados para corregir.
 export const enviarCorreccion = (postulacionId) =>

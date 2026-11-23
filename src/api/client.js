@@ -26,6 +26,7 @@ const csrf = axios.create({
   baseURL: CSRF_URL,
   withCredentials: true,
   headers: { Accept: 'application/json' },
+  timeout: 15000,
 })
 
 let pendienteCookie = null
@@ -49,6 +50,8 @@ const client = axios.create({
   // Imprescindible: la sesión viaja en la cookie HttpOnly 'laravel-session'.
   withCredentials: true,
   headers: { Accept: 'application/json' },
+  // Sin tiempo máximo, un backend caído dejaba los botones bloqueados para siempre. 60 s cubre la subida de un PDF de 3 MB.
+  timeout: 60000,
   // El header CSRF lo pone el interceptor de abajo, no axios. Así no dependemos
   // de si la versión instalada lo manda (y con qué formato) y controlamos el
   // decodeURIComponent, que Laravel exige sí o sí.
@@ -84,7 +87,21 @@ client.interceptors.request.use(async (config) => {
 
 client.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const config = error.config
+
+    // 419 (CSRF vencido, p. ej. tras reiniciar el navegador o rotar la sesión): la cookie XSRF-TOKEN de ahora ya no
+    // sirve. Se pide una nueva y la petición se repite una sola vez. Antes solo se reintentaba si NO había cookie.
+    if (error.response?.status === 419 && config && !config._reintentoCsrf) {
+      config._reintentoCsrf = true
+      try {
+        await csrf.get()
+        return await client.request(config)
+      } catch (reintentoError) {
+        return Promise.reject(reintentoError)
+      }
+    }
+
     // Solo un 401 CON respuesta significa sesión perdida. Si no hay response
     // el backend está caído: no se cierra la sesión del usuario por eso.
     if (error.response?.status === 401) {

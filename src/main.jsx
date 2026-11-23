@@ -5,7 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import { AuthProvider } from './auth/AuthContext'
 import ErrorBoundary from './components/ErrorBoundary'
-import { ConfirmacionProvider } from './hooks/useConfirmacion'
+import ConfirmacionProvider from './components/ui/ConfirmacionProvider'
 import AppRouter from './router'
 
 // La barrera de la raíz es el último recurso: si falla algo fuera del marco (sesión, rutas, pantallas de acceso)

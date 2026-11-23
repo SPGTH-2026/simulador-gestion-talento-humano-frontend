@@ -56,14 +56,6 @@ export const menu = [
   // 'disponible: false': la pantalla existe (ruta y permiso siguen en el router) pero todavía no tiene funciones ni
   // backend, así que el menú no la ofrece. Para mostrarla de nuevo basta quitar esa línea.
   { id: 'reportes', label: 'Reportes', icono: 'reportes', to: '/reportes', permiso: 'reportes:ver', disponible: false },
-  {
-    id: 'supervision',
-    label: 'Supervisión',
-    icono: 'supervision',
-    to: '/supervision',
-    permiso: 'supervision:gestionar',
-    disponible: false,
-  },
 
   // Vistas del aspirante
   { id: 'mis-postulaciones', label: 'Mis postulaciones', icono: 'postulaciones', to: '/mis-postulaciones', permiso: 'propio:postulaciones' },

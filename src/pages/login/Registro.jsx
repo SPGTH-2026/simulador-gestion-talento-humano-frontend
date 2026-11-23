@@ -83,7 +83,12 @@ export default function Registro() {
     }
   }
 
+  const [yendoAGoogle, setYendoAGoogle] = useState(false)
+
   const registrarseConGoogle = () => {
+    // Un segundo clic antes de salir de la página no debe disparar otra redirección.
+    if (yendoAGoogle) return
+    setYendoAGoogle(true)
     // Navegación completa: Laravel redirige a Google y procesa el callback.
     window.location.href = GOOGLE_URL
   }
@@ -103,6 +108,7 @@ export default function Registro() {
         tamano="flexible"
         type="button"
         onClick={registrarseConGoogle}
+        disabled={yendoAGoogle}
         className="w-full"
       >
         <GoogleIcon />

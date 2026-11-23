@@ -1,11 +1,10 @@
-import { createContext, useCallback, useContext, useRef, useState } from 'react'
-import ConfirmarAccion from '../components/ui/ConfirmarAccion'
-
-const ConfirmacionContext = createContext(null)
+import { useCallback, useRef, useState } from 'react'
+import ConfirmarAccion from './ConfirmarAccion'
+import { ConfirmacionContext } from '../../hooks/confirmacionContexto'
 
 // Proveedor: renderiza el diálogo y resuelve la promesa de confirmar().
 // Solo puede haber un diálogo a la vez; si se abre otro, el anterior se cancela.
-export function ConfirmacionProvider({ children }) {
+export default function ConfirmacionProvider({ children }) {
   const [opciones, setOpciones] = useState(null)
   const resolverRef = useRef(null)
 
@@ -43,13 +42,4 @@ export function ConfirmacionProvider({ children }) {
       )}
     </ConfirmacionContext.Provider>
   )
-}
-
-// Uso: if (!(await confirmar({ titulo, mensaje, textoConfirmar, peligro }))) return
-export function useConfirmacion() {
-  const contexto = useContext(ConfirmacionContext)
-  if (!contexto) {
-    throw new Error('useConfirmacion debe usarse dentro de <ConfirmacionProvider>')
-  }
-  return contexto.confirmar
 }

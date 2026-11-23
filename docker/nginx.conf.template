@@ -41,6 +41,10 @@ server {
 
     charset utf-8;
 
+    # Por defecto nginx rechaza cuerpos > 1 MB (413). Un PDF de 3 MB (límite del negocio) pasa por /api, así que se sube
+    # el límite con holgura para la subida multipart.
+    client_max_body_size 5M;
+
     # --- Cabeceros ---------------------------------------------------
     # Se declaran aqui y una sola vez. Ningun location vuelve a declarar un
     # add_header, que es lo que haria que estos dejaran de llegar.
