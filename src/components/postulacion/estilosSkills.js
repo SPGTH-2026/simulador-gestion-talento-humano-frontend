@@ -22,7 +22,7 @@ export const origenTexto = (origen) =>
       : 'Propia'
 
 // Una fila de skill, en dos renglones para que las acciones no se amontonen:
-//  1. nombre + etiquetas, y a la derecha Sí/No (las filas de solo lectura NO tienen Sí/No).
+//  1. nombre + etiquetas, y a la derecha el interruptor de declarar (las filas de solo lectura NO lo tienen).
 //  2. cuando está declarada, el certificado: a la izquierda su estado/nombre y a la derecha sus acciones
 //     (Ver, Reemplazar, Quitar o Cargar certificado), siempre visibles.
 //

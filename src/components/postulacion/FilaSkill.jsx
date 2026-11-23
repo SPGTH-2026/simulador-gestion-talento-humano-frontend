@@ -1,6 +1,7 @@
+import { useId } from 'react'
 import BarraProgreso from '../ui/BarraProgreso'
-import RespuestaSiNo from '../evaluacion/RespuestaSiNo'
 import Boton from '../ui/Boton'
+import Interruptor from '../ui/Interruptor'
 import { CLASE_ETIQUETA, CLASE_CERTIFICADA, origenTexto } from './estilosSkills'
 
 // Una fila de skill: casilla, nivel, certificado y acciones. Recibe lo que necesita como props.
@@ -14,6 +15,8 @@ export default function FilaSkill({
   clave,
   tope,
   sinSiNo = false,
+  error = '',
+  errorClave = null,
   onActivar,
   onDesactivar,
   onAdjuntar,
@@ -22,14 +25,19 @@ export default function FilaSkill({
   registrarRef,
   onArchivo,
 }) {
+  const idNombre = useId()
+  const idAyuda = useId()
   const activa = Boolean(declarada)
   const certificado = declarada?.certificado || (declarada?.id ? certificadosSubidos?.[declarada.id] : null)
   const subiendoCert = activa && enVuelo === `cert-${declarada.id}`
-  // Guardando el Sí/No de ESTA fila (declarar o quitar la skill): la rueda va en la opción que se aplica.
+  // Se guarda el interruptor de ESTA fila (declarar o quitar la skill): la rueda va en la perilla y junto al control.
+  // Si el error de la sección pertenece a esta fila (declarar, quitar o algo de su certificado), se pinta junto a ella.
+  const clavesDeLaFila = [clave, declarada && `skill-${declarada.id}`, declarada && `cert-${declarada.id}`, declarada && `quitarcert-${declarada.id}`]
+  const errorDeLaFila = error && errorClave && clavesDeLaFila.includes(errorClave) ? error : ''
   const guardandoSiNo = enVuelo === clave || (activa && enVuelo === `skill-${declarada.id}`)
   const puedeEditarCert = editable && !sinSiNo
-  // Hay algo en curso que NO es el guardado de esta fila: sus controles se bloquean. El propio Sí/No de la fila no se
-  // deshabilita mientras guarda (perdería el foco del teclado): se marca como ocupado.
+  // Hay algo en curso que NO es el guardado de esta fila: sus controles se bloquean (aria-disabled, sin perder el foco). El propio
+  // interruptor de la fila no se deshabilita mientras guarda (perdería el foco del teclado): se marca como ocupado.
   const otraOperacion = Boolean(enVuelo) && !guardandoSiNo
   // Con el envío al 100 % el archivo ya llegó y el servidor sigue trabajando: se dice «Procesando…».
   const procesandoCert = subiendoCert && (progresoCert ?? 0) >= 100
@@ -39,7 +47,7 @@ export default function FilaSkill({
     <li className="flex flex-col gap-2 py-3">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-sena-texto">
-          {nombre}
+          <span id={idNombre}>{nombre}</span>
           {/* El origen solo se indica donde ayuda: las skills de la convocatoria ya lo dicen en su encabezado. */}
           {activa && declarada.origen !== 'convocatoria' && (
             <span className={CLASE_ETIQUETA}>{origenTexto(declarada.origen)}</span>
@@ -55,16 +63,30 @@ export default function FilaSkill({
         </p>
 
         {!sinSiNo && (
-          <RespuestaSiNo
-            pregunta={`¿Declaras «${nombre}»?`}
-            valor={activa}
-            onChange={(declarar) => (declarar ? onActivar() : onDesactivar())}
-            ocupado={guardandoSiNo}
-            deshabilitadoSi={!editable || otraOperacion || Boolean(tope && !activa)}
-            deshabilitadoNo={!editable || otraOperacion}
-          />
+          <div className="flex items-center gap-2">
+            {/* El único indicador visible es la rueda dentro del interruptor. Mientras guarda se ANUNCIA el estado con un texto solo
+                para lectores de pantalla (sr-only, fuera del flujo: no mueve la distribución). La región existe siempre para que
+                el anuncio se lea al cambiar su contenido. */}
+            <span role="status" className="sr-only">
+              {guardandoSiNo ? (activa ? 'Quitando…' : 'Guardando…') : ''}
+            </span>
+            <Interruptor
+              idNombre={idNombre}
+              activo={activa}
+              onChange={(declarar) => (declarar ? onActivar() : onDesactivar())}
+              ocupado={guardandoSiNo}
+              bloqueado={!editable || otraOperacion || Boolean(tope && !activa)}
+              ayudaId={editable && tope && !activa ? idAyuda : undefined}
+            />
+          </div>
         )}
       </div>
+
+      {editable && tope && !activa && !sinSiNo && (
+        <p id={idAyuda} className="text-sm text-slate-600 dark:text-sena-texto-suave">
+          Alcanzaste el máximo de skills: quita una para declarar otra.
+        </p>
+      )}
 
       {activa && (
         <div className="flex flex-col gap-2 rounded-lg bg-sena-fondo/50 px-3 py-2 dark:bg-sena-noche/40">
@@ -130,6 +152,12 @@ export default function FilaSkill({
         </div>
       )}
 
+      {errorDeLaFila && (
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          {errorDeLaFila}
+        </p>
+      )}
+
       <input
         ref={registrarRef}
         type="file"
@@ -147,7 +175,7 @@ export default function FilaSkill({
 }
 
 // Skills de la postulación (doc 33). SOLO las que pide la convocatoria
-// (vista.skills_convocatoria): el aspirante marca Sí/No y puede adjuntar un
+// (vista.skills_convocatoria): el aspirante activa el interruptor y puede adjuntar un
 // certificado OPCIONAL. Todas son opcionales (ninguna bloquea el envío).
 //
 // Las filas declaradas ANTES del cambio (origen 'catalogo' o 'propia') NO se

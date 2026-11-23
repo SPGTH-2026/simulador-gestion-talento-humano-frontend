@@ -10,7 +10,9 @@ export default function SeccionSkills({
   onRecargar,
 }) {
   const ctx = useSeccionSkills({ vista, editable, asegurar, onRecargar })
-  const { accionesDeclarada, buscarDeclarada, certificadosSubidos, declaradas, declarar, enVuelo, error, esVieja, progresoCert, quitar, requeridas, setError, tope, viejas } = ctx
+  // Sin skills en la convocatoria ni declaradas antes, el hook devuelve null: la sección no se pinta.
+  if (ctx === null) return null
+  const { accionesDeclarada, buscarDeclarada, certificadosSubidos, declaradas, declarar, enVuelo, error, errorClave, esVieja, fallarEn, progresoCert, quitar, requeridas, tope, viejas } = ctx
   return (
     <section className={ESTILO_TARJETA}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -22,9 +24,8 @@ export default function SeccionSkills({
 
       {requeridas.length > 0 && (
         <p className="mt-2 text-sm text-slate-600 dark:text-sena-texto-suave">
-          Marca las que tengas de las que pide la convocatoria. Todas son
-          opcionales y ninguna bloquea el envío. Con "Sí" puedes adjuntar un
-          certificado si lo quieres (opcional).
+          Activa las habilidades que deseas declarar. Son opcionales y no
+          bloquean el envío de tu postulación. Puedes adjuntar un certificado.
         </p>
       )}
 
@@ -35,7 +36,7 @@ export default function SeccionSkills({
             {requeridas.map((requerida) => {
               const declarada = buscarDeclarada(requerida.nombre)
               // Una fila vieja que coincide con una skill de la convocatoria
-              // tampoco se toca: se muestra con su nota, sin Sí/No.
+              // tampoco se toca: se muestra con su nota, sin interruptor.
               const soloLectura = declarada ? esVieja(declarada) : false
               const clave = `req-${requerida.id ?? normalizarSkill(requerida.nombre)}`
 
@@ -45,7 +46,7 @@ export default function SeccionSkills({
                   nombre={requerida.nombre}
                   declarada={declarada}
                   editable={editable}
-                  enVuelo={enVuelo} progresoCert={progresoCert} certificadosSubidos={certificadosSubidos}
+                  enVuelo={enVuelo} progresoCert={progresoCert} certificadosSubidos={certificadosSubidos} error={error} errorClave={errorClave}
                   clave={clave}
                   tope={tope}
                   sinSiNo={soloLectura}
@@ -61,7 +62,7 @@ export default function SeccionSkills({
                       // El backend solo admite la skill de la convocatoria (por
                       // id): sin id no se puede declarar.
                       if (!id) {
-                        setError('No se encontró la skill de la convocatoria.')
+                        fallarEn(clave, 'No se encontró la skill de la convocatoria.')
                         return null
                       }
 
@@ -92,7 +93,7 @@ export default function SeccionSkills({
                 nombre={skill.nombre}
                 declarada={skill}
                 editable={editable}
-                enVuelo={enVuelo} progresoCert={progresoCert} certificadosSubidos={certificadosSubidos}
+                enVuelo={enVuelo} progresoCert={progresoCert} certificadosSubidos={certificadosSubidos} error={error} errorClave={errorClave}
                 clave={`skill-${skill.id}`}
                 tope={tope}
                 sinSiNo
@@ -103,7 +104,7 @@ export default function SeccionSkills({
         </div>
       )}
 
-      {error && (
+      {error && !errorClave && (
         <p role="alert" className="mt-2 text-sm text-red-600 dark:text-red-400">
           {error}
         </p>

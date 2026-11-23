@@ -14,6 +14,12 @@ export function useSeccionSkills({ vista,
   const requeridas = vista.skills_convocatoria ?? []
 
   const [error, setError] = useState('')
+  // Clave de la operación a la que pertenece el error (la fila que lo causó): se pinta junto a ella y no al final de la sección.
+  const [errorClave, setErrorClave] = useState(null)
+  const fallarEn = (clave, mensaje) => {
+    setError(mensaje)
+    setErrorClave(clave)
+  }
   // clave de la operación en vuelo: `req-...` | `skill-<id>` | `cert-<id>` | `quitarcert-<id>`
   const [enVuelo, setEnVuelo] = useState(null)
   // Porcentaje (0-100) de la subida del certificado en curso.
@@ -22,7 +28,7 @@ export function useSeccionSkills({ vista,
   // inmediato sin esperar a que onRecargar() vuelva a traer todo el estado.
   const [certificadosSubidos, setCertificadosSubidos] = useState({})
   const refsCertificado = useRef({})
-  // Cerrojo síncrono: 'enVuelo' es estado y solo cambia en el siguiente render; dos clics seguidos (o el Sí/No y un
+  // Cerrojo síncrono: 'enVuelo' es estado y solo cambia en el siguiente render; dos clics seguidos (o el interruptor y un
   // certificado) podrían colarse en ese intervalo y enviar la operación dos veces. La referencia lo impide.
   const cerrojo = useRef(false)
 
@@ -33,10 +39,11 @@ export function useSeccionSkills({ vista,
     cerrojo.current = true
     setEnVuelo(clave)
     setError('')
+    setErrorClave(null)
     try {
       return (await tarea()) !== false
     } catch (e) {
-      setError(mensajeDe(e))
+      fallarEn(clave, mensajeDe(e))
       // Un fallo de red puede llegar DESPUÉS de que el servidor aplicó el cambio: se vuelve a leer el estado real
       // para que la pantalla no quede desfasada (y el siguiente clic no actúe sobre algo que ya no existe).
       try {
@@ -89,7 +96,7 @@ export function useSeccionSkills({ vista,
         if (!forma) return false
 
         await declararSkill(postulacionId, forma)
-        // Se espera la recarga: el Sí/No y «Cargar certificado» cambian cuando llega el estado real.
+        // Se espera la recarga: el interruptor y «Cargar certificado» cambian cuando llega el estado real.
         await onRecargar()
         return true
       },
@@ -104,9 +111,13 @@ export function useSeccionSkills({ vista,
 
   const quitar = async (skill) => {
     if (!editable || cerrojo.current) return
+    // Dice qué se elimina: la skill y, si la tiene, también su certificado (el servidor borra el archivo).
+    const certificado = skill.certificado?.nombre_original
     const ok = await confirmar({
       titulo: 'Quitar skill',
-      mensaje: `¿Estás seguro de quitar la skill "${skill.nombre}"?`,
+      mensaje: skill.certificado
+        ? `Se quitará la skill «${skill.nombre}» de tu postulación y también se eliminará el certificado que cargaste${certificado ? ` (${certificado})` : ''}. Podrás declararla de nuevo y volver a cargarlo.`
+        : `Se quitará la skill «${skill.nombre}» de tu postulación. Podrás declararla de nuevo cuando quieras.`,
       textoConfirmar: 'Quitar',
       textoCancelar: 'Cancelar',
       peligro: true,
@@ -125,7 +136,7 @@ export function useSeccionSkills({ vista,
   const elegirCertificado = async (skill, archivo) => {
     const validacion = validarArchivoPostulacion(archivo)
     if (!validacion.ok) {
-      setError(validacion.mensaje)
+      fallarEn(`cert-${skill.id}`, validacion.mensaje)
       return
     }
     setProgresoCert(0)
@@ -220,6 +231,8 @@ export function useSeccionSkills({ vista,
       setCertificadosSubidos,
       setEnVuelo,
       setError,
+      errorClave,
+      fallarEn,
       setProgresoCert,
       setVistaPrevia,
       tope,
