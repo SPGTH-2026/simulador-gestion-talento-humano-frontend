@@ -1,3 +1,4 @@
+import { isValidElement } from 'react'
 import { usePanelDecisiones } from './usePanelDecisiones'
 import { Link } from 'react-router-dom'
 import { EtiquetaConIcono } from '../evaluacion/PresentacionEvaluacion'
@@ -29,6 +30,8 @@ function EtiquetaDecision({ codigo }) {
 // Las acciones de cada fila las calcula accionesDeFila con lo último que dijo el servidor; el servidor sigue validando.
 export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidir }) {
   const ctx = usePanelDecisiones({ convocatoriaId, enProceso, puedeDecidir })
+  // Mientras carga, falla o no está abierto, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
+  if (ctx === null || isValidElement(ctx)) return ctx
   const { accionesDe, alConflicto, alGuardar, cambiarPagina, cargando, cupos, detalle, error, fase, filaDecidiendo, filaDetalle, filas, guardada, lista, meta, pausaGuardada, reintentar, setDecidiendo, setDetalle, setGuardada, sinFilas, vigenteEnProceso } = ctx
   return (
     <div className="@container flex flex-col gap-4" aria-busy={cargando}>

@@ -80,6 +80,27 @@ export function validarNota(texto, { enEdicion = false } = {}) {
   return { ok: true, valor: t.replace(',', '.') }
 }
 
+// Restricción AL ESCRIBIR O PEGAR en el campo de la nota: ¿este texto todavía puede llegar a ser una nota válida? Deja pasar
+// lo intermedio («», «8», «8,», «10,0») y rechaza lo que ninguna continuación arregla: letras, espacios, un segundo
+// separador, separador al inicio, más de dos decimales, más de dos enteros o un valor mayor que 10 (como «10,01»). Quien la
+// usa NO modifica el texto: si no se permite, conserva lo anterior y muestra el motivo; nunca vuelve válido un texto inválido
+// (un «8,5abc» pegado se rechaza entero, no se limpia a «8,5»). El rango se sigue validando al guardar (validarNota).
+export function permiteEscribirNota(texto) {
+  const t = String(texto ?? '')
+  if (t === '') return { permitido: true }
+  if (/[^\d.,]/.test(t)) {
+    return { permitido: false, mensaje: 'La nota solo puede llevar números y un separador decimal (coma o punto).' }
+  }
+  if ((t.match(/[.,]/g) ?? []).length > 1) return { permitido: false, mensaje: 'Usa un solo separador decimal (coma o punto).' }
+  if (/^[.,]/.test(t)) return { permitido: false, mensaje: 'Escribe la parte entera antes del separador, por ejemplo 0,5.' }
+  const [entera, decimales = ''] = t.split(/[.,]/)
+  if (decimales.length > 2) return { permitido: false, mensaje: 'Usa como máximo dos decimales.' }
+  if (entera.length > 2 || Number(`${entera}.${decimales || '0'}`) > 10) {
+    return { permitido: false, mensaje: 'La nota debe estar entre 0 y 10.' }
+  }
+  return { permitido: true }
+}
+
 // Resultado adicional: pendiente de configurar y sin actividades son cosas distintas, y ninguna es un 0.
 export const ESTADO_RESULTADO = {
   pendiente_de_configurar: 'Pendiente de configurar',

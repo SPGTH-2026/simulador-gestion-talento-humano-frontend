@@ -94,9 +94,8 @@ export default function SeccionesDescripcion({ c, esGestion }) {
               </span>
             )}
             <EtiquetaDocumento obligatorio={Boolean(documento.obligatorio)} />
-            {/* Regla propia del documento (libreta militar, tarjeta
-                profesional). Misma constante que usa el panel de postulación:
-                una sola fuente para el texto. */}
+            {/* Regla propia del documento (libreta militar). Misma constante
+                que usa el panel de postulación: una sola fuente para el texto. */}
             {ETIQUETAS_DOCUMENTO[documento.codigo] && (
               <span className="shrink-0 rounded-full bg-sena-hundido px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-sena-superficie-alta dark:text-sena-texto-suave">
                 {ETIQUETAS_DOCUMENTO[documento.codigo]}

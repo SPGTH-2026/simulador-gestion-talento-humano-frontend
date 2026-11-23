@@ -1,3 +1,4 @@
+import { isValidElement } from 'react'
 import { useContenidoDetalle } from './useContenidoDetalle'
 import DetalleConvocatoria from '../../components/convocatorias/DetalleConvocatoria'
 import PanelDocumentosPostulacion from '../../components/postulacion/PanelDocumentosPostulacion'
@@ -5,6 +6,8 @@ import PanelDocumentosPostulacion from '../../components/postulacion/PanelDocume
 // Contenido del detalle de una convocatoria: carga, permisos, postulación y acciones de gestión.
 export default function ContenidoDetalle({ id }) {
   const ctx = useContenidoDetalle({ id })
+  // Mientras carga, falla o no está abierto, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
+  if (ctx === null || isValidElement(ctx)) return ctx
   const { accionInferior, accionesGestion, aplicarPostulacion, detalle, errorAccion, estadoPostulacion, mostrarPanel, navigate } = ctx
   return (
     <>

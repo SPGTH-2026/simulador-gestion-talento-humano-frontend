@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { crearDocumentoCatalogo } from '../../api/convocatorias'
 import { mensajeError } from '../../api/mensajeError'
 import { DOCUMENTOS_OBLIGATORIOS, esObligatorioFijo } from '../../lib/documentosConvocatoria'
@@ -16,6 +16,8 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
   const [nuevoDocumento, setNuevoDocumento] = useState('')
   const [errorDocumento, setErrorDocumento] = useState('')
   const [guardandoDocumento, setGuardandoDocumento] = useState(false)
+  // Cerrojo síncrono: Enter en el campo y el botón pueden llegar antes de que React pinte el botón ocupado y enviar dos veces.
+  const guardandoRef = useRef(false)
   const [mostrarNuevoDocumento, setMostrarNuevoDocumento] = useState(false)
   // 'Repartir en partes iguales' deja el reparto en automático: al marcar, quitar o agregar un documento se vuelve a repartir
   // solo (si no, el documento nuevo quedaba sin porcentaje y no se podía guardar). Escribir un porcentaje a mano lo apaga.
@@ -92,6 +94,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
   // Crea un documento NUEVO en el catálogo y lo suma (marcado) a esta
   // convocatoria. El gestor luego le pone su porcentaje como a cualquier otro.
   const agregarDocumentoCatalogo = async () => {
+    if (guardandoRef.current) return
     const nombre = nuevoDocumento.trim()
 
     if (nombre.length < 3) {
@@ -99,6 +102,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
       return
     }
 
+    guardandoRef.current = true
     setGuardandoDocumento(true)
     setErrorDocumento('')
 
@@ -120,6 +124,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
     } catch (e) {
       setErrorDocumento(mensajeError(e))
     } finally {
+      guardandoRef.current = false
       setGuardandoDocumento(false)
     }
   }

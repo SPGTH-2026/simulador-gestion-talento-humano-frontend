@@ -5,7 +5,7 @@ import Campo from '../ui/Campo'
 import Etiqueta from '../ui/Etiqueta'
 import { MensajeError } from '../ui/Mensaje'
 import { CLASE_CAJA_SUAVE, CLASE_CAMPO, CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
-import { formatoFecha, hoyBogota, notaParaServidor, validarNota, textoNota, traducirError, traducirErrores } from '../../lib/seleccion'
+import { formatoFecha, hoyBogota, notaParaServidor, permiteEscribirNota, validarNota, textoNota, traducirError, traducirErrores } from '../../lib/seleccion'
 
 // Piezas del panel de calificaciones: formulario de nota, historial y tarjeta de actividad.
 export const CAMPOS_FORMULARIO = ['nota', 'fecha_realizacion', 'observacion', 'motivo']
@@ -27,9 +27,18 @@ export function FormularioNota({ actividad, existente, bloqueado = false, onGuar
   const inactivo = guardando || bloqueado
 
   const cambiar = (campo) => (e) => {
-    setValores((v) => ({ ...v, [campo]: e.target.value }))
-    // La nota se valida mientras se escribe o se pega: un texto inválido se señala de inmediato y nunca se corrige solo.
     const texto = e.target.value
+    // La nota se restringe al escribir y al pegar: lo que ya no puede ser una nota válida NO entra al campo (se conserva el
+    // texto anterior) y se dice el motivo. Nunca se corrige solo: un pegado inválido se rechaza entero.
+    if (campo === 'nota') {
+      const regla = permiteEscribirNota(texto)
+      if (!regla.permitido) {
+        setErrores((previo) => ({ ...previo, nota: regla.mensaje }))
+        return
+      }
+    }
+    setValores((v) => ({ ...v, [campo]: texto }))
+    // Lo permitido se valida igual mientras se escribe: un separador sin decimales («8,») aún no es error hasta salir del campo.
     const nota = campo === 'nota' && texto.trim() !== '' ? validarNota(texto, { enEdicion: true }) : null
     setErrores((previo) => ({ ...previo, [campo]: nota && !nota.ok && nota.mensaje ? nota.mensaje : undefined }))
     setErrorGeneral('')

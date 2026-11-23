@@ -1,3 +1,4 @@
+import { isValidElement } from 'react'
 import { usePortafolio } from './usePortafolio'
 import { Link } from 'react-router-dom'
 import { descargarDocumentoRevision, descargarCertificadoRevision } from '../../api/portafolios'
@@ -35,6 +36,8 @@ export const TITULO_BLOQUE = `text-base font-semibold ${CLASE_TEXTO_FUERTE}`
 // Portafolio en solo lectura: quien llega aquí ve y descarga, no escribe.
 export default function Portafolio({ userId }) {
   const ctx = usePortafolio({ userId })
+  // Mientras carga o si falla, el hook devuelve la propia pantalla (un elemento de React) o null, no el contexto.
+  if (ctx === null || isValidElement(ctx)) return ctx
   const { abriendoId, botonesLectura, encabezadoRevision, error, errorRevision, handleVerDocumentos, portafolio, postulacionSel, postulaciones, revision, rutaArchivo, setPostulacionSel, setRevision, usuario, verArchivo } = ctx
   return (
     <>

@@ -15,11 +15,12 @@ export const DOCUMENTOS_OBLIGATORIOS = [
   'certificados_laborales',
 ]
 
-// Etiquetas de los documentos opcionales que tienen regla propia. Los decide el
-// gestor; si los incluye, el backend los guarda como obligatorios.
+// Etiquetas de los documentos que tienen una regla propia de aplicación (hoy solo la libreta militar). La obligatoriedad NO
+// se dice aquí: es la que quedó guardada en la convocatoria (el backend guarda como obligatorio todo documento que el
+// gestor incluye) y se muestra con «Obligatorio» / «(opcional)». Una etiqueta como «Si el cargo la exige» la repetía o la
+// contradecía, por eso la tarjeta profesional ya no lleva etiqueta propia.
 export const ETIQUETAS_DOCUMENTO = {
   libreta_militar: 'Solo para hombres',
-  tarjeta_profesional: 'Si el cargo la exige',
 }
 
 // ¿Es uno de los obligatorios fijos (marcado y bloqueado, no se puede quitar)?

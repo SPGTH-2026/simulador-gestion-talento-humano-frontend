@@ -1,3 +1,4 @@
+import { isValidElement } from 'react'
 import { usePanelCalificaciones } from './usePanelCalificaciones'
 import Boton from '../ui/Boton'
 import { MensajeAviso, MensajeError } from '../ui/Mensaje'
@@ -8,6 +9,8 @@ import { TarjetaActividad } from './PiezasCalificaciones'
 
 export default function PanelCalificaciones({ convocatoriaId, postulacionId, puedeDecidir, recarga, onCambio, soloLectura = false }) {
   const ctx = usePanelCalificaciones({ convocatoriaId, postulacionId, puedeDecidir, recarga, onCambio, soloLectura })
+  // Mientras carga, falla o no está abierto, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
+  if (ctx === null || isValidElement(ctx)) return ctx
   const { actualizando, datos, editando, error, fallo, guardar, puedeEscribir, razon, reintentar, resultado, setEditando, sinActividades, sinConfigurar } = ctx
   return (
     <div className="@container flex flex-col gap-4" aria-busy={actualizando}>

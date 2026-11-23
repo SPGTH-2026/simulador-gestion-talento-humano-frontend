@@ -1,3 +1,4 @@
+import { isValidElement } from 'react'
 import { usePanelConfiguracion } from './usePanelConfiguracion'
 import Boton from '../ui/Boton'
 import Campo from '../ui/Campo'
@@ -27,6 +28,8 @@ function EstadoConfiguracion({ config }) {
 // de la convocatoria, así que cambiar de convocatoria lo reinicia.
 export default function PanelConfiguracion({ convocatoriaId, activo, puedeDecidir }) {
   const ctx = usePanelConfiguracion({ convocatoriaId, activo, puedeDecidir })
+  // Mientras carga, falla o no está abierto, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
+  if (ctx === null || isValidElement(ctx)) return ctx
   const { ambas, borrador, cambiarPeso, config, editable, editar, errorGeneral, errores, guardada, guardando, guardar, huboCambio, idGrupo, opcion, puedeGuardar, suma, unaSola } = ctx
   return (
     <form

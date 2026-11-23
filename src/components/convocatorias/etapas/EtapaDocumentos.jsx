@@ -9,11 +9,15 @@ export default function EtapaDocumentos({ ctx }) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-sm text-slate-500 dark:text-sena-texto-suave">
-              Los cuatro primeros son obligatorios y no se pueden quitar. Los
-              demás los eliges tú.
+              Los cuatro documentos básicos se incluyen siempre. Elegir otros
+              documentos es opcional (por eso este paso figura como
+              «Opcional»), pero todo documento que selecciones aquí será
+              obligatorio para postularse.
             </p>
-            <p className="text-xs text-slate-400 dark:text-sena-texto-suave">
-              Solo se aceptan archivos PDF.
+            <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
+              No es lo mismo que los «Documentos adicionales» que el aspirante
+              puede aportar de forma voluntaria al postularse. Solo se aceptan
+              archivos PDF.
             </p>
           </div>
           {!documentosBloqueados && (
@@ -55,7 +59,8 @@ export default function EtapaDocumentos({ ctx }) {
                 placeholder="Nombre del documento (ej. Especialización en SST)"
                 className="min-w-56 flex-1 rounded border border-slate-300 bg-white p-2 text-sm text-slate-800 focus:border-sena focus:outline-none focus:ring-2 focus:ring-sena/40 dark:border-sena-borde dark:bg-sena-noche dark:text-sena-texto"
               />
-              <Boton tamano="tactil" onClick={agregarDocumentoCatalogo} disabled={guardandoDocumento}>
+              {/* 'ocupado' del sistema: bloquea el botón, lo marca con aria-busy y muestra la rueda junto a «Guardando…». */}
+              <Boton tamano="tactil" onClick={agregarDocumentoCatalogo} ocupado={guardandoDocumento}>
                 {guardandoDocumento ? 'Guardando…' : 'Agregar'}
               </Boton>
               <Boton
@@ -120,7 +125,7 @@ export default function EtapaDocumentos({ ctx }) {
         {documentosObligatorios.length > 0 && (
           <div className="flex flex-col gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-              Obligatorios (no se pueden quitar)
+              Básicos (siempre incluidos)
             </h3>
             <div className="flex flex-col gap-2">
               {documentosObligatorios.map((d) => filaDocumento(d, true))}
@@ -131,7 +136,7 @@ export default function EtapaDocumentos({ ctx }) {
         {documentosOpcionales.length > 0 && (
           <div className="flex flex-col gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
-              Opcionales
+              Otros documentos (los que elijas serán obligatorios)
             </h3>
             <div className="flex flex-col gap-2">
               {documentosOpcionales.map((d) => filaDocumento(d))}
