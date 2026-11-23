@@ -4,7 +4,7 @@ import { CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE } from '../../../lib/estilos'
 
 // Sección de PanelRanking. Recibe el estado y las acciones del componente en la prop ctx.
 export default function EleccionFinalistas({ ctx }) {
-  const { abrirRevision, aviso, avisoTransitorio, buscando, desactualizado, error, limpiar, mensajeRef, meta, modo, pausaAviso, seleccion, usarSugerencia } = ctx
+  const { abrirRevision, aviso, avisoTransitorio, buscando, desactualizado, limpiar, mensajeRef, meta, modo, pausaAviso, seleccion, usarSugerencia } = ctx
   return (
   <section
     aria-label="Elección de finalistas"

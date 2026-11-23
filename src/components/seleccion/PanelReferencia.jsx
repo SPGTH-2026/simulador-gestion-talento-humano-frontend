@@ -25,7 +25,7 @@ export default function PanelReferencia({ convocatoriaId, postulacionId, activo,
   const ctx = usePanelReferencia({ convocatoriaId, postulacionId, activo, onCambio })
   // Sin abrir la pestaña el hook devuelve null; sin datos y con error devuelve el aviso con «Reintentar» (un elemento).
   if (ctx === null || isValidElement(ctx)) return ctx
-  const { datos, doc, editarJustificacion, elegida, error, errorGeneral, errores, estado, evaluaciones, fase, guardada, guardando, guardar, idGrupo, invalidada, justificacion, necesita, puedeGuardar, referencia, reintentar, setElegida, setErrores } = ctx
+  const { datos, doc, editarJustificacion, elegida, error, errorGeneral, errores, evaluaciones, fase, guardada, guardando, guardar, idGrupo, invalidada, justificacion, necesita, puedeGuardar, referencia, reintentar, setElegida, setErrores } = ctx
   return (
     <div className="@container flex flex-col gap-4">
       {fase === 'error' && (

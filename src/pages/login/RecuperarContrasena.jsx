@@ -13,7 +13,7 @@ import { mostrarAvisoGlobal } from '../../lib/validacionAcceso'
 
 export default function RecuperarContrasena() {
   const ctx = useRecuperarContrasena()
-  const { bloqueado, codigo, confirmacion, email, enviando, errorGlobal, errores, iniciar, paso, password, pedirCodigo, reenviando, reenviar, restablecer, segundos, setCodigo, setConfirmacion, setEmail, setPassword, volverAlPaso1 } = ctx
+  const { bloqueado, codigo, confirmacion, email, enviando, errorGlobal, errores, paso, password, pedirCodigo, reenviando, reenviar, restablecer, segundos, setCodigo, setConfirmacion, setEmail, setPassword, volverAlPaso1 } = ctx
   return (
     <>
       {/* Flecha para volver un paso: del primer paso al inicio de sesión; del segundo, a pedir el código. */}

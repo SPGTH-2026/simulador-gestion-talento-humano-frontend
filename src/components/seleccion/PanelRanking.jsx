@@ -17,7 +17,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
   const ctx = usePanelRanking({ convocatoriaId, activo, enProceso, puedeDecidir, comparacion, onConfirmada })
   if (ctx.fase === 'error' && !ctx.meta) return <ErrorTotalRanking ctx={ctx} />
   if (!ctx.meta) return <CargandoRanking />
-  const { alConfirmar, alRankingDesactualizado, avisos, borrador, cargando, desactualizado, empate, enComparacion, error, estado, fase, hayFilas, lista, meta, modo, montado, pagina, puedeElegir, recargar, revision, seleccion, setBorrador, setRevision } = ctx;
+  const { alConfirmar, alRankingDesactualizado, avisos, borrador, cargando, desactualizado, empate, enComparacion, error, fase, hayFilas, meta, modo, puedeElegir, recargar, revision, seleccion, setBorrador, setRevision } = ctx;
   return (
     <div className="@container flex flex-col gap-3" aria-busy={cargando}>
       {fase === 'error' && (

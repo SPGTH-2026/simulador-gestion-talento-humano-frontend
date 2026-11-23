@@ -1,4 +1,4 @@
-import { Cumplimiento } from '../../components/evaluacion/PresentacionEvaluacion'
+
 import Boton from '../../components/ui/Boton'
 import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import Paginacion from '../../components/ui/Paginacion'

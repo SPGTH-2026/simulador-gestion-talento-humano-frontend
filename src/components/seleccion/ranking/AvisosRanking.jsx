@@ -3,7 +3,7 @@ import { CLASE_CAJA_SUAVE, CLASE_TEXTO_FUERTE } from '../../../lib/estilos'
 
 // Sección de PanelRanking. Recibe el estado y las acciones del componente en la prop ctx.
 export default function AvisosRanking({ ctx }) {
-  const { aviso, avisos, hayAlerta } = ctx
+  const { avisos, hayAlerta } = ctx
   return (
   <section
     aria-label="Avisos del ranking"

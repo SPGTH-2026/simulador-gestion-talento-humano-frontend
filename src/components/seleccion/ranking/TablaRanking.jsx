@@ -9,7 +9,7 @@ import { textoCumplimiento, textoNota } from '../../../lib/seleccion'
 
 // Sección de PanelRanking. Recibe el estado y las acciones del componente en la prop ctx.
 export default function TablaRanking({ ctx }) {
-  const { alternar, aviso, cargando, columnaCasillas, comparacion, conPuesto, enComparacion, filas, lista, modo, seleccion } = ctx
+  const { alternar, cargando, columnaCasillas, comparacion, conPuesto, enComparacion, filas, seleccion } = ctx
   return (
   <div className={`${CLASE_TARJETA_PLANA} overflow-hidden ${cargando ? 'opacity-60' : ''}`}>
     <table className="w-full table-fixed text-left text-sm">

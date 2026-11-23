@@ -1,10 +1,10 @@
-import { DialogoConfirmacion } from './DialogoConfirmacion'
+
 import { rankingConvocatoria } from '../../../api/seleccion'
 import { mensajeError } from '../../../api/mensajeError'
 
 // Bloque de usePanelRanking movido a su propio hook. Recibe sus dependencias en `deps`.
 export function useSeleccionRanking(deps) {
-  const { aviso, borrador, borradorActual, cargadoClave, cargando, convocatoriaId, error, fase, filas, intentoActual, lista, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista } = deps
+  const { borradorActual, cargadoClave, convocatoriaId, filas, intentoActual, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista } = deps
   const alternar = (fila) => {
     setAviso(null)
     setSeleccion((previo) => {

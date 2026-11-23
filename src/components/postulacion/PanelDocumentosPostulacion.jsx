@@ -1,6 +1,6 @@
 import { isValidElement } from 'react'
 import { usePanelDocumentosPostulacion } from './usePanelDocumentosPostulacion'
-import { postularse } from '../../api/postulaciones'
+
 import { CLASE_CAJA_SUAVE } from '../../lib/estilos'
 import IndicadorCompletitud from './IndicadorCompletitud'
 import SeccionSexo from './SeccionSexo'
@@ -38,7 +38,7 @@ export default function PanelDocumentosPostulacion({
 }) {
   const ctx = usePanelDocumentosPostulacion({ postulacionId, convocatoria, documentosConvocatoria, skillsConvocatoriaNombres, miPostulacion, onEstadoChange, onPostulacionCreada, onEnviado, onVerDocumentos, modoCorreccion, onCorreccionEnviada })
   if (isValidElement(ctx)) return ctx
-  const { alGuardarSexo, asegurar, aviso, correccion, correccionVigente, corregidos, editable, editableSexo, enviandoCorreccion, enviarCorreccionAhora, error, esBorrador, esRetirada, estado, infoCorreccion, marcados, motivo, motivoVolver, puedeVolver, reactivando, recargar, setError, sexo, vista, volverAPostularme } = ctx
+  const { alGuardarSexo, asegurar, aviso, correccion, correccionVigente, corregidos, editable, editableSexo, enviandoCorreccion, enviarCorreccionAhora, error, esBorrador, esRetirada, infoCorreccion, marcados, motivo, motivoVolver, puedeVolver, reactivando, recargar, setError, sexo, vista, volverAPostularme } = ctx
   return (
     <div className="flex flex-col gap-4">
       {error && (
