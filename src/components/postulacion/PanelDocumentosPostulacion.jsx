@@ -36,7 +36,7 @@ export default function PanelDocumentosPostulacion({
   modoCorreccion = false,
   onCorreccionEnviada,
 }) {
-  const ctx = usePanelDocumentosPostulacion({ postulacionId, convocatoria, documentosConvocatoria, skillsConvocatoriaNombres, miPostulacion, onEstadoChange, onPostulacionCreada, onEnviado, onVerDocumentos, modoCorreccion, onCorreccionEnviada })
+  const ctx = usePanelDocumentosPostulacion({ postulacionId, convocatoria, documentosConvocatoria, skillsConvocatoriaNombres, miPostulacion, onEstadoChange, onPostulacionCreada, modoCorreccion, onCorreccionEnviada })
   if (isValidElement(ctx)) return ctx
   const { alGuardarSexo, asegurar, aviso, correccion, correccionVigente, corregidos, editable, editableSexo, enviandoCorreccion, enviarCorreccionAhora, error, esBorrador, esRetirada, infoCorreccion, marcados, motivo, motivoVolver, puedeVolver, reactivando, recargar, setError, sexo, vista, volverAPostularme } = ctx
   return (
