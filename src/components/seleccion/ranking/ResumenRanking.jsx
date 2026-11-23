@@ -2,9 +2,8 @@ import Boton from '../../ui/Boton'
 import Campo from '../../ui/Campo'
 import { CLASE_CAJA_SUAVE, CLASE_CAMPO, CLASE_META_DD, CLASE_META_DT, CLASE_TARJETA_PLANA, CLASE_TEXTO_SUAVE } from '../../../lib/estilos'
 
-// Sección de PanelRanking. Recibe el estado y las acciones del componente en la prop ctx.
-export default function ResumenRanking({ ctx }) {
-  const { abrirObjetivo, avisoObjetivo, botonCambiar, cerrarObjetivo, errorObjetivo, guardandoObjetivo, guardarObjetivo, meta, modo, objetivoCambio, objetivoNumero, objetivoTexto, objetivoValido, pausaObjetivo, puedeCambiarObjetivo, setErrorObjetivo, setObjetivoTexto, textoObjetivo } = ctx
+// Sección de PanelRanking. Recibe solo lo que muestra, por props.
+export default function ResumenRanking({ abrirObjetivo, avisoObjetivo, botonCambiar, cerrarObjetivo, errorObjetivo, guardandoObjetivo, guardarObjetivo, meta, modo, objetivoCambio, objetivoNumero, objetivoTexto, objetivoValido, pausaObjetivo, puedeCambiarObjetivo, setErrorObjetivo, setObjetivoTexto, textoObjetivo }) {
   return (
   <section aria-label="Resumen del ranking" className="flex flex-col gap-3">
     <dl className={`${CLASE_TARJETA_PLANA} grid grid-cols-2 gap-x-5 gap-y-3 p-4 @min-[520px]:grid-cols-4`}>

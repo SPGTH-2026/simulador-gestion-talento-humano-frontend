@@ -1,4 +1,3 @@
-
 import { rankingConvocatoria } from '../../../api/seleccion'
 import { mensajeError } from '../../../api/mensajeError'
 

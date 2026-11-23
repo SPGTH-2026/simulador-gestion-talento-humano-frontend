@@ -114,7 +114,7 @@ export function usePanelRanking({ convocatoriaId, activo = true, enProceso, pued
   // Una sola columna de casillas: «Elegir» (solo quien puede elegir) o, en modo comparación, «Comparar».
   const columnaCasillas = enComparacion || puedeElegir
 
-  const seleccionRanking = useSeleccionRanking({ aviso, borrador, borradorActual, cargadoClave, cargando, convocatoriaId, error, fase, filas, intentoActual, lista, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista })
+  const seleccionRanking = useSeleccionRanking({ borradorActual, cargadoClave, convocatoriaId, filas, intentoActual, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista })
   const { abrirRevision, alConfirmar, alRankingDesactualizado, alternar, leerRankingCompleto, leerSugeridos, limpiar, manejarCambioDeRanking, sincronizar, usarSugerencia } = seleccionRanking
   // Avisos del estado: una línea por tema, sin repetir lo que ya dicen las cifras.
   const avisos = []

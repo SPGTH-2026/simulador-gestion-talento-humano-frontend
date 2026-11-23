@@ -1,9 +1,8 @@
 import { Link } from 'react-router-dom'
 import { CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../../lib/estilos'
 
-// Sección de PanelRanking. Recibe el estado y las acciones del componente en la prop ctx.
-export default function SinConfigurarRanking({ ctx }) {
-  const { convocatoriaId, meta } = ctx
+// Sección de PanelRanking. Recibe solo lo que muestra, por props.
+export default function SinConfigurarRanking({ convocatoriaId, meta }) {
   return (
   <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">
     <h3 className={`text-base font-semibold ${CLASE_TEXTO_FUERTE}`}>Falta configurar las actividades</h3>
