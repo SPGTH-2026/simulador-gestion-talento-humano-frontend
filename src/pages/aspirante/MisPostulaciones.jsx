@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import useAvisoTransitorio from '../../hooks/useAvisoTransitorio'
+import { MensajeExito } from '../../components/ui/Mensaje'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { listaMisPostulaciones, cambiarEstadoPostulacion } from '../../api/postulaciones'
 import { mensajeError } from '../../api/mensajeError'
@@ -77,14 +79,15 @@ function BloqueConvocatoria({ convocatoria }) {
 // Estado de la postulación ("Estado") y, si está retirada, la fecha en una
 // sola línea debajo del badge. El bloque va centrado: son datos cortos y así la
 // columna queda equilibrada con las de al lado.
-function BloqueEstadoPostulacion({ postulacion }) {
+// 'alinear': 'centro' (columna de la tabla) o 'inicio' (tarjeta, donde todo se lee desde la izquierda).
+function BloqueEstadoPostulacion({ postulacion, alinear = 'centro' }) {
   const codigo = postulacion.estado?.codigo
 
   return (
-    <div className="flex flex-col items-center gap-1 text-center">
+    <div className={`flex flex-col gap-1 ${alinear === 'inicio' ? 'items-start text-left' : 'items-center text-center'}`}>
       <EtiquetaPostulacion codigo={codigo} nombre={postulacion.estado?.nombre} />
       {codigo === 'retirada' && postulacion.fecha_retiro && (
-        <span className="whitespace-nowrap text-xs text-slate-500 dark:text-sena-texto-suave">
+        <span className="whitespace-nowrap text-sm text-slate-600 dark:text-sena-texto-suave">
           Retirada el {formatearFechaHora(postulacion.fecha_retiro)}
         </span>
       )}
@@ -203,7 +206,12 @@ export default function MisPostulaciones() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   // Mensaje de éxito que llega al volver de enviar la postulación (router state).
-  const [exito] = useState(location.state?.exito ?? '')
+  // Es una confirmación breve: se retira sola (con pausa al pasar el puntero o el foco) y no reaparece al recargar.
+  const [exito, setExito] = useState(() => (location.state?.exito ? { texto: location.state.exito } : null))
+  const pausaExito = useAvisoTransitorio(exito, () => setExito(null))
+  useEffect(() => {
+    if (location.state?.exito) navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
   // id de la fila cuya acción está en vuelo (bloquea su botón).
   const [accionandoId, setAccionandoId] = useState(null)
   const [recarga, setRecarga] = useState(0)
@@ -317,12 +325,9 @@ export default function MisPostulaciones() {
       </div>
 
       {exito && (
-        <p
-          role="status"
-          className="rounded bg-emerald-100 p-3 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-        >
-          {exito}
-        </p>
+        <div {...pausaExito}>
+          <MensajeExito>{exito.texto}</MensajeExito>
+        </div>
       )}
 
       {error && (
@@ -400,7 +405,9 @@ export default function MisPostulaciones() {
                 <li key={p.id} className={`${CLASE_TARJETA} flex flex-col gap-3 p-4`}>
                   <BloqueConvocatoria convocatoria={p.convocatoria} />
 
-                  <dl className="grid grid-cols-2 gap-3 text-center">
+                  {/* Datos alineados a la izquierda, como el título: dos columnas en teléfono y tres desde 'sm', para que
+                      una tarjeta ancha no reparta los datos con huecos ni los centre. */}
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
                     <div>
                       <dt className={CLASE_META_DT}>Postulación</dt>
                       <dd className="mt-0.5 whitespace-nowrap text-sm text-slate-700 dark:text-sena-texto">
@@ -410,18 +417,20 @@ export default function MisPostulaciones() {
                     <div>
                       <dt className={CLASE_META_DT}>Estado</dt>
                       <dd className="mt-0.5">
-                        <BloqueEstadoPostulacion postulacion={p} />
+                        <BloqueEstadoPostulacion postulacion={p} alinear="inicio" />
                       </dd>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-2 sm:col-span-1">
                       <dt className={CLASE_META_DT}>Estado de la convocatoria</dt>
-                      <dd className="mt-0.5">
+                      <dd className="mt-0.5 flex">
                         <EtiquetaVentana convocatoria={p.convocatoria} />
                       </dd>
                     </div>
                   </dl>
 
-                  <BloqueAcciones {...ctx} />
+                  <div className="border-t border-sena-linea/70 pt-3 dark:border-sena-borde/50">
+                    <BloqueAcciones {...ctx} />
+                  </div>
                 </li>
               )
             })}

@@ -10,7 +10,7 @@ import {
 } from '../../api/postulacionesDocumentos'
 import { mensajeError } from '../../api/mensajeError'
 import { useAuth } from '../../auth/useAuth'
-import { estadoVentana, formatearFechaHora } from '../../lib/ventanaPostulacion'
+import { estadoVentana } from '../../lib/ventanaPostulacion'
 import { CODIGO_LIBRETA_MILITAR, motivoNoEditable } from '../../lib/postulacionDocumentos'
 import { CLASE_CAJA_SUAVE } from '../../lib/estilos'
 import IndicadorCompletitud from './IndicadorCompletitud'
@@ -20,6 +20,7 @@ import SeccionSkills from './SeccionSkills'
 import SeccionAdicionales from './SeccionAdicionales'
 import SeccionEnviarPostulacion from './SeccionEnviarPostulacion'
 import Boton from '../ui/Boton'
+import { EnvioCorreccion, ResumenCorreccion } from './CorreccionDocumentos'
 
 // Panel reutilizable del paso único "llenar todo en la convocatoria" (doc 33).
 //
@@ -72,7 +73,7 @@ export default function PanelDocumentosPostulacion({
     return () => {
       activo = false
     }
-  }, [idPostulacion, estado, user?.role])
+  }, [idPostulacion, user?.role])
 
   // Documentos marcados con "No" por el evaluador, y los que ya se reemplazaron.
   const marcados = useMemo(
@@ -89,7 +90,12 @@ export default function PanelDocumentosPostulacion({
     [correccion],
   )
   const infoCorreccion = correccion ? { marcados, reemplazados } : null
-  const pendientes = [...marcados].filter((id) => !reemplazados.has(id))
+  // La vigencia la decide el servidor (correccion_estado): pedida, sin enviar, con plazo y postulación activos. La
+  // pantalla no la recalcula, así coincide siempre con lo que el servidor va a aceptar.
+  const correccionVigente = correccion?.correccion_estado === 'vigente'
+  // Documentos marcados que YA se reemplazaron desde la solicitud (regla del servidor: archivo actualizado después de
+  // pedir la corrección). Un archivo que ya existía antes no cuenta. Se cuenta solo dentro de los marcados.
+  const corregidos = [...marcados].filter((id) => reemplazados.has(id)).length
 
   const enviarCorreccionAhora = async () => {
     setEnviandoCorreccion(true)
@@ -177,13 +183,24 @@ export default function PanelDocumentosPostulacion({
   }, [idPostulacion])
   const recargar = useCallback(() => {
     if (!idPostulacion) return Promise.resolve()
-    return estadoDocumentos(idPostulacion)
-      .then((data) => {
-        aplicarEstado(data)
-        setError('')
-      })
-      .catch((e) => setError(mensajeError(e)))
-  }, [idPostulacion, aplicarEstado])
+    // La corrección (qué documentos ya se reemplazaron) se relee JUNTO con el estado: así «N de M corregidos» y el botón de
+    // enviar cambian a la vez que el documento, no unos segundos después.
+    const correccionNueva =
+      user?.role === 'aspirante'
+        ? obtenerCorreccion(idPostulacion)
+            .then(setCorreccion)
+            .catch(() => {})
+        : Promise.resolve()
+    return Promise.all([
+      estadoDocumentos(idPostulacion)
+        .then((data) => {
+          aplicarEstado(data)
+          setError('')
+        })
+        .catch((e) => setError(mensajeError(e))),
+      correccionNueva,
+    ])
+  }, [idPostulacion, aplicarEstado, user?.role])
 
   // Borrador silencioso: garantiza una postulación y devuelve su id + el estado
   // fresco. Si ya existe (también si está retirada: editar no cambia el estado)
@@ -276,7 +293,7 @@ export default function PanelDocumentosPostulacion({
   // Sin estado todavía: mientras llega el GET, o el error de acceso.
   if (idPostulacion && !estado && !error) {
     return (
-      <p className="text-slate-500 dark:text-sena-texto-suave">Cargando tus datos…</p>
+      <p className="text-slate-600 dark:text-sena-texto-suave">Cargando tus datos…</p>
     )
   }
   if (idPostulacion && !estado && error) {
@@ -296,7 +313,8 @@ export default function PanelDocumentosPostulacion({
   const esPropia = !vista.postulacion?.user_id || vista.postulacion.user_id === user?.id
   const puedeEscribir = esAspirante && esPropia
 
-  const editable = Boolean(vista.editable) && puedeEscribir
+  // En la pantalla de corrección solo se edita mientras la corrección está vigente.
+  const editable = Boolean(vista.editable) && puedeEscribir && (!modoCorreccion || correccionVigente)
   const motivo = motivoNoEditable(vista)
   const codigo = vista.postulacion?.estado?.codigo
   const esBorrador = codigo === 'borrador'
@@ -359,6 +377,10 @@ export default function PanelDocumentosPostulacion({
         />
       )}
 
+      {modoCorreccion && correccion && (
+        <ResumenCorreccion correccion={correccion} total={marcados.size} corregidos={corregidos} />
+      )}
+
       <SeccionDocumentosRequeridos
         vista={vista}
         editable={editable}
@@ -368,12 +390,14 @@ export default function PanelDocumentosPostulacion({
         onError={setError}
         correccion={infoCorreccion}
         soloCorreccion={modoCorreccion}
+        bloqueoCorreccion={correccionVigente}
       />
 
       {modoCorreccion && correccion && (
-        <CorreccionEnvio
+        <EnvioCorreccion
           correccion={correccion}
-          pendientes={pendientes}
+          total={marcados.size}
+          corregidos={corregidos}
           enviando={enviandoCorreccion}
           onEnviar={enviarCorreccionAhora}
         />
@@ -392,6 +416,7 @@ export default function PanelDocumentosPostulacion({
           <SeccionAdicionales
             vista={vista}
             editable={editable}
+            bloqueoCorreccion={correccionVigente}
             asegurar={asegurar}
             onRecargar={recargar}
             onError={setError}
@@ -410,7 +435,7 @@ export default function PanelDocumentosPostulacion({
 
       {esRetirada && (
         <div className={`${CLASE_CAJA_SUAVE} flex flex-wrap items-center justify-between gap-3 p-3`}>
-          <p className="text-xs text-slate-600 dark:text-sena-texto-suave">
+          <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
             {puedeVolver
               ? 'Tus documentos obligatorios están completos.'
               : motivoVolver}
@@ -432,48 +457,5 @@ export default function PanelDocumentosPostulacion({
         </div>
       )}
     </div>
-  )
-}
-
-// Resumen de la corrección pedida y botón para enviarla cuando todos los documentos
-// marcados están reemplazados.
-function CorreccionEnvio({ correccion, pendientes, enviando, onEnviar }) {
-  const enviada = correccion.correccion_enviada_at
-  const limite = correccion.fecha_limite_correccion ?? null
-  const vencido = limite ? new Date(limite) < new Date() : false
-  const faltan = pendientes.length
-  const bloqueado = !enviada && vencido
-  const texto = bloqueado
-    ? 'Ya no puedes enviar la corrección porque el plazo terminó.'
-    : enviada
-    ? `Corrección enviada el ${formatearFechaHora(enviada)}. El evaluador la revisará.`
-    : faltan > 0
-      ? `Faltan ${faltan} documento(s) por reemplazar.`
-      : 'Ya reemplazaste todos los documentos marcados. Envía la corrección para que el evaluador la revise.'
-
-  return (
-    <section className={`${CLASE_CAJA_SUAVE} flex flex-col gap-3 p-4`}>
-      <h2 className="text-sm font-semibold text-slate-800 dark:text-sena-texto">
-        Corrección solicitada por el evaluador
-      </h2>
-      {correccion.observaciones && (
-        <p className="text-sm text-slate-700 dark:text-sena-texto-suave">{correccion.observaciones}</p>
-      )}
-      <p className="text-xs text-slate-600 dark:text-sena-texto-suave">{texto}</p>
-      {limite && !enviada && (
-        <p className={`text-xs font-medium ${vencido ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
-          {vencido ? 'El plazo para corregir venció el ' : 'Plazo para corregir: hasta el '}
-          {formatearFechaHora(limite)}.
-        </p>
-      )}
-      <button
-        type="button"
-        disabled={Boolean(enviada) || faltan > 0 || enviando || bloqueado}
-        onClick={onEnviar}
-        className="self-start rounded bg-sena-oscuro px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-azul disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {enviando ? 'Enviando...' : 'Enviar documento corregido'}
-      </button>
-    </section>
   )
 }
