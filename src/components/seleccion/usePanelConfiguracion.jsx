@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { obtenerConfiguracion, guardarConfiguracion } from '../../api/seleccion'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import Boton from '../ui/Boton'
-import Etiqueta from '../ui/Etiqueta'
 import { MensajeError } from '../ui/Mensaje'
 import Rueda from '../ui/Rueda'
 import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
@@ -13,14 +12,6 @@ export const desdeConfiguracion = (c) => ({
   pesoEntrevista: String(c.entrevista?.activa && c.prueba_tecnica?.activa ? c.entrevista.peso : 50),
   pesoPrueba: String(c.entrevista?.activa && c.prueba_tecnica?.activa ? c.prueba_tecnica.peso : 50),
 })
-
-// Etiqueta del estado de la configuración. "Pendiente de configurar" (nunca se
-// guardó) y "Sin actividades" (se guardó a propósito sin ellas) son cosas distintas.
-function EstadoConfiguracion({ config }) {
-  if (!config.configurada) return <Etiqueta tono="aviso">Pendiente de configurar</Etiqueta>
-  if (config.opcion === 'sin_actividades') return <Etiqueta tono="neutral">Sin actividades</Etiqueta>
-  return <Etiqueta tono="azul">{opcionPorId(config.opcion)?.etiqueta ?? config.opcion}</Etiqueta>
-}
 
 export const soloDigitos = (valor) => valor.replace(/\D/g, '').slice(0, 3)
 

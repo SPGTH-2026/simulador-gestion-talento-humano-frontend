@@ -7,14 +7,6 @@ import { MensajeAviso, MensajeError, MensajeExito } from '../ui/Mensaje'
 import { CLASE_CAMPO, CLASE_CAJA_SUAVE, CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { OPCIONES_ACTIVIDADES, opcionPorId } from '../../lib/seleccion'
 
-// Formulario a partir de la configuración que devolvió el servidor. Sin
-// configurar (opcion null) no hay ninguna opción elegida.
-const desdeConfiguracion = (c) => ({
-  opcion: c.opcion,
-  pesoEntrevista: String(c.entrevista?.activa && c.prueba_tecnica?.activa ? c.entrevista.peso : 50),
-  pesoPrueba: String(c.entrevista?.activa && c.prueba_tecnica?.activa ? c.prueba_tecnica.peso : 50),
-})
-
 // Etiqueta del estado de la configuración. "Pendiente de configurar" (nunca se
 // guardó) y "Sin actividades" (se guardó a propósito sin ellas) son cosas distintas.
 function EstadoConfiguracion({ config }) {
