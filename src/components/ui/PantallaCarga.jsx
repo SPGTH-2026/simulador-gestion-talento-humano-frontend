@@ -101,7 +101,7 @@ export default function PantallaCarga({ operacion = 'sesion', id = '', error = '
   const muyLarga = !error && segundos >= SEGUNDOS_MUY_LARGA
 
   const contenedor = config.completa
-    ? 'min-h-screen bg-sena-lienzo dark:bg-sena-noche'
+    ? 'alto-minimo-pantalla bg-sena-lienzo dark:bg-sena-noche'
     : 'min-h-[50vh]'
 
   return (

@@ -5,6 +5,9 @@ import IndicadorNavegacion from '../components/IndicadorNavegacion'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import PantallaCarga from '../components/ui/PantallaCarga'
+import useDocumentoSinDesplazar from '../hooks/useDocumentoSinDesplazar'
+import useScrollPorRuta from '../hooks/useScrollPorRuta'
+import { enfocar } from '../lib/foco'
 
 // Marco de la aplicación: menú a la izquierda, barra neutra arriba y el
 // contenido sobre un lienzo claro (azul profundo en oscuro).
@@ -15,6 +18,10 @@ export default function AppLayout() {
   const [menuAbierto, setMenuAbierto] = useState(false)
   const botonQueAbrio = useRef(null)
   const focoAlCerrar = useRef(null)
+  useDocumentoSinDesplazar()
+
+  // Posición del contenido al cambiar de pantalla (nueva arriba; atrás/adelante y «volver» recuperan la suya).
+  useScrollPorRuta()
 
   // Al cerrar el cajón el foco va a otro sitio: al botón que lo abrió si se
   // cerró sin elegir nada (Escape, fondo, botón) o al contenido si se navegó.
@@ -35,7 +42,7 @@ export default function AppLayout() {
       if (!e.matches) return
       // El cajón deja de existir: el foco pasa al contenido, visible y que
       // admite teclado, en lugar de quedarse en un contenedor sin anillo.
-      focoAlCerrar.current = () => document.getElementById('contenido')?.focus()
+      focoAlCerrar.current = () => enfocar(document.getElementById('contenido'))
       setMenuAbierto(false)
     }
     escritorio.addEventListener('change', alCambiar)
@@ -47,11 +54,11 @@ export default function AppLayout() {
     setMenuAbierto(true)
   }
   const cerrarMenu = () => {
-    focoAlCerrar.current = () => botonQueAbrio.current?.focus()
+    focoAlCerrar.current = () => enfocar(botonQueAbrio.current)
     setMenuAbierto(false)
   }
   const cerrarAlNavegar = () => {
-    focoAlCerrar.current = () => document.getElementById('contenido')?.focus()
+    focoAlCerrar.current = () => enfocar(document.getElementById('contenido'))
     setMenuAbierto(false)
   }
 
@@ -59,7 +66,7 @@ export default function AppLayout() {
   // esto escapaban al documento, que se volvía varios miles de px más alto que la ventana, y el scroll del touchpad
   // desplazaba la página entera dejando blanco debajo.
   return (
-    <div className="relative flex h-screen overflow-hidden bg-sena-lienzo dark:bg-sena-noche">
+    <div className="alto-marco relative flex overflow-hidden bg-sena-lienzo dark:bg-sena-noche">
       <IndicadorNavegacion />
 
       {/* Enlace para saltar el menú: solo se ve al enfocarlo con el teclado. */}
@@ -73,13 +80,13 @@ export default function AppLayout() {
 
       <Sidebar abierto={menuAbierto} onCerrar={cerrarMenu} onNavegar={cerrarAlNavegar} />
 
-      <div className="flex min-w-0 flex-1 flex-col" inert={menuAbierto}>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col" inert={menuAbierto}>
         <Topbar onAbrirMenu={abrirMenu} />
 
         <main
           id="contenido"
           tabIndex={-1}
-          className="scroll-sena-contenido flex-1 overflow-y-auto overscroll-contain px-4 py-5 focus:outline-none sm:px-6 lg:px-8 lg:py-7"
+          className="scroll-sena-contenido min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 focus:outline-none sm:px-6 lg:px-8 lg:py-7"
         >
           <div className="mx-auto w-full max-w-[1440px]">
             {/* El Suspense vive AQUÍ y no solo en el router: mientras llega el

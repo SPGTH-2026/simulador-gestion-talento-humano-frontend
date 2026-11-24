@@ -227,3 +227,23 @@ html.dark {
     animation: none;
   }
 }
+
+/* Alturas del marco con respaldo: la declaración en 'vh' la usa un navegador sin 'dvh' (iOS anterior a 15.4); los demás toman la
+   segunda. 'dvh' sigue el área realmente visible: en iOS, 'vh' mide con la barra de Safari plegada y deja el marco más alto que lo
+   que se ve (la barra superior se desplazaba fuera de pantalla). */
+.alto-marco {
+  height: 100vh;
+  height: 100dvh;
+}
+.alto-minimo-pantalla {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+.alto-maximo-dialogo {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+}
+.alto-dialogo {
+  height: calc(100vh - 2rem);
+  height: calc(100dvh - 2rem);
+}

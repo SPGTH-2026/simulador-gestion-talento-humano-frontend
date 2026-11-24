@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { enfocar } from '../../lib/foco'
 
 const FOCALIZABLES =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -35,8 +36,8 @@ export default function Dialogo({
     focoInicial.current ??= caja.current.contains(document.activeElement)
       ? document.activeElement
       : caja.current
-    focoInicial.current.focus()
-    return () => quienTeniaElFoco?.focus?.()
+    enfocar(focoInicial.current)
+    return () => enfocar(quienTeniaElFoco)
   }, [quienTeniaElFoco])
 
   // Una identidad por diálogo montado (estable aunque React monte dos veces en desarrollo).
@@ -95,7 +96,7 @@ export default function Dialogo({
         aria-labelledby={idTitulo}
         aria-describedby={idDescripcion}
         tabIndex={-1}
-        className={`max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-xl border border-sena-linea bg-white shadow-xl focus:outline-none dark:border-sena-borde dark:bg-sena-superficie ${className}`.trim()}
+        className={`alto-maximo-dialogo w-full overflow-y-auto rounded-xl border border-sena-linea bg-white shadow-xl focus:outline-none dark:border-sena-borde dark:bg-sena-superficie ${className}`.trim()}
       >
         {children}
       </div>

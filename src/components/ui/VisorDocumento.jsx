@@ -61,7 +61,7 @@ export default function VisorDocumento({ ruta, titulo, nombre, onCerrar }) {
   const descargar = () => dispararDescarga(blob, nombreArchivo)
 
   return (
-    <Dialogo idTitulo={idTitulo} onCerrar={onCerrar} className="flex h-[calc(100dvh-2rem)] max-w-5xl flex-col overflow-hidden!">
+    <Dialogo idTitulo={idTitulo} onCerrar={onCerrar} className="alto-dialogo flex max-w-5xl flex-col overflow-hidden!">
       <CabeceraVisor
         idTitulo={idTitulo}
         titulo={titulo}

@@ -80,7 +80,7 @@ export default class ErrorBoundary extends Component {
     )
 
     return pantallaCompleta ? (
-      <main className="grid min-h-screen place-items-center bg-sena-lienzo px-4 py-8 dark:bg-sena-noche">
+      <main className="alto-minimo-pantalla grid place-items-center bg-sena-lienzo px-4 py-8 dark:bg-sena-noche">
         {contenido}
       </main>
     ) : (
