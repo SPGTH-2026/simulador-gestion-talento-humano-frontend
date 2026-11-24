@@ -256,8 +256,10 @@ export default function Usuarios() {
                       <td className={`${CLASE_TD} text-right`}>
                         <div className="flex justify-end gap-2">
                           {/* Nadie cambia su propio rol ni se inhabilita a sí mismo: en su fila no hay acciones. */}
-                          {u.id === user?.id ? (
-                            <span className="py-1.5 text-xs text-slate-500 dark:text-sena-texto-suave">Tu cuenta</span>
+                          {u.id === user?.id || u.role === 'super_admin' ? (
+                            <span className="py-1.5 text-xs text-slate-500 dark:text-sena-texto-suave">
+                              {u.id === user?.id ? 'Tu cuenta' : 'Cuenta de super admin'}
+                            </span>
                           ) : (
                             <>
                               <Boton variante="contorno" tamano="tactil" onClick={() => empezarEdicion(u)}>

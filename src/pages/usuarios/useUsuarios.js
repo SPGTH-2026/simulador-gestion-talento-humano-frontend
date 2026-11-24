@@ -91,9 +91,11 @@ export function useUsuarios() {
   }, [pagina, busqueda, filtroFicha, filtroRol, intento])
 
   // El instructor no gestiona instructores ni super admins (matriz del backend).
-  const rolesPermitidos = esInstructor
+  // Solo existe un super admin (la cuenta de SUPER_ADMIN_EMAIL): no se ofrece como rol al asignar.
+  const rolesPermitidos = (esInstructor
     ? ROLES.filter((r) => r.valor === 'aprendiz' || r.valor === 'aspirante')
     : ROLES
+  ).filter((r) => r.valor !== 'super_admin')
 
   const empezarEdicion = (u) => {
     setEditandoId(u.id)
