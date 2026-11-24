@@ -7,8 +7,9 @@ import AvatarIniciales from '../evaluacion/AvatarIniciales'
 import Boton from '../ui/Boton'
 import Icono from '../ui/Icono'
 import { MensajeError } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
+import { EsqueletoTabla } from '../ui/Esqueleto'
 import DetalleCandidato from './DetalleCandidato'
+import EstadoCandidato from './EstadoCandidato'
 import Paginacion from '../ui/Paginacion'
 import {
   CLASE_TARJETA_PLANA,
@@ -22,9 +23,9 @@ import { estadoDocumental, puedeDesignarReferencia, textoCumplimiento } from '..
 
 const CLASE_TH = 'whitespace-nowrap px-3 py-2.5 first:pl-4 last:pr-4'
 const CLASE_TD = 'px-3 py-2.5 align-middle first:pl-4 last:pr-4'
-// Columnas que solo caben desde ~520 px de panel; por debajo sus datos pasan bajo el nombre.
-const ANCHA_TH = `hidden @min-[520px]:table-cell ${CLASE_TH}`
-const ANCHA_TD = `hidden @min-[520px]:table-cell ${CLASE_TD}`
+// Columnas que solo caben desde ~720 px de panel (con las tres, el nombre necesita al menos ~300 px); por debajo sus datos pasan bajo el nombre.
+const ANCHA_TH = `hidden @min-[720px]:table-cell ${CLASE_TH}`
+const ANCHA_TD = `hidden @min-[720px]:table-cell ${CLASE_TD}`
 
 function EtiquetaEstadoDocumental({ codigo }) {
   const e = estadoDocumental(codigo)
@@ -66,6 +67,12 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
   if (activo && !abierta) setAbierta(true)
   // Candidato cuyo detalle está abierto (id de la postulación). El detalle se pide solo al abrirlo.
   const [abierto, setAbierto] = useState(null)
+  // Pestaña con la que se abre el detalle: la de siempre, o la que resuelve el bloqueo que se tocó en la fila.
+  const [pestanaAlAbrir, setPestanaAlAbrir] = useState('calificaciones')
+  const abrirDetalle = (id, pestana = 'calificaciones') => {
+    setPestanaAlAbrir(pestana)
+    setAbierto(id)
+  }
 
   useEffect(() => {
     if (!abierta) return undefined
@@ -94,7 +101,10 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
 
   // Lo que el servidor devolvió al guardar una referencia o una nota se aplica a la fila, sin recargar la lista:
   // la convocatoria y la página siguen siendo las mismas.
+  // Los bloqueos (y «listo») dependen de más cosas que esos dos campos: tras un cambio se vuelven a pedir en silencio, sin
+  // vaciar la tabla.
   const actualizarFila = ({ id, estado_documental, cumplimiento }) => {
+    setIntento((n) => n + 1)
     setEstado((previo) => ({
       ...previo,
       filas: previo.filas.map((f) =>
@@ -126,9 +136,19 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
       )}
 
       {cargando && !hayFilas && (
-        <p role="status" className={`flex items-center gap-2 py-8 text-sm ${CLASE_TEXTO_SUAVE}`}>
-          <Rueda /> Cargando candidatos…
-        </p>
+        <EsqueletoTabla
+          texto="Cargando candidatos…"
+          filas={5}
+          encabezados={[
+            { texto: 'Aspirante' },
+            { texto: 'Estado documental', clase: 'hidden @min-[720px]:block' },
+            { texto: 'Cumplimiento', clase: 'hidden text-right @min-[720px]:block' },
+            { texto: 'Acciones', clase: 'text-center' },
+          ]}
+          plantilla="grid-cols-[minmax(0,1fr)_9rem] @min-[720px]:grid-cols-[minmax(0,1fr)_10rem_7rem_9rem]"
+          pie
+          textoPie="Cargando candidatos…"
+        />
       )}
 
       {fase === 'listo' && !hayFilas && (
@@ -146,8 +166,8 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
             <caption className="sr-only">Candidatos de la convocatoria</caption>
             <colgroup>
               <col />
-              <col className="hidden w-40 @min-[520px]:table-column" />
-              <col className="hidden w-24 @min-[520px]:table-column" />
+              <col className="hidden w-40 @min-[720px]:table-column" />
+              <col className="hidden w-28 @min-[720px]:table-column" />
               <col className="w-36" />
             </colgroup>
             <thead className={CLASE_THEAD}>
@@ -155,9 +175,7 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
                 <th scope="col" className={CLASE_TH}>Aspirante</th>
                 <th scope="col" className={ANCHA_TH}>Estado documental</th>
                 <th scope="col" className={`${ANCHA_TH} text-right`}>Cumplimiento</th>
-                <th scope="col" className={`${CLASE_TH} text-right`}>
-                  <span className="sr-only">Acciones</span>
-                </th>
+                <th scope="col" className={`${CLASE_TH} text-center`}>Acciones</th>
               </tr>
             </thead>
             <tbody className={CLASE_TBODY}>
@@ -165,7 +183,7 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
                 <tr key={c.id} className="hover:bg-sena-fondo/60 dark:hover:bg-sena-superficie-alta/40">
                   <td className={CLASE_TD}>
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="hidden shrink-0 @min-[520px]:block"><AvatarIniciales nombre={c.aspirante} /></span>
+                      <span className="hidden shrink-0 @min-[720px]:block"><AvatarIniciales nombre={c.aspirante} /></span>
                       <div className="flex min-w-0 flex-col items-start gap-1">
                         {/* Dos líneas como máximo; el nombre completo también va en el title y en el botón del detalle. */}
                         <span
@@ -174,12 +192,23 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
                         >
                           {c.aspirante}
                         </span>
-                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 @min-[520px]:hidden">
+                        {/* En panel estrecho el estado documental va bajo el nombre y el motivo del bloqueo después: primero el estado, luego
+                            la causa y su acción. Sin dato de cumplimiento no se dibuja un guion suelto. */}
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 @min-[720px]:hidden">
                           <EtiquetaEstadoDocumental codigo={c.estado_documental} />
-                          <span className="text-xs">
-                            <Cumplimiento valor={c.cumplimiento} />
-                          </span>
+                          {textoCumplimiento(c.cumplimiento) != null && (
+                            <span className="text-xs">
+                              <Cumplimiento valor={c.cumplimiento} />
+                            </span>
+                          )}
                         </span>
+                        <EstadoCandidato
+                          fila={c}
+                          convocatoriaId={convocatoriaId}
+                          puedeDecidir={puedeDecidir}
+                          puedeDesignar={puedeDesignar}
+                          onResolver={(pestana) => abrirDetalle(c.id, pestana)}
+                        />
                       </div>
                     </div>
                   </td>
@@ -189,12 +218,12 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
                   <td className={`${ANCHA_TD} text-right`}>
                     <Cumplimiento valor={c.cumplimiento} />
                   </td>
-                  <td className={`${CLASE_TD} text-right`}>
+                  <td className={`${CLASE_TD} text-center`}>
                     <Boton
                       variante="contorno"
                       tamano="tactil"
                       aria-label={`Abrir el detalle de ${c.aspirante}`}
-                      onClick={() => setAbierto(c.id)}
+                      onClick={() => abrirDetalle(c.id)}
                     >
                       Ver detalle
                     </Boton>
@@ -225,6 +254,7 @@ export default function PanelCandidatos({ convocatoriaId, activo = true }) {
           fila={filaAbierta}
           puedeDecidir={puedeDecidir}
           puedeDesignar={puedeDesignar}
+          pestanaInicial={pestanaAlAbrir}
           onCerrar={() => setAbierto(null)}
           onCambio={actualizarFila}
         />

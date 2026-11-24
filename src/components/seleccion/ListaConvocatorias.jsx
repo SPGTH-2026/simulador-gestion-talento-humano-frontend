@@ -5,9 +5,9 @@ import Boton from '../ui/Boton'
 import Campo from '../ui/Campo'
 import Icono from '../ui/Icono'
 import { MensajeError } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
+import { EsqueletoLista } from '../ui/Esqueleto'
 import Paginacion from '../ui/Paginacion'
-import { CLASE_CAMPO, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
+import { CLASE_CAMPO, CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { ESTADOS_FILTRO, textoCandidatos, tituloConvocatoria } from '../../lib/seleccion'
 
 // Navegación entre convocatorias. Cada fila dice lo que el listado ya trae: nombre (hasta dos líneas), estado y
@@ -16,6 +16,9 @@ import { ESTADOS_FILTRO, textoCandidatos, tituloConvocatoria } from '../../lib/s
 //
 // En pantallas anchas es una columna siempre visible. En las estrechas se pliega en un solo botón con el nombre de la
 // convocatoria activa: así el detalle queda a la vista y, al abrirlo, siguen disponibles todas las páginas.
+// Las filas van dentro de una tarjeta plana (mismo borde y superficie que el resto del sistema): sin ella las no elegidas flotaban
+// sobre el fondo y no se distinguían como lista. El relleno de 4 px de la tarjeta deja sitio al contorno del foco (2 px + 2 px de
+// separación), que si no se recortaría contra el borde de la zona con desplazamiento.
 // La convocatoria activa se marca con aria-current y con el relleno sólido del botón de acción del sistema, y el foco
 // de teclado se dibuja por fuera con un contorno que se distingue también sobre ese relleno.
 // 'onFiltroEstado' (opcional) activa el filtro de estado (siempre visible, también con la lista plegada en móvil), con el mismo patrón de los demás listados (un campo con su
@@ -28,6 +31,7 @@ export default function ListaConvocatorias({
   onElegir,
   filtroEstado = '',
   onFiltroEstado,
+  codigoEstadoSeleccionada,
   className = '',
 }) {
   const idCuerpo = useId()
@@ -39,6 +43,7 @@ export default function ListaConvocatorias({
   // Solo cuenta en pantallas estrechas: sin convocatoria elegida la lista empieza abierta; con una, plegada.
   const [abierta, setAbierta] = useState(!seleccionadaId)
   const lista = useRef(null)
+  const boton = useRef(null)
   // Al cambiar el filtro (también desde la URL: atrás/adelante) se vuelve a la primera página.
   const [filtroPrevio, setFiltroPrevio] = useState(filtroEstado)
   if (filtroPrevio !== filtroEstado) {
@@ -74,8 +79,14 @@ export default function ListaConvocatorias({
     setEstado((previo) => ({ ...previo, fase: 'cargando', error: '' }))
     setIntento((n) => n + 1)
   }
-  const elegir = (c) => {
+  // En pantallas estrechas la lista se pliega al elegir o con Escape: el foco vuelve al botón «Convocatoria» (lo único visible) en vez
+  // de perderse en la página. Con la lista siempre visible (ancho) el botón no se ve y el foco se queda en la fila.
+  const plegar = () => {
     setAbierta(false)
+    if (boton.current?.offsetParent) boton.current.focus()
+  }
+  const elegir = (c) => {
+    plegar()
     onElegir(c)
   }
 
@@ -99,9 +110,11 @@ export default function ListaConvocatorias({
         Convocatorias
       </h2>
 
-      {/* El filtro va fuera de la parte plegable: en pantallas estrechas se ve sin desplegar la lista. */}
+      {/* Dos controles con funciones distintas y la MISMA presentación (etiqueta visible encima, caja de 44 px, mismo borde y tipografía):
+          «Estado» es un selector que filtra la lista (siempre visible, también con la lista plegada en móvil) y «Convocatoria» es un
+          botón que despliega la lista (solo en pantallas estrechas). El filtro no cambia lo que cada estado permite hacer. */}
       {onFiltroEstado && (
-        <Campo etiqueta="Estado" className="px-1">
+        <Campo etiqueta="Estado" className="px-1 @min-[480px]:max-w-72">
           <select
             value={filtroEstado}
             onChange={(e) => {
@@ -121,24 +134,42 @@ export default function ListaConvocatorias({
         </Campo>
       )}
 
-      {/* Solo en pantallas estrechas: un botón con la convocatoria activa que despliega la lista. */}
-      <button
-        type="button"
-        aria-expanded={abierta}
-        aria-controls={idCuerpo}
-        onClick={() => setAbierta((a) => !a)}
-        className="flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-sena-azul/60 px-3 py-2 text-left transition-colors hover:bg-sena-cielo/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sena motion-reduce:transition-none @min-[900px]:hidden dark:border-sena-texto-suave/70 dark:hover:bg-sena-superficie-alta"
-      >
-        <span className="flex min-w-0 flex-col">
-          <span className={`text-xs font-medium ${CLASE_TEXTO_SUAVE}`}>Convocatoria</span>
-          <span className={`truncate text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>
-            {seleccionadaId ? (etiquetaSeleccionada ?? `Convocatoria ${seleccionadaId}`) : 'Elige una convocatoria'}
-          </span>
-        </span>
-        <Icono nombre="chevron" className={`size-5 shrink-0 transition-transform motion-reduce:transition-none ${abierta ? 'rotate-180' : ''}`} />
-      </button>
+      <Campo etiqueta="Convocatoria" className="px-1 @min-[900px]:hidden">
+        {({ id }) => (
+          <button
+            id={id}
+            ref={boton}
+            type="button"
+            aria-expanded={abierta}
+            aria-controls={idCuerpo}
+            onClick={() => setAbierta((a) => !a)}
+            className={`${CLASE_CAMPO} flex w-full min-w-0 items-center justify-between gap-3 text-left transition-colors hover:bg-sena-cielo/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sena motion-reduce:transition-none dark:hover:bg-sena-superficie-alta`}
+          >
+            <span className="truncate">
+              {seleccionadaId ? (etiquetaSeleccionada ?? `Convocatoria ${seleccionadaId}`) : 'Elige una convocatoria'}
+            </span>
+            <Icono nombre="chevron" className={`size-5 shrink-0 transition-transform motion-reduce:transition-none ${abierta ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+      </Campo>
 
-      <div id={idCuerpo} className={`flex min-h-0 min-w-0 flex-col gap-2 ${abierta ? '' : '@max-[899px]:hidden'}`}>
+      {/* La convocatoria abierta se conserva aunque el filtro no la incluya: solo se avisa, sin cerrarla ni cambiar nada. */}
+      {filtroEstado && codigoEstadoSeleccionada && codigoEstadoSeleccionada !== filtroEstado && (
+        <p className={`px-3 text-xs ${CLASE_TEXTO_SUAVE}`}>
+          La convocatoria abierta no coincide con este filtro. Sigue abierta; elige «Todos los estados» para verla en la lista.
+        </p>
+      )}
+
+      <div
+        id={idCuerpo}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && abierta && boton.current?.offsetParent) {
+            e.stopPropagation()
+            plegar()
+          }
+        }}
+        className={`flex min-h-0 min-w-0 flex-col gap-2 ${abierta ? '' : '@max-[899px]:hidden'}`}
+      >
         {fase === 'error' && (
           <div className="flex flex-col items-start gap-3 px-1">
             <MensajeError>{error}</MensajeError>
@@ -148,10 +179,10 @@ export default function ListaConvocatorias({
           </div>
         )}
 
+        {/* Filas de dos líneas dentro de la tarjeta de la lista y el pie de paginación reservado: la tarjeta se recorta al alto del
+              área (max-h del contenedor), así que ni genera scroll ni rellena la página. */}
         {cargando && !hayFilas && fase !== 'error' && (
-          <p role="status" className={`flex items-center gap-2 px-3 py-4 text-sm ${CLASE_TEXTO_SUAVE}`}>
-            <Rueda /> Cargando convocatorias…
-          </p>
+          <EsqueletoLista texto="Cargando convocatorias…" filas={10} tarjeta pie textoPie="Cargando convocatorias…" listaClassName="max-h-72 @min-[900px]:max-h-none" />
         )}
 
         {fase === 'listo' && filtroVigente && !hayFilas && (
@@ -171,7 +202,7 @@ export default function ListaConvocatorias({
           <ul
             ref={lista}
             aria-busy={cargando}
-            className={`-mx-1 flex max-h-72 min-h-0 flex-col gap-0.5 overflow-y-auto px-1 py-0.5 @min-[900px]:max-h-none ${cargando ? 'opacity-60' : ''}`}
+            className={`${CLASE_TARJETA_PLANA} flex max-h-72 min-h-0 flex-col gap-0.5 overflow-y-auto p-1 @min-[900px]:max-h-none ${cargando ? 'opacity-60' : ''}`}
           >
             {filas.map((c) => {
               const elegida = String(c.id) === String(seleccionadaId)

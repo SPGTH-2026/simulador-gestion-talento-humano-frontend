@@ -1,28 +1,18 @@
 import { useCallback, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
-import EtiquetaEstado from '../../components/convocatorias/EtiquetaEstado'
-import useConvocatoriaDeUrl from '../../hooks/useConvocatoriaDeUrl'
-import ListaConvocatorias from '../../components/seleccion/ListaConvocatorias'
+import ComparadorCandidatos from '../../components/seleccion/ComparadorCandidatos'
+import PaginaSeleccion from '../../components/seleccion/PaginaSeleccion'
 import PanelFinalistas from '../../components/seleccion/PanelFinalistas'
 import PanelRanking from '../../components/seleccion/PanelRanking'
-import Boton from '../../components/ui/Boton'
-import { MensajeError } from '../../components/ui/Mensaje'
 import Pestanas from '../../components/ui/Pestanas'
-import ComparadorCandidatos from '../../components/seleccion/ComparadorCandidatos'
+import useConvocatoriaDeUrl from '../../hooks/useConvocatoriaDeUrl'
+import useFiltroEstadoSeleccion from '../../hooks/useFiltroEstadoSeleccion'
 import useFiltrosUrl from '../../hooks/useFiltrosUrl'
 import useMarcasComparacion from '../../hooks/useMarcasComparacion'
-import {
-  CLASE_CHIP,
-  CLASE_TARJETA_PLANA,
-  CLASE_TEXTO_FUERTE,
-  CLASE_TEXTO_PARTIDO,
-  CLASE_TEXTO_SUAVE,
-  CLASE_TITULO_PAGINA,
-} from '../../lib/estilos'
-import { tituloConvocatoria } from '../../lib/seleccion'
+import useModalidadConvocatoria from '../../hooks/useModalidadConvocatoria'
 
 // La convocatoria y la pestaña viven en la URL: sobreviven a recargar y se pueden compartir.
-const CLAVES = ['convocatoria', 'pestana']
+const CLAVES = ['convocatoria', 'pestana', 'estado']
 
 export default function SeleccionRanking() {
   const { can } = useAuth()
@@ -33,6 +23,7 @@ export default function SeleccionRanking() {
   const [invalidacion, setInvalidacion] = useState(0)
 
   const convocatoriaId = valores.convocatoria
+  const [filtroEstado, cambiarFiltroEstado] = useFiltroEstadoSeleccion(valores.estado, setValores)
   // Marcas para comparar (CU-SEL-017): de la convocatoria a la vista, compartidas por Ranking y Finalistas.
   const comparacion = useMarcasComparacion(convocatoriaId)
   const pestana = valores.pestana === 'finalistas' ? 'finalistas' : 'ranking'
@@ -48,116 +39,72 @@ export default function SeleccionRanking() {
   const cambiarPestana = (id) => setValores({ pestana: id === 'ranking' ? '' : id })
 
   // Los datos de la convocatoria (y su estado, que decide si se puede elegir) siguen al ID de la URL: la fila tocada si es
-  // esa, o una consulta propia por ese ID que no depende de la página del listado. Ya no hace falta pedir la
-  // configuración solo para conocer el estado.
+  // esa, o una consulta propia por ese ID que no depende de la página del listado.
   const resuelta = useConvocatoriaDeUrl(convocatoriaId, datos)
-  const actual = resuelta.datos
-  const codigoEstado = actual?.estado?.codigo ?? null
+  const modalidad = useModalidadConvocatoria(convocatoriaId)
+  const codigoEstado = resuelta.datos?.estado?.codigo ?? null
   // null = aún se desconoce: no se afirma nada hasta saberlo.
   const enProceso = codigoEstado == null ? null : codigoEstado === 'en_proceso'
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className={`${CLASE_TITULO_PAGINA} text-balance`}>Ranking y finalistas</h1>
-
-      <div className="@container">
-        <div className="grid items-start gap-x-6 gap-y-4 @min-[900px]:grid-cols-[minmax(17.5rem,20rem)_minmax(0,1fr)]">
-          <ListaConvocatorias
-            seleccionadaId={convocatoriaId}
-            etiquetaSeleccionada={actual ? tituloConvocatoria(actual) : undefined}
-            onElegir={elegir}
-            className="@min-[900px]:sticky @min-[900px]:top-2 @min-[900px]:max-h-[calc(100dvh-10rem)]"
-          />
-
-          {!convocatoriaId ? (
-            <section
-              aria-label="Detalle de la convocatoria"
-              className={`${CLASE_TARJETA_PLANA} flex flex-col items-center gap-1 px-6 py-8 text-center`}
-            >
-              <h2 className={`text-base font-semibold ${CLASE_TEXTO_FUERTE}`}>Elige una convocatoria</h2>
-              <p className={`max-w-md text-sm ${CLASE_TEXTO_SUAVE}`}>Verás el ranking de sus candidatos listos y podrás confirmar a los finalistas.</p>
-            </section>
-          ) : (
-            <section id="detalle-convocatoria" aria-labelledby="titulo-detalle" className="flex min-w-0 flex-col gap-3">
-              <header className="flex flex-col gap-1.5">
-                <h2
-                  id="titulo-detalle"
-                  className={`text-xl font-semibold leading-snug text-balance ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}
-                >
-                  {actual ? tituloConvocatoria(actual) : `Convocatoria ${convocatoriaId}`}
-                </h2>
-                {actual && (
-                  <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                    <EtiquetaEstado codigo={actual.estado?.codigo} nombre={actual.estado?.nombre} />
-                    {actual.codigo && <span className={CLASE_CHIP}>{actual.codigo}</span>}
-                    <span className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
-                      {actual.vacantes} {actual.vacantes === 1 ? 'vacante' : 'vacantes'}
-                    </span>
-                  </p>
-                )}
-              </header>
-
-              {resuelta.error && (
-                <div className="flex flex-col items-start gap-2">
-                  <MensajeError>No se pudieron cargar los datos de esta convocatoria. {resuelta.error}</MensajeError>
-                  <Boton variante="contorno" tamano="tactil" onClick={resuelta.reintentar}>
-                    Reintentar
-                  </Boton>
-                </div>
-              )}
-
-              {/* Cada panel pide sus datos cuando su pestaña está a la vista (prop 'activo'); Pestanas los deja
-                  montados para no perder lo elegido al cambiar de pestaña. */}
-              <Pestanas
-                key={convocatoriaId}
-                className="flex flex-col gap-3"
-                etiquetaAccesible="Ranking y finalistas de la convocatoria"
-                activaId={pestana}
-                onCambiar={cambiarPestana}
-                pestanas={[
-                  {
-                    id: 'ranking',
-                    etiqueta: 'Ranking',
-                    contenido: (
-                      <PanelRanking
-                        key={convocatoriaId}
-                        convocatoriaId={convocatoriaId}
-                        activo={pestana === 'ranking'}
-                        enProceso={enProceso}
-                        puedeDecidir={can('seleccion:decidir')}
-                        comparacion={comparacion}
-                        onConfirmada={() => setInvalidacion((n) => n + 1)}
-                      />
-                    ),
-                  },
-                  {
-                    id: 'finalistas',
-                    etiqueta: 'Finalistas',
-                    contenido: (
-                      <PanelFinalistas
-                        key={convocatoriaId}
-                        convocatoriaId={convocatoriaId}
-                        activo={pestana === 'finalistas'}
-                        invalidacion={invalidacion}
-                        comparacion={comparacion}
-                      />
-                    ),
-                  },
-                ]}
-              />
-            </section>
-          )}
-        </div>
-      </div>
+    <>
+      <PaginaSeleccion
+        titulo="Ranking y finalistas"
+        textoVacio="Verás el ranking de sus candidatos listos y podrás confirmar a los finalistas."
+        convocatoriaId={convocatoriaId}
+        actual={resuelta.datos}
+        resuelta={resuelta}
+        modalidad={modalidad}
+        onElegir={elegir}
+        filtroEstado={filtroEstado}
+        onFiltroEstado={cambiarFiltroEstado}
+      >
+        {/* Cada panel pide sus datos cuando su pestaña está a la vista (prop 'activo'); Pestanas los deja montados para no
+            perder lo elegido al cambiar de pestaña. */}
+        <Pestanas
+          key={convocatoriaId}
+          className="flex flex-col gap-3"
+          etiquetaAccesible="Ranking y finalistas de la convocatoria"
+          activaId={pestana}
+          onCambiar={cambiarPestana}
+          pestanas={[
+            {
+              id: 'ranking',
+              etiqueta: 'Ranking',
+              contenido: (
+                <PanelRanking
+                  key={convocatoriaId}
+                  convocatoriaId={convocatoriaId}
+                  activo={pestana === 'ranking'}
+                  enProceso={enProceso}
+                  puedeDecidir={can('seleccion:decidir')}
+                  comparacion={comparacion}
+                  modalidad={modalidad}
+                  onConfirmada={() => setInvalidacion((n) => n + 1)}
+                />
+              ),
+            },
+            {
+              id: 'finalistas',
+              etiqueta: 'Finalistas',
+              contenido: (
+                <PanelFinalistas
+                  key={convocatoriaId}
+                  convocatoriaId={convocatoriaId}
+                  activo={pestana === 'finalistas'}
+                  invalidacion={invalidacion}
+                  comparacion={comparacion}
+                />
+              ),
+            },
+          ]}
+        />
+      </PaginaSeleccion>
 
       {/* Solo lectura: abrirlo y cerrarlo no toca las marcas de comparar ni la elección de finalistas del Ranking. */}
       {comparacion.abierto && (
-        <ComparadorCandidatos
-          convocatoriaId={convocatoriaId}
-          ids={[...comparacion.marcas.keys()]}
-          onCerrar={comparacion.cerrar}
-        />
+        <ComparadorCandidatos convocatoriaId={convocatoriaId} ids={[...comparacion.marcas.keys()]} onCerrar={comparacion.cerrar} />
       )}
-    </div>
+    </>
   )
 }

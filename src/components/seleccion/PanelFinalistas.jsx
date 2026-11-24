@@ -6,7 +6,7 @@ import AvatarIniciales from '../evaluacion/AvatarIniciales'
 import Boton from '../ui/Boton'
 import Icono from '../ui/Icono'
 import { MensajeAviso, MensajeError } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
+import { EsqueletoLista } from '../ui/Esqueleto'
 import Paginacion from '../ui/Paginacion'
 import BarraComparar, { CasillaComparar } from './BarraComparar'
 import {
@@ -84,9 +84,7 @@ export default function PanelFinalistas({ convocatoriaId, activo = true, invalid
   }
   if (!datos) {
     return (
-      <p role="status" className={`flex items-center gap-2 py-8 text-sm ${CLASE_TEXTO_SUAVE}`}>
-        <Rueda /> Cargando finalistas…
-      </p>
+      <EsqueletoLista texto="Cargando finalistas…" filas={4} />
     )
   }
 

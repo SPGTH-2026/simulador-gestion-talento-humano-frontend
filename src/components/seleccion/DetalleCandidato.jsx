@@ -14,9 +14,9 @@ import { estadoDocumental, textoCumplimiento } from '../../lib/seleccion'
 // Detalle de UN candidato: calificaciones (siempre) y referencia documental (solo Instructor y Superadministrador).
 // El padre lo monta con key = id del candidato, así que al abrir otro empieza de cero y las respuestas del anterior
 // no lo alcanzan. 'fila' es la fila viva de la lista: el estado del encabezado cambia cuando el servidor lo cambia.
-export default function DetalleCandidato({ convocatoriaId, fila, puedeDecidir, puedeDesignar, onCerrar, onCambio }) {
+export default function DetalleCandidato({ convocatoriaId, fila, puedeDecidir, puedeDesignar, pestanaInicial = 'calificaciones', onCerrar, onCambio }) {
   const idTitulo = useId()
-  const [pestana, setPestana] = useState('calificaciones')
+  const [pestana, setPestana] = useState(puedeDesignar || pestanaInicial !== 'referencia' ? pestanaInicial : 'calificaciones')
   // Sube cuando cambia la referencia: las calificaciones dependen de la habilitación documental.
   const [recarga, setRecarga] = useState(0)
   const doc = estadoDocumental(fila.estado_documental)
@@ -37,6 +37,7 @@ export default function DetalleCandidato({ convocatoriaId, fila, puedeDecidir, p
           puedeDecidir={puedeDecidir}
           recarga={recarga}
           onCambio={alCambiar}
+          onIrAConfiguracion={onCerrar}
         />
       ),
     },

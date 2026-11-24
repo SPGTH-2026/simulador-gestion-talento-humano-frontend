@@ -1,9 +1,10 @@
 import { rankingConvocatoria } from '../../../api/seleccion'
 import { mensajeError } from '../../../api/mensajeError'
+import { rutaDecidir } from '../../../lib/pasosSeleccion'
 
 // Bloque de usePanelRanking movido a su propio hook. Recibe sus dependencias en `deps`.
 export function useSeleccionRanking(deps) {
-  const { borradorActual, cargadoClave, convocatoriaId, filas, intentoActual, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista } = deps
+  const { borradorActual, puedeDecidir, cargadoClave, convocatoriaId, filas, intentoActual, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista } = deps
   const alternar = (fila) => {
     setAviso(null)
     setSeleccion((previo) => {
@@ -122,7 +123,7 @@ export function useSeleccionRanking(deps) {
       const ids = await leerSugeridos()
       if (!montado.current) return
       setSeleccion(new Map(ids))
-      setAviso({ tipo: 'info', texto: `Se eligieron los ${ids.size} candidatos sugeridos.` })
+      setAviso({ tipo: 'info', texto: ids.size === 1 ? 'Se eligió el candidato sugerido.' : `Se eligieron los ${ids.size} candidatos sugeridos.` })
     } catch (e) {
       if (!montado.current) return
       if (e.cambio) manejarCambioDeRanking()
@@ -150,6 +151,8 @@ export function useSeleccionRanking(deps) {
       texto: creada
         ? 'Finalistas confirmados. Quedó registrada una nueva versión de la lista.'
         : 'La lista vigente ya coincidía con esta elección: no se creó una versión nueva.',
+      // Con la lista confirmada (nueva o idéntica a la vigente), quien puede decidir sigue en Decidir.
+      enlace: puedeDecidir ? { texto: 'Ir a Decidir', to: rutaDecidir(convocatoriaId) } : null,
     })
     recargar()
     // Avisa al padre: la lista vigente de la pestaña Finalistas ya no es la que se vio.

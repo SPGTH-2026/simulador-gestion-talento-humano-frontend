@@ -208,7 +208,7 @@ export default function DialogoDecision({ convocatoriaId, fila, acciones, cupos,
 
         {errorGeneral && <MensajeError>{errorGeneral}</MensajeError>}
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Boton variante="contorno" tamano="tactil" disabled={enviando} onClick={onCerrar}>
             Cancelar
           </Boton>

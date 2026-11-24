@@ -3,8 +3,7 @@ import { guardarCalificacion, obtenerCalificaciones } from '../../api/seleccion'
 import { mensajeError } from '../../api/mensajeError'
 import Boton from '../ui/Boton'
 import { MensajeError } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
-import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
+import { EsqueletoDetalle } from '../ui/Esqueleto'
 
 export function razonSinEscritura(datos, puedeDecidir) {
   if (!puedeDecidir) return 'Tu rol puede consultar las calificaciones, pero no registrarlas.'
@@ -68,9 +67,7 @@ export function usePanelCalificaciones({ convocatoriaId, postulacionId, puedeDec
   if (datos == null && fallo) return avisoReintento
   if (datos == null) {
     return (
-      <p role="status" className={`flex items-center gap-2 py-8 text-sm ${CLASE_TEXTO_SUAVE}`}>
-        <Rueda /> Cargando calificaciones…
-      </p>
+      <EsqueletoDetalle texto="Cargando calificaciones…" metricas={3} bloques={2} />
     )
   }
 

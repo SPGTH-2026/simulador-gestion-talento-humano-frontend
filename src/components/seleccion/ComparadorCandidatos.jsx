@@ -4,7 +4,7 @@ import { IconoX } from '../convocatorias/Iconos'
 import Boton from '../ui/Boton'
 import Dialogo from '../ui/Dialogo'
 import { MensajeAviso, MensajeError } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
+import { EsqueletoTarjetas } from '../ui/Esqueleto'
 import { CLASE_META_DT, CLASE_TARJETA_PLANA, CLASE_TBODY, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE, CLASE_THEAD } from '../../lib/estilos'
 
 export default function ComparadorCandidatos({ convocatoriaId, ids, onCerrar }) {
@@ -28,9 +28,7 @@ export default function ComparadorCandidatos({ convocatoriaId, ids, onCerrar }) 
         </header>
 
         {fase === 'cargando' && (
-          <p role="status" className={`flex items-center gap-2 py-8 text-sm ${CLASE_TEXTO_SUAVE}`}>
-            <Rueda /> Cargando la comparación…
-          </p>
+          <EsqueletoTarjetas texto="Cargando la comparación…" n={Math.min(Math.max(ids.length, 2), 3)} />
         )}
 
         {fase === 'error' && (

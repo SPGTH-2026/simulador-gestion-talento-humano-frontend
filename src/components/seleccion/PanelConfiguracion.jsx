@@ -3,6 +3,7 @@ import { usePanelConfiguracion } from './usePanelConfiguracion'
 import Boton from '../ui/Boton'
 import Campo from '../ui/Campo'
 import Etiqueta from '../ui/Etiqueta'
+import PasoSiguienteSeleccion from './PasoSiguienteSeleccion'
 import { MensajeAviso, MensajeError, MensajeExito } from '../ui/Mensaje'
 import { CLASE_CAMPO, CLASE_CAJA_SUAVE, CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { OPCIONES_ACTIVIDADES, opcionPorId } from '../../lib/seleccion'
@@ -18,8 +19,8 @@ function EstadoConfiguracion({ config }) {
 // Configuración de la entrevista y la prueba técnica de UNA convocatoria. Se pide
 // al abrir la pestaña ('activo'), una sola vez; el padre lo monta con 'key' = id
 // de la convocatoria, así que cambiar de convocatoria lo reinicia.
-export default function PanelConfiguracion({ convocatoriaId, activo, puedeDecidir }) {
-  const ctx = usePanelConfiguracion({ convocatoriaId, activo, puedeDecidir })
+export default function PanelConfiguracion({ convocatoriaId, activo, puedeDecidir, onGuardada }) {
+  const ctx = usePanelConfiguracion({ convocatoriaId, activo, puedeDecidir, onGuardada })
   // Mientras carga, falla o no está abierto, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (ctx === null || isValidElement(ctx)) return ctx
   const { ambas, borrador, cambiarPeso, config, editable, editar, errorGeneral, errores, guardada, guardando, guardar, huboCambio, idGrupo, opcion, puedeGuardar, suma, unaSola } = ctx
@@ -38,6 +39,14 @@ export default function PanelConfiguracion({ convocatoriaId, activo, puedeDecidi
           </p>
         )}
       </div>
+
+      {/* Con la configuración guardada se dice qué sigue según la modalidad (no solo justo después de guardar). */}
+      {config.configurada && (
+        <PasoSiguienteSeleccion
+          convocatoriaId={convocatoriaId}
+          modo={config.opcion === 'sin_actividades' ? 'sin_actividades' : 'con_actividades'}
+        />
+      )}
 
       {config.bloqueada ? (
         <MensajeAviso>

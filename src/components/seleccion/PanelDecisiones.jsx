@@ -9,7 +9,8 @@ import { MensajeAviso, MensajeError, MensajeExito } from '../ui/Mensaje'
 import Paginacion from '../ui/Paginacion'
 import DialogoDecision from './DialogoDecision'
 import DetalleDecision from './DetalleDecision'
-import { CLASE_META_DD, CLASE_META_DT, CLASE_TARJETA_PLANA, CLASE_TBODY, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE, CLASE_THEAD } from '../../lib/estilos'
+import { Metrica, ResumenSeleccion } from './ResumenSeleccion'
+import { CLASE_TARJETA_PLANA, CLASE_TBODY, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE, CLASE_THEAD } from '../../lib/estilos'
 import { ESTADO_DECISION, MOTIVO_REVISION_DECISION, formatoFechaHora } from '../../lib/seleccion'
 
 const CLASE_TH = 'px-3 py-2.5 first:pl-4 last:pr-4'
@@ -44,24 +45,12 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
         </div>
       )}
 
-      <dl className={`${CLASE_TARJETA_PLANA} grid grid-cols-2 gap-x-5 gap-y-3 p-4 @min-[520px]:grid-cols-4`}>
-        <div>
-          <dt className={CLASE_META_DT}>Vacantes</dt>
-          <dd className={`${CLASE_META_DD} tabular-nums`}>{cupos.vacantes_totales}</dd>
-        </div>
-        <div>
-          <dt className={CLASE_META_DT}>Cupos ocupados</dt>
-          <dd className={`${CLASE_META_DD} tabular-nums`}>{cupos.cupos_ocupados}</dd>
-        </div>
-        <div>
-          <dt className={CLASE_META_DT}>Cupos disponibles</dt>
-          <dd className={`${CLASE_META_DD} tabular-nums`}>{cupos.cupos_disponibles}</dd>
-        </div>
-        <div>
-          <dt className={CLASE_META_DT}>Pendientes de decisión</dt>
-          <dd className={`${CLASE_META_DD} tabular-nums`}>{meta.pendientes}</dd>
-        </div>
-      </dl>
+      <ResumenSeleccion etiqueta="Cupos y decisiones pendientes">
+        <Metrica titulo="Vacantes">{cupos.vacantes_totales}</Metrica>
+        <Metrica titulo="Cupos ocupados">{cupos.cupos_ocupados}</Metrica>
+        <Metrica titulo="Cupos disponibles">{cupos.cupos_disponibles}</Metrica>
+        <Metrica titulo="Pendientes de decisión">{meta.pendientes}</Metrica>
+      </ResumenSeleccion>
 
       {/* Confirmación breve: se retira sola a los pocos segundos (se detiene mientras se lee). La lista, los cupos y la fila
           ya muestran el resultado, así que nada se pierde al desaparecer. */}
@@ -127,7 +116,7 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
                 <th scope="col" className={`hidden @min-[640px]:table-cell ${CLASE_TH}`}>
                   Decisión
                 </th>
-                <th scope="col" className={`${CLASE_TH} text-right`}>
+                <th scope="col" className={`${CLASE_TH} text-center`}>
                   Acciones
                 </th>
               </tr>
@@ -171,7 +160,7 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
                         </div>
                       </div>
                     </td>
-                    <td className={`hidden align-top @min-[640px]:table-cell ${CLASE_TD}`}>
+                    <td className={`hidden @min-[640px]:table-cell ${CLASE_TD}`}>
                       <div className="flex flex-col items-start gap-1">
                         <EtiquetaDecision codigo={f.estado} />
                         {f.decision && (
@@ -181,8 +170,8 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
                         )}
                       </div>
                     </td>
-                    <td className={`${CLASE_TD} text-right`}>
-                      <div className="flex flex-col items-end gap-2 @min-[680px]:flex-row @min-[680px]:items-center @min-[680px]:justify-end">
+                    <td className={`${CLASE_TD} text-center`}>
+                      <div className="flex flex-col items-center gap-2 @min-[680px]:flex-row @min-[680px]:justify-center">
                         {acciones.puede && (
                           <Boton
                             variante="contorno"

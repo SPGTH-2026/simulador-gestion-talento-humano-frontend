@@ -4,8 +4,7 @@ import { mensajeError } from '../../api/mensajeError'
 import useAvisoTransitorio from '../../hooks/useAvisoTransitorio'
 import Boton from '../ui/Boton'
 import { MensajeError } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
-import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
+import { CargaInicial, EsqueletoDetalle, EsqueletoTabla } from '../ui/Esqueleto'
 import { ESTADO_DECISION, accionesDeFila } from '../../lib/seleccion'
 
 // Lógica de PanelDecisiones: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
@@ -85,13 +84,22 @@ export function usePanelDecisiones({ convocatoriaId, enProceso, puedeDecidir }) 
   const alGuardar = (resultado) => {
     setDecidiendo(null)
     setGuardada({ texto: `Decisión guardada: ${resultado.aspirante ?? 'el candidato'} quedó como ${ESTADO_DECISION[resultado.estado]?.texto.toLowerCase() ?? resultado.estado}.` })
-    setEstado((previo) => ({
-      ...previo,
-      meta: previo.meta ? { ...previo.meta, cupos: resultado.cupos } : previo.meta,
-      filas: previo.filas.map((f) =>
-        f.postulacion_id === resultado.postulacion_id ? { ...f, estado: resultado.estado, decision: resultado.decision } : f,
-      ),
-    }))
+    setEstado((previo) => {
+      // Los cupos salen de la respuesta; «pendientes» cuenta TODA la lista, así que se descuenta aquí si esta fila dejó de estar
+      // pendiente. Sin esto, hasta que terminaba la relectura la pantalla creía «sin cupos y con pendientes» y mostraba un
+      // instante el aviso amarillo de «No quedan cupos disponibles» tras ocupar el último cupo con el último pendiente.
+      const estabaPendiente = previo.filas.find((f) => f.postulacion_id === resultado.postulacion_id)?.estado === 'pendiente'
+      const dejaDeEstarlo = estabaPendiente && resultado.estado !== 'pendiente'
+      return {
+        ...previo,
+        meta: previo.meta
+          ? { ...previo.meta, cupos: resultado.cupos, pendientes: Math.max(0, previo.meta.pendientes - (dejaDeEstarlo ? 1 : 0)) }
+          : previo.meta,
+        filas: previo.filas.map((f) =>
+          f.postulacion_id === resultado.postulacion_id ? { ...f, estado: resultado.estado, decision: resultado.decision } : f,
+        ),
+      }
+    })
     return recargar()
   }
   const alConflicto = () => recargar()
@@ -108,9 +116,23 @@ export function usePanelDecisiones({ convocatoriaId, enProceso, puedeDecidir }) 
   }
   if (!meta) {
     return (
-      <p role="status" className={`flex items-center gap-2 py-8 text-sm ${CLASE_TEXTO_SUAVE}`}>
-        <Rueda /> Cargando decisiones…
-      </p>
+      <CargaInicial texto="Cargando decisiones…">
+        {/* La separación (gap-4) es la de la pantalla final: resumen, tabla y pie. */}
+        <div className="@container flex flex-col gap-4">
+          <EsqueletoDetalle metricas={4} bloques={0} />
+          <EsqueletoTabla
+            filas={3}
+            encabezados={[
+              { texto: 'Aspirante' },
+              { texto: 'Decisión', clase: 'hidden @min-[640px]:block' },
+              { texto: 'Acciones', clase: 'text-center' },
+            ]}
+            plantilla="grid-cols-[minmax(0,1fr)_9rem] @min-[640px]:grid-cols-[34%_minmax(0,1fr)_11rem]"
+            pie
+            textoPie="Cargando decisiones…"
+          />
+        </div>
+      </CargaInicial>
     )
   }
 

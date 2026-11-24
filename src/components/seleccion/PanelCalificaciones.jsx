@@ -1,13 +1,17 @@
 import { isValidElement } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../../auth/useAuth'
 import { usePanelCalificaciones } from './usePanelCalificaciones'
 import Boton from '../ui/Boton'
 import { MensajeAviso, MensajeError } from '../ui/Mensaje'
 import Rueda from '../ui/Rueda'
 import { CLASE_CAJA_SUAVE, CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
+import { rutaConfiguracion, rutaRanking } from '../../lib/pasosSeleccion'
 import { ACTIVIDADES, ESTADO_RESULTADO, textoNota } from '../../lib/seleccion'
 import { TarjetaActividad } from './PiezasCalificaciones'
 
-export default function PanelCalificaciones({ convocatoriaId, postulacionId, puedeDecidir, recarga, onCambio, soloLectura = false }) {
+export default function PanelCalificaciones({ convocatoriaId, postulacionId, puedeDecidir, recarga, onCambio, onIrAConfiguracion, soloLectura = false }) {
+  const puedeVer = useAuth().can('seleccion:ver')
   const ctx = usePanelCalificaciones({ convocatoriaId, postulacionId, puedeDecidir, recarga, onCambio, soloLectura })
   // Mientras carga, falla o no está abierto, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (ctx === null || isValidElement(ctx)) return ctx
@@ -79,11 +83,33 @@ export default function PanelCalificaciones({ convocatoriaId, postulacionId, pue
         <MensajeAviso>
           Pendiente de configurar: esta convocatoria aún no tiene definidas sus actividades presenciales. Se configuran
           en la pestaña Configuración de la convocatoria.
+          {puedeVer && (
+            <>
+              {' '}
+              <Link to={rutaConfiguracion(convocatoriaId)} onClick={onIrAConfiguracion} className="font-semibold underline underline-offset-2">
+                Ir a la configuración
+              </Link>
+            </>
+          )}
         </MensajeAviso>
       )}
       {sinActividades && (
         <p className={`${CLASE_CAJA_SUAVE} p-3 text-sm ${CLASE_TEXTO_FUERTE}`}>
-          Esta convocatoria no tiene actividades presenciales: solo cuenta la habilitación documental.
+          Esta convocatoria no tiene actividades presenciales: no se piden notas y solo cuenta la habilitación documental.
+          {/* Una sola línea y un solo enlace: el bloque «Siguiente paso» completo vive en la pestaña Configuración. */}
+          {!soloLectura && puedeVer && (
+            <>
+              {' '}
+              <Link to={rutaRanking(convocatoriaId)} className="font-semibold underline underline-offset-2">
+                Ir a Ranking y finalistas
+              </Link>
+            </>
+          )}
+        </p>
+      )}
+      {puedeEscribir && resultado.estado === 'incompleto' && (
+        <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
+          Completa las calificaciones requeridas: hasta entonces este candidato no queda listo para elegirse como finalista.
         </p>
       )}
       {razon && <MensajeAviso>{razon}</MensajeAviso>}

@@ -3,8 +3,7 @@ import { designarReferencia, obtenerReferencia } from '../../api/seleccion'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import Boton from '../ui/Boton'
 import { MensajeError } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
-import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
+import { EsqueletoDetalle } from '../ui/Esqueleto'
 import { estadoDocumental, traducirError, traducirErrores } from '../../lib/seleccion'
 
 // Lógica de PanelReferencia: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
@@ -65,9 +64,7 @@ export function usePanelReferencia({ convocatoriaId, postulacionId, activo, onCa
   }
   if (!datos) {
     return (
-      <p role="status" className={`flex items-center gap-2 py-8 text-sm ${CLASE_TEXTO_SUAVE}`}>
-        <Rueda /> Cargando evaluaciones…
-      </p>
+      <EsqueletoDetalle texto="Cargando evaluaciones…" bloques={2} />
     )
   }
 

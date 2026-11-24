@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../../lib/estilos'
+import { rutaConfiguracion } from '../../../lib/pasosSeleccion'
 
 // Sección de PanelRanking. Recibe solo lo que muestra, por props.
 export default function SinConfigurarRanking({ convocatoriaId, meta }) {
@@ -11,7 +12,7 @@ export default function SinConfigurarRanking({ convocatoriaId, meta }) {
       {meta.no_listos > 0 && ` Hay ${meta.postuladas} ${meta.postuladas === 1 ? 'candidato' : 'candidatos'} esperando.`}
     </p>
     <Link
-      to={`/seleccion/preseleccion?convocatoria=${convocatoriaId}&pestana=configuracion`}
+      to={rutaConfiguracion(convocatoriaId)}
       className="inline-flex min-h-11 items-center justify-center rounded-lg border border-sena-azul/60 px-4 text-sm font-semibold text-sena-azul hover:bg-sena-cielo/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sena dark:border-sena-texto-suave/70 dark:text-sena-texto dark:hover:bg-sena-superficie-alta"
     >
       Ir a la configuración
