@@ -99,6 +99,15 @@ export function useEvaluacionEvaluar() {
   // solo explica por qué «Enviar a corrección» está disponible o bloqueado (ver PanelRondasCorreccion).
   const correccion = dato?.correccion ?? null
   const puedePedirCorreccion = correccion ? Boolean(correccion.puede_solicitar) : true
+  // Documentos marcados «No cumple». Mientras haya alguno y la corrección todavía pueda seguir, no se finaliza: si se
+  // finaliza, el aspirante queda con un documento sin corregir y la selección usaría esa evaluación.
+  const noCumple = aplicables.filter((d) => respuestas[d.id] === false)
+  // Las correcciones se agotaron: no quedan rondas (plazo vencido sin respuesta o las dos ordinarias usadas) y el
+  // evaluador no puede pedir otra. Solo entonces se puede finalizar con un documento «No cumple».
+  const correccionAgotada = Boolean(correccion) && !correccion.puede_solicitar
+    && ['agotadas', 'vencida'].includes(correccion.motivo)
+  const bloqueoPorNoCumple = noCumple.length > 0 && !correccionAgotada
+  const bloqueoFinalizar = faltantes.length > 0 || bloqueoPorNoCumple
 
   const guardar = async (estadoFinal) => {
     setError('')
@@ -166,7 +175,7 @@ export function useEvaluacionEvaluar() {
   }
 
   const finalizar = async () => {
-    if (faltantes.length > 0) return // el botón ya está desactivado; el servidor también lo rechaza
+    if (bloqueoFinalizar) return // el botón ya está desactivado
     const pendientes =
       sinResponder > 0
         ? ` ${sinResponder === 1 ? '1 requisito sin responder contará' : `${sinResponder} requisitos sin responder contarán`} como no cumplido.`
@@ -248,9 +257,12 @@ export function useEvaluacionEvaluar() {
       error,
       evaluacion,
       excluidos,
+      bloqueoFinalizar,
+      bloqueoPorNoCumple,
       faltantes,
       finalizar,
       guardando,
+      noCumple,
       guardar,
       puedePedirCorreccion,
       navigate,
