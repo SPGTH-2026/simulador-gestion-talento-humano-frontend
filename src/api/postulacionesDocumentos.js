@@ -165,26 +165,11 @@ export async function mensajeErrorBlob(error) {
   }
 }
 
-// Corrección de una postulación propia: la evaluación que trae el resumen de rondas (`correccion`: ronda actual, historial,
-// plazo y límites) o null si no hay una corrección pedida. La ronda es de la POSTULACIÓN (compartida entre evaluadores).
-// Pide solo las evaluaciones de ESTA postulación con corrección pedida (el servidor filtra; no se baja todo el listado).
+// Corrección de una postulación propia: `{ correccion: resumen }` (ronda actual, historial, plazo y límites) o null si no
+// hay una corrección pedida. La ronda es de la POSTULACIÓN (compartida entre evaluadores). Se pide directo a la
+// postulación: no se baja el listado de evaluaciones.
 export const obtenerCorreccion = (postulacionId) =>
-  client
-    .get('/mis-evaluaciones', {
-      params: { postulacion_id: Number(postulacionId), estado: 'correccion_solicitada' },
-    })
-    .then((res) => {
-      const lista = res.data?.data ?? []
-      // La lista viene con la más reciente primero: la que cuenta es la última ronda pedida.
-      return (
-        lista.find(
-          (e) =>
-            Number(e.postulacion_id) === Number(postulacionId) &&
-            e.estado === 'correccion_solicitada' &&
-            e.correccion?.ronda_actual,
-        ) ?? null
-      )
-    })
+  client.get(`/postulaciones/${postulacionId}/correccion`).then((res) => res.data.data ?? null)
 
 // El aspirante confirma que reemplazó todos los documentos marcados para corregir.
 export const enviarCorreccion = (postulacionId) =>
