@@ -1,8 +1,8 @@
 // Cada opción pide UN permiso. Los módulos con hijos se muestran
 // si al usuario le queda al menos un hijo visible.
 // Notificaciones no está aquí: se abre desde la campana del Topbar.
-// Mientras la pantalla de Notificaciones no tenga funciones ni backend, la campana no se muestra.
-export const NOTIFICACIONES_DISPONIBLES = false
+// Interruptor de la campana: en false se oculta sin tocar la ruta ni el backend.
+export const NOTIFICACIONES_DISPONIBLES = true
 
 // 'icono' es solo presentación (ver components/ui/Icono.jsx): no cambia
 // permisos ni destinos. Los hijos no llevan ícono.
