@@ -50,14 +50,14 @@ export default function AppRouter() {
         <Route path="/recuperar" element={<RecuperarContrasena />} />
       </Route>
 
+      {/* Sin sesión o con sesión: el alta con Google espera la ficha antes de existir como cuenta. */}
+      <Route path="/completar-ficha" element={<CompletarFicha />} />
+
       {/* Con sesión. /verificar-correo vive FUERA de AppLayout a propósito:
           ProtectedRoute manda aquí a quien no tenga el correo confirmado, y si
           compartiera layout con las rutas de negocio acabaríamos en un bucle. */}
       <Route element={<ProtectedRoute />}>
         <Route path="/verificar-correo" element={<VerificarCorreo />} />
-
-        {/* El aspirante sin ficha solo puede ver esta pantalla hasta asociarla. */}
-        <Route path="/completar-ficha" element={<CompletarFicha />} />
 
         <Route element={<AppLayout />}>
           <Route element={<PermissionRoute permiso="dashboard:ver" />}>

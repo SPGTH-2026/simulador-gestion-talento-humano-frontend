@@ -188,6 +188,30 @@ export default function Usuarios() {
                             </label>
                           )}
 
+                          {form.role === 'instructor' && (
+                            <fieldset className="flex flex-col gap-2 text-sm text-sena-azul dark:text-sena-texto">
+                              <legend className="font-medium">Fichas del instructor (al menos una)</legend>
+                              {fichas.map((f) => (
+                                <label key={f.id} className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={form.fichas.includes(String(f.id))}
+                                    onChange={(e) =>
+                                      setForm({
+                                        ...form,
+                                        fichas: e.target.checked
+                                          ? [...form.fichas, String(f.id)]
+                                          : form.fichas.filter((x) => x !== String(f.id)),
+                                      })
+                                    }
+                                  />
+                                  {f.codigo} · {f.nombre_programa}
+                                </label>
+                              ))}
+                              {errores.fichas && <span className="text-xs text-peligro">{errores.fichas}</span>}
+                            </fieldset>
+                          )}
+
                           <label className="flex items-center gap-2 pb-2 text-sm font-medium text-sena-azul dark:text-sena-texto">
                             <input
                               type="checkbox"
