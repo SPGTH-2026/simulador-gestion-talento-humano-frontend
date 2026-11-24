@@ -23,7 +23,7 @@ export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, bloqueoFinalizar, bloqueoPorNoCumple, excluidos, faltantes, finalizar, guardando, guardar, noCumple, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
       {volverAlListado}
@@ -196,13 +196,25 @@ export default function EvaluacionEvaluar() {
               ref={botonFinalizar}
               tamano="tactil"
               onClick={finalizar}
-              disabled={guardando || faltantes.length > 0}
-              title={faltantes.length > 0 ? 'Falta cargar un documento obligatorio' : undefined}
+              disabled={guardando || bloqueoFinalizar}
+              title={
+                faltantes.length > 0
+                  ? 'Falta cargar un documento obligatorio'
+                  : bloqueoPorNoCumple
+                    ? 'Hay documentos marcados «No cumple». Espera a que el aspirante los corrija o a que se agoten las correcciones.'
+                    : undefined
+              }
               className="whitespace-normal!"
             >
               {guardando ? 'Guardando…' : 'Finalizar y enviar resultado'}
             </Boton>
           </div>
+          {bloqueoPorNoCumple && (
+            <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
+              Para finalizar, todos los documentos deben cumplir o las correcciones deben haberse agotado. Marcados como «No
+              cumple»: {noCumple.map((d) => d.nombre).join(', ')}.
+            </p>
+          )}
         </section>
       </div>
     </div>
