@@ -1,6 +1,6 @@
 import { useMisEvaluaciones } from './useMisEvaluaciones'
 import Boton from '../../components/ui/Boton'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoTarjetas } from '../../components/ui/Esqueleto'
 import Icono from '../../components/ui/Icono'
 import { MensajeError, MensajeExito } from '../../components/ui/Mensaje'
 import Paginacion from '../../components/ui/Paginacion'
@@ -33,7 +33,13 @@ export default function MisEvaluaciones() {
       )}
 
       {cargando ? (
-        <Cargando>Cargando evaluaciones…</Cargando>
+        <EsqueletoTarjetas
+          texto="Cargando evaluaciones…"
+          n={6}
+          claseTarjeta="min-h-56"
+          rejilla="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+          clasesItem={(i) => (i === 3 ? 'hidden md:flex' : i > 3 ? 'hidden xl:flex' : '')}
+        />
       ) : (
         evaluaciones.length === 0 &&
         !error && (

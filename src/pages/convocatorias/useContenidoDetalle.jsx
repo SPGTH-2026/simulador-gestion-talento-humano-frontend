@@ -13,6 +13,7 @@ import Boton from '../../components/ui/Boton'
 import { MensajeError } from '../../components/ui/Mensaje'
 import Icono from '../../components/ui/Icono'
 import Cargando from '../../components/ui/Cargando'
+import { EsqueletoDetalle } from '../../components/ui/Esqueleto'
 import { CLASE_TARJETA } from '../../lib/estilos'
 
 // Lógica de ContenidoDetalle: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
@@ -99,7 +100,7 @@ export function useContenidoDetalle({ id }) {
   }
 
   if (cargando) {
-    return <Cargando>Cargando convocatoria…</Cargando>
+    return <EsqueletoDetalle texto="Cargando convocatoria…" bloques={3} />
   }
 
   // El aspirante postulado a una convocatoria que ya no está publicada (el

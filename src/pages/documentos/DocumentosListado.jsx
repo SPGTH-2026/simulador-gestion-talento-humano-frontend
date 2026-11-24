@@ -6,7 +6,7 @@ import Boton from '../../components/ui/Boton'
 import Tarjeta from '../../components/ui/Tarjeta'
 import Campo from '../../components/ui/Campo'
 import Paginacion from '../../components/ui/Paginacion'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoTabla } from '../../components/ui/Esqueleto'
 import useDebounce from '../../lib/useDebounce'
 import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import EstadoVacio from '../../components/ui/EstadoVacio'
@@ -22,7 +22,7 @@ export default function DocumentosListado() {
   const [, setPagina] = useState(1)
   const [aspirantes, setAspirantes] = useState([])
   const [meta, setMeta] = useState({})
-  const [cargando, setCargando] = useState(false)
+  const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
 
   const cargarFichas = useCallback(async () => {
@@ -72,7 +72,8 @@ export default function DocumentosListado() {
     <div className="flex flex-col gap-5">
       <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
         <h1 className={CLASE_TITULO_PAGINA}>Portafolios Documentales</h1>
-        <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>{meta?.total ?? 0} aspirante(s) con postulaciones</p>
+        {/* El total solo se dice cuando se conoce: durante la carga inicial no se muestra «0 aspirante(s)». */}
+        {meta?.total != null && <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>{meta.total} aspirante(s) con postulaciones</p>}
       </header>
 
       {/* Mismo bloque de filtros de Convocatorias y Usuarios: campos con etiqueta sobre el lienzo, sin tarjeta gris. */}
@@ -105,8 +106,22 @@ export default function DocumentosListado() {
 
       {error && <Mensaje tipo="error">{error}</Mensaje>}
 
-      {cargando ? (
-        <Cargando>Cargando aspirantes…</Cargando>
+      {/* Esqueleto solo en la carga inicial; al filtrar o paginar se conservan las filas (atenuadas) mientras llegan las nuevas. */}
+      {cargando && aspirantes.length === 0 ? (
+        <EsqueletoTabla
+          texto="Cargando aspirantes…"
+          filas={5}
+          encabezados={[
+            { texto: 'Aspirante' },
+            { texto: 'Ficha', clase: 'hidden @min-[640px]:block' },
+            { texto: 'Postulaciones', clase: 'hidden @min-[640px]:block' },
+            { texto: 'Última actividad', clase: 'hidden @min-[640px]:block' },
+            { texto: 'Acciones', clase: 'text-center' },
+          ]}
+          plantilla="grid-cols-[minmax(0,1fr)_9rem] @min-[640px]:grid-cols-[minmax(0,2fr)_6rem_8rem_9rem_9rem]"
+          pie
+          textoPie="Cargando aspirantes…"
+        />
       ) : aspirantes.length === 0 ? (
         <EstadoVacio
           icono="📂"
@@ -114,7 +129,7 @@ export default function DocumentosListado() {
           descripcion="No hay aspirantes con postulaciones en los filtros actuales."
         />
       ) : (
-        <Tarjeta className="overflow-x-auto">
+        <Tarjeta className={`overflow-x-auto ${cargando ? 'opacity-60' : ''}`} aria-busy={cargando}>
           <table className={`${CLASE_TABLA} min-w-175`}>
             <thead className={CLASE_THEAD}>
               <tr>

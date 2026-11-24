@@ -213,7 +213,7 @@ export default function EvaluacionListado() {
                           </th>
                         ),
                       )}
-                      <th scope="col" className={`${CLASE_TH} text-right`}>
+                      <th scope="col" className={`${CLASE_TH} text-center`}>
                         Acciones
                       </th>
                     </tr>

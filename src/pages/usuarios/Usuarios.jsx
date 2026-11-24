@@ -4,7 +4,7 @@ import Boton from '../../components/ui/Boton'
 import Paginacion from '../../components/ui/Paginacion'
 import Campo from '../../components/ui/Campo'
 import CampoBusqueda from '../../components/ui/CampoBusqueda'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoLista } from '../../components/ui/Esqueleto'
 import Icono from '../../components/ui/Icono'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import Etiqueta from '../../components/ui/Etiqueta'
@@ -107,7 +107,7 @@ export default function Usuarios() {
               <tr>
                 <td colSpan="6">
                   <div className="sticky left-0 w-[100cqw]">
-                    <Cargando>Cargando usuarios…</Cargando>
+                    <EsqueletoLista texto="Cargando usuarios…" filas={4} />
                   </div>
                 </td>
               </tr>

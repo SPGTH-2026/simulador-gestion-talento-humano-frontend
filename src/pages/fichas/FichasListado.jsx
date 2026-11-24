@@ -3,7 +3,7 @@ import { NUEVA } from './useFichasListado'
 import FilaFicha from './FilaFicha'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoLista } from '../../components/ui/Esqueleto'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import Icono from '../../components/ui/Icono'
 import { MensajeError, MensajeExito } from '../../components/ui/Mensaje'
@@ -59,7 +59,7 @@ export default function FichasListado() {
               <tr>
                 <td colSpan="7">
                   <div className="sticky left-0 w-[100cqw]">
-                    <Cargando>Cargando fichas…</Cargando>
+                    <EsqueletoLista texto="Cargando fichas…" filas={4} avatar={false} />
                   </div>
                 </td>
               </tr>

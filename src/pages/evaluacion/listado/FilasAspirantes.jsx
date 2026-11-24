@@ -126,7 +126,7 @@ export function FilaTabla({ fila }) {
           <Resultado evaluacion={fila.evaluacion} />
         </div>
       </td>
-      <td className={`${CLASE_TD} text-right`}>
+      <td className={`${CLASE_TD} text-center`}>
         <EnlaceRevisar fila={fila} variante="contorno">
           Revisar
         </EnlaceRevisar>
