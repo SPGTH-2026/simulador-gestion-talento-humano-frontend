@@ -38,7 +38,7 @@ export default function Portafolio({ userId }) {
   const ctx = usePortafolio({ userId })
   // Mientras carga o si falla, el hook devuelve la propia pantalla (un elemento de React) o null, no el contexto.
   if (ctx === null || isValidElement(ctx)) return ctx
-  const { abriendoId, botonesLectura, encabezadoRevision, error, errorRevision, handleVerDocumentos, portafolio, postulacionSel, postulaciones, revision, rutaArchivo, setPostulacionSel, setRevision, usuario, verArchivo } = ctx
+  const { abriendoId, botonesLectura, encabezadoRevision, errorRevision, handleVerDocumentos, portafolio, postulacionSel, postulaciones, revision, rutaArchivo, setPostulacionSel, setRevision, usuario, verArchivo } = ctx
   return (
     <>
       <div className="flex flex-col gap-5">

@@ -1,6 +1,12 @@
 ﻿import { isValidElement } from 'react'
 import { useEvaluacionEvaluar } from './useEvaluacionEvaluar'
 import PanelRondasCorreccion from './PanelRondasCorreccion'
+
+
+
+
+
+
 import AvatarIniciales from '../../components/evaluacion/AvatarIniciales'
 import {
   EtiquetaConIcono,
@@ -10,7 +16,9 @@ import RequisitoEvaluacion from '../../components/evaluacion/RequisitoEvaluacion
 import ResumenCumplimiento from '../../components/evaluacion/ResumenCumplimiento'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
+
 import Mensaje, { MensajeAviso, MensajeError } from '../../components/ui/Mensaje'
+
 import {
   CLASE_CAMPO,
   CLASE_TARJETA,
@@ -19,11 +27,12 @@ import {
   CLASE_TEXTO_SUAVE,
 } from '../../lib/estilos'
 
+
 export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, bloqueoFinalizar, bloqueoPorNoCumple, excluidos, faltantes, finalizar, guardando, guardar, noCumple, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
       {volverAlListado}

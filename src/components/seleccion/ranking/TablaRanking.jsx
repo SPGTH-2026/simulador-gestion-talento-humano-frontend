@@ -7,9 +7,8 @@ import CasillaSeleccion from '../CasillaSeleccion'
 import { CLASE_TARJETA_PLANA, CLASE_TBODY, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE, CLASE_THEAD } from '../../../lib/estilos'
 import { textoCumplimiento, textoNota } from '../../../lib/seleccion'
 
-// Sección de PanelRanking. Recibe el estado y las acciones del componente en la prop ctx.
-export default function TablaRanking({ ctx }) {
-  const { alternar, aviso, cargando, columnaCasillas, comparacion, conPuesto, enComparacion, filas, lista, modo, seleccion } = ctx
+// Sección de PanelRanking. Recibe solo lo que muestra, por props.
+export default function TablaRanking({ alternar, cargando, columnaCasillas, comparacion, conPuesto, enComparacion, filas, seleccion }) {
   return (
   <div className={`${CLASE_TARJETA_PLANA} overflow-hidden ${cargando ? 'opacity-60' : ''}`}>
     <table className="w-full table-fixed text-left text-sm">

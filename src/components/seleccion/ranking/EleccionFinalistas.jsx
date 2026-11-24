@@ -2,9 +2,8 @@ import Boton from '../../ui/Boton'
 import { MensajeAviso, MensajeError, MensajeExito } from '../../ui/Mensaje'
 import { CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE } from '../../../lib/estilos'
 
-// Sección de PanelRanking. Recibe el estado y las acciones del componente en la prop ctx.
-export default function EleccionFinalistas({ ctx }) {
-  const { abrirRevision, aviso, avisoTransitorio, buscando, desactualizado, error, limpiar, mensajeRef, meta, modo, pausaAviso, seleccion, usarSugerencia } = ctx
+// Sección de PanelRanking. Recibe solo lo que muestra, por props.
+export default function EleccionFinalistas({ abrirRevision, aviso, avisoTransitorio, buscando, desactualizado, limpiar, mensajeRef, meta, modo, pausaAviso, seleccion, usarSugerencia }) {
   return (
   <section
     aria-label="Elección de finalistas"

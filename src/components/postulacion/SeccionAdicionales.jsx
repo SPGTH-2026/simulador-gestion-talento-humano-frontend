@@ -27,7 +27,7 @@ export default function SeccionAdicionales({
   bloqueoCorreccion = false,
 }) {
   const ctx = useSeccionAdicionales({ vista, editable, asegurar, onRecargar, onError })
-  const { adicionales, adicionalesMostrar, agregado, archivo, elegirArchivo, eliminar, enVueloIds, enviando, enviar, errores, nota, pausaAgregado, progresoEnvio, puedeAgregar, refArchivo, setArchivo, setNota, setTitulo, titulo, tope, ver } = ctx
+  const { adicionalesMostrar, agregado, archivo, elegirArchivo, eliminar, enVueloIds, enviando, enviar, errores, nota, pausaAgregado, progresoEnvio, puedeAgregar, refArchivo, setArchivo, setNota, setTitulo, titulo, tope, ver } = ctx
   return (
     <section className={ESTILO_TARJETA}>
       <div className="flex flex-wrap items-center justify-between gap-2">

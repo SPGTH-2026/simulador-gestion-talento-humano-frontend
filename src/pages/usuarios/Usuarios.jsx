@@ -188,6 +188,30 @@ export default function Usuarios() {
                             </label>
                           )}
 
+                          {form.role === 'instructor' && (
+                            <fieldset className="flex flex-col gap-2 text-sm text-sena-azul dark:text-sena-texto">
+                              <legend className="font-medium">Fichas del instructor (al menos una)</legend>
+                              {fichas.map((f) => (
+                                <label key={f.id} className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={form.fichas.includes(String(f.id))}
+                                    onChange={(e) =>
+                                      setForm({
+                                        ...form,
+                                        fichas: e.target.checked
+                                          ? [...form.fichas, String(f.id)]
+                                          : form.fichas.filter((x) => x !== String(f.id)),
+                                      })
+                                    }
+                                  />
+                                  {f.codigo} · {f.nombre_programa}
+                                </label>
+                              ))}
+                              {errores.fichas && <span className="text-xs text-peligro">{errores.fichas}</span>}
+                            </fieldset>
+                          )}
+
                           <label className="flex items-center gap-2 pb-2 text-sm font-medium text-sena-azul dark:text-sena-texto">
                             <input
                               type="checkbox"
@@ -232,8 +256,10 @@ export default function Usuarios() {
                       <td className={`${CLASE_TD} text-right`}>
                         <div className="flex justify-end gap-2">
                           {/* Nadie cambia su propio rol ni se inhabilita a sí mismo: en su fila no hay acciones. */}
-                          {u.id === user?.id ? (
-                            <span className="py-1.5 text-xs text-slate-500 dark:text-sena-texto-suave">Tu cuenta</span>
+                          {u.id === user?.id || u.role === 'super_admin' ? (
+                            <span className="py-1.5 text-xs text-slate-500 dark:text-sena-texto-suave">
+                              {u.id === user?.id ? 'Tu cuenta' : 'Cuenta de super admin'}
+                            </span>
                           ) : (
                             <>
                               <Boton variante="contorno" tamano="tactil" onClick={() => empezarEdicion(u)}>

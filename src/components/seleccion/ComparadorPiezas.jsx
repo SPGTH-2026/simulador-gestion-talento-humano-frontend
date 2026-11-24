@@ -1,4 +1,4 @@
-import { criterios } from './useComparadorCandidatos'
+
 import Valor from './Valor'
 import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { textoNota } from '../../lib/seleccion'

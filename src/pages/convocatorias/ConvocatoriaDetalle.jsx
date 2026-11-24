@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom'
-import DetalleConvocatoria from '../../components/convocatorias/DetalleConvocatoria'
+
 
 // Vista de solo lectura propia (componente DetalleConvocatoria.jsx). El wizard
 // queda únicamente para Nueva/Editar y no se toca aquí.

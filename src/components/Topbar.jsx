@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import { CLASE_BOTON_ICONO, CLASE_TEXTO_SUAVE } from '../lib/estilos'
+import { CLASE_TEXTO_SUAVE } from '../lib/estilos'
 import { NOTIFICACIONES_DISPONIBLES } from '../config/menu'
 import { migasDe } from '../lib/migas'
+import CampanaNotificaciones from './notificaciones/CampanaNotificaciones'
 import DatosUsuario from './DatosUsuario'
 import ThemeToggle from './ThemeToggle'
 import Icono from './ui/Icono'
@@ -87,11 +88,7 @@ export default function Topbar({ onAbrirMenu }) {
           <ThemeToggle />
         </div>
 
-        {NOTIFICACIONES_DISPONIBLES && can('propio:notificaciones') && (
-          <Link to="/notificaciones" className={CLASE_BOTON_ICONO} aria-label="Notificaciones">
-            <Icono nombre="campana" />
-          </Link>
-        )}
+        {NOTIFICACIONES_DISPONIBLES && can('propio:notificaciones') && <CampanaNotificaciones />}
 
         <div className="hidden items-center gap-2 sm:flex">
           <span className="mx-1 h-6 w-px bg-sena-linea dark:bg-sena-borde/60" aria-hidden="true" />

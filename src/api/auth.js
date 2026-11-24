@@ -38,3 +38,10 @@ export const confirmVerification = (code) =>
 // El aspirante asocia su ficha; el rol NO cambia (eso lo hace el instructor).
 export const guardarFicha = (codigo) =>
   client.post('/auth/ficha', { ficha_codigo: codigo }).then((res) => res.data)
+
+// GET /api/auth/google/pendiente  ->  { data: { email, name } }  (404 si no hay alta pendiente con Google)
+export const pendienteGoogle = () => client.get('/auth/google/pendiente').then((res) => res.data)
+
+// POST /api/auth/google/pendiente/ficha  body { ficha_codigo }  ->  crea la cuenta con su ficha y abre la sesión
+export const completarPendienteGoogle = (codigo) =>
+  client.post('/auth/google/pendiente/ficha', { ficha_codigo: codigo }).then((res) => res.data)

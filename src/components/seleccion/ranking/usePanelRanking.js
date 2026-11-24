@@ -25,8 +25,6 @@ export function usePanelRanking({ convocatoriaId, activo = true, enProceso, pued
   // Las confirmaciones breves de éxito se retiran solas a los pocos segundos (el objetivo y la elección quedan igual).
   // Los avisos que requieren atención y los errores NO: siguen visibles hasta la siguiente acción.
   const avisoTransitorio = aviso && (aviso.tipo === 'exito' || aviso.tipo === 'info') ? aviso : null
-  const objetivo = useObjetivoRanking({ convocatoriaId, meta, recargar, montado, botonCambiar })
-  const { abrirObjetivo, avisoObjetivo, cerrarObjetivo, errorObjetivo, guardandoObjetivo, guardarObjetivo, objetivoActual, objetivoCambio, objetivoNumero, objetivoTexto, objetivoValido, pausaObjetivo, setAvisoObjetivo, setErrorObjetivo, setGuardandoObjetivo, setObjetivoTexto, textoObjetivo } = objetivo
   const pausaAviso = useAvisoTransitorio(avisoTransitorio, () => setAviso(null))
 
   const montado = useRef(true)
@@ -114,7 +112,10 @@ export function usePanelRanking({ convocatoriaId, activo = true, enProceso, pued
   // Una sola columna de casillas: «Elegir» (solo quien puede elegir) o, en modo comparación, «Comparar».
   const columnaCasillas = enComparacion || puedeElegir
 
-  const seleccionRanking = useSeleccionRanking({ aviso, borrador, borradorActual, cargadoClave, cargando, convocatoriaId, error, fase, filas, intentoActual, lista, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista })
+  const objetivo = useObjetivoRanking({ convocatoriaId, meta, recargar, montado, botonCambiar })
+  const { abrirObjetivo, avisoObjetivo, cerrarObjetivo, errorObjetivo, guardandoObjetivo, guardarObjetivo, objetivoActual, objetivoCambio, objetivoNumero, objetivoTexto, objetivoValido, pausaObjetivo, setAvisoObjetivo, setErrorObjetivo, setGuardandoObjetivo, setObjetivoTexto, textoObjetivo } = objetivo
+
+  const seleccionRanking = useSeleccionRanking({ borradorActual, cargadoClave, convocatoriaId, filas, intentoActual, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista })
   const { abrirRevision, alConfirmar, alRankingDesactualizado, alternar, leerRankingCompleto, leerSugeridos, limpiar, manejarCambioDeRanking, sincronizar, usarSugerencia } = seleccionRanking
   // Avisos del estado: una línea por tema, sin repetir lo que ya dicen las cifras.
   const avisos = []

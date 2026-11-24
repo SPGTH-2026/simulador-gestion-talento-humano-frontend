@@ -10,7 +10,7 @@ import Paginacion from '../ui/Paginacion'
 import DialogoDecision from './DialogoDecision'
 import DetalleDecision from './DetalleDecision'
 import { CLASE_META_DD, CLASE_META_DT, CLASE_TARJETA_PLANA, CLASE_TBODY, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE, CLASE_THEAD } from '../../lib/estilos'
-import { ESTADO_DECISION, MOTIVO_REVISION_DECISION, accionesDeFila, formatoFechaHora } from '../../lib/seleccion'
+import { ESTADO_DECISION, MOTIVO_REVISION_DECISION, formatoFechaHora } from '../../lib/seleccion'
 
 const CLASE_TH = 'px-3 py-2.5 first:pl-4 last:pr-4'
 const CLASE_TD = 'px-3 py-2.5 align-middle first:pl-4 last:pr-4'
@@ -32,7 +32,7 @@ export default function PanelDecisiones({ convocatoriaId, enProceso, puedeDecidi
   const ctx = usePanelDecisiones({ convocatoriaId, enProceso, puedeDecidir })
   // Mientras carga, falla o no está abierto, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (ctx === null || isValidElement(ctx)) return ctx
-  const { accionesDe, alConflicto, alGuardar, cambiarPagina, cargando, cupos, detalle, error, fase, filaDecidiendo, filaDetalle, filas, guardada, lista, meta, pausaGuardada, reintentar, setDecidiendo, setDetalle, setGuardada, sinFilas, vigenteEnProceso } = ctx
+  const { accionesDe, alConflicto, alGuardar, cambiarPagina, cargando, cupos, error, fase, filaDecidiendo, filaDetalle, filas, guardada, lista, meta, pausaGuardada, reintentar, setDecidiendo, setDetalle, setGuardada, sinFilas, vigenteEnProceso } = ctx
   return (
     <div className="@container flex flex-col gap-4" aria-busy={cargando}>
       {fase === 'error' && (

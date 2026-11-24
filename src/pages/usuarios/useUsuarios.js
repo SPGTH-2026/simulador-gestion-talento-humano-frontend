@@ -29,7 +29,7 @@ export function useUsuarios() {
   const [exito, setExito] = useState('')
 
   const [editandoId, setEditandoId] = useState(null)
-  const [form, setForm] = useState({ role: '', subrole: 'general', active: true, ficha_id: '' })
+  const [form, setForm] = useState({ role: '', subrole: 'general', active: true, ficha_id: '', fichas: [] })
   const [errores, setErrores] = useState({})
   const [guardando, setGuardando] = useState(false)
 
@@ -91,9 +91,11 @@ export function useUsuarios() {
   }, [pagina, busqueda, filtroFicha, filtroRol, intento])
 
   // El instructor no gestiona instructores ni super admins (matriz del backend).
-  const rolesPermitidos = esInstructor
+  // Solo existe un super admin (la cuenta de SUPER_ADMIN_EMAIL): no se ofrece como rol al asignar.
+  const rolesPermitidos = (esInstructor
     ? ROLES.filter((r) => r.valor === 'aprendiz' || r.valor === 'aspirante')
     : ROLES
+  ).filter((r) => r.valor !== 'super_admin')
 
   const empezarEdicion = (u) => {
     setEditandoId(u.id)
@@ -102,6 +104,7 @@ export function useUsuarios() {
       subrole: u.subrole ?? 'general',
       active: u.active,
       ficha_id: u.ficha?.id ? String(u.ficha.id) : '',
+      fichas: (u.fichas ?? []).map((f) => String(f.id)),
     })
     setErrores({})
   }
@@ -130,6 +133,8 @@ export function useUsuarios() {
         subrole: esAprendiz ? form.subrole : null,
         active: form.active,
         ficha_id: admiteFicha ? (form.ficha_id || null) : null,
+        // Un instructor vive en una o más fichas (ficha_instructor); con cualquier otro rol la lista no aplica.
+        fichas: form.role === 'instructor' ? form.fichas.map(Number) : [],
       })
       actualizarFila(respuesta.data)
       setEditandoId(null)

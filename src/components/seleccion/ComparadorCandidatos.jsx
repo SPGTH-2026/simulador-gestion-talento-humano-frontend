@@ -1,5 +1,5 @@
 import { useComparadorCandidatos } from './useComparadorCandidatos'
-import { criterios } from './useComparadorCandidatos'
+
 import { IconoX } from '../convocatorias/Iconos'
 import Boton from '../ui/Boton'
 import Dialogo from '../ui/Dialogo'

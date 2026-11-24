@@ -1,8 +1,7 @@
 import Paginacion from '../../ui/Paginacion'
 
-// Sección de PanelRanking. Recibe el estado y las acciones del componente en la prop ctx.
-export default function PaginacionRanking({ ctx }) {
-  const { cambiarPagina, cargando, meta } = ctx
+// Sección de PanelRanking. Recibe solo lo que muestra, por props.
+export default function PaginacionRanking({ cambiarPagina, cargando, meta }) {
   return (
   <Paginacion
     meta={meta}

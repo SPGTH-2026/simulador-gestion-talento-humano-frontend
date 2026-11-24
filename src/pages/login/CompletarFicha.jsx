@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/useAuth'
 import * as authApi from '../../api/auth'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import PantallaCarga from '../../components/ui/PantallaCarga'
+import CompletarFichaGoogle from './CompletarFichaGoogle'
 import TarjetaAuth from '../../components/ui/TarjetaAuth'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
@@ -25,8 +26,9 @@ export default function CompletarFicha() {
     return <PantallaCarga operacion="sesion" />
   }
 
+  // Sin sesión: alta pendiente con Google (la cuenta se crea al elegir la ficha).
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <CompletarFichaGoogle />
   }
 
   // Ya tiene ficha o no es aspirante (instructor, super admin): fuera de aquí.
