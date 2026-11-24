@@ -139,9 +139,9 @@ export function useSeccionDocumentosRequeridos({ vista,
   }
 
   // "Ver": el PDF lo abre PanelDocumentosPostulacion (evento document:view).
-  const ver = (documento) =>
+  const ver = (documento, titulo) =>
     window.dispatchEvent(new CustomEvent('document:view', {
-      detail: { documentoId: documento.id, nombre: documento.nombre_original },
+      detail: { documentoId: documento.id, nombre: documento.nombre_original, titulo },
     }))
 
     return {

@@ -35,7 +35,7 @@ export function usePanelDocumentosPostulacion({
   const { correccion, marcados, infoCorreccion, correccionVigente, corregidos, enviandoCorreccion, enviarCorreccionAhora, releerCorreccion } = correccionPanel
 
   const { sexo, alGuardarSexo } = usePanelPerfilSexo({ estado, setError })
-  usePanelVerDocumentos({ idPostulacion, setError })
+  const visor = usePanelVerDocumentos({ idPostulacion })
 
   const [aviso, setAviso] = useState('')
   const [reactivando, setReactivando] = useState(false)
@@ -113,6 +113,7 @@ export function usePanelDocumentosPostulacion({
     setError,
     sexo,
     vista,
+    visor,
     volverAPostularme,
   }
 }

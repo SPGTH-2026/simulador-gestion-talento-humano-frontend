@@ -3,12 +3,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { listaDocumentos } from '../../api/documentos'
 import { obtenerEvaluacion, guardarEvaluacion } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
-import { abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulacionesDocumentos'
 import { IconoFlechaIzquierda } from '../../components/convocatorias/Iconos'
 import Boton from '../../components/ui/Boton'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoDetalle } from '../../components/ui/Esqueleto'
 import { MensajeError } from '../../components/ui/Mensaje'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import useVisorDocumento from '../../hooks/useVisorDocumento'
 import { CLASE_TARJETA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { repartirPesos } from '../../lib/evaluacion'
 
@@ -22,8 +22,7 @@ export function useEvaluacionEvaluar() {
   const [documentos, setDocumentos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
-  const [errorDocumento, setErrorDocumento] = useState('')
-  const [abriendo, setAbriendo] = useState(null)
+  const { abrir: abrirVisor, visor } = useVisorDocumento()
 
   const [respuestas, setRespuestas] = useState({})
   const [observaciones, setObservaciones] = useState('')
@@ -181,20 +180,12 @@ export function useEvaluacionEvaluar() {
     if (continuar) guardar('finalizada')
   }
 
-  const verDocumento = async (documento) => {
-    setErrorDocumento('')
-    setAbriendo(documento.id)
-    try {
-      await abrirArchivoEnPestana(
-        `/revision/postulaciones/${postulacionId}/documentos/${documento.archivo.id}/archivo?inline=1`,
-        { nombre: documento.archivo.nombre_original },
-      )
-    } catch (e) {
-      setErrorDocumento((await mensajeErrorBlob(e)) || mensajeError(e))
-    } finally {
-      setAbriendo(null)
-    }
-  }
+  // El visor interno muestra la carga y los errores; no se abre otra pestaña.
+  const verDocumento = (documento) =>
+    abrirVisor(`/revision/postulaciones/${postulacionId}/documentos/${documento.archivo.id}/archivo?inline=1`, {
+      titulo: documento.nombre || documento.archivo.nombre_original,
+      nombre: documento.archivo.nombre_original,
+    })
 
   const volverAlListado = (
     <Boton as={Link} to="/evaluacion" variante="fantasma" tamano="tactil" className="-ml-4 self-start">
@@ -218,7 +209,13 @@ export function useEvaluacionEvaluar() {
   }
 
   if (cargando) {
-    return <Cargando>Cargando evaluación…</Cargando>
+    // «Volver al listado» no depende de la API: se ve mientras carga y el esqueleto sustituye solo el contenido.
+    return (
+      <div className="flex flex-col gap-4">
+        {volverAlListado}
+        <EsqueletoDetalle texto="Cargando evaluación…" bloques={3} />
+      </div>
+    )
   }
 
   if (!dato) {
@@ -233,7 +230,6 @@ export function useEvaluacionEvaluar() {
   const { aspirante, convocatoria, evaluacion } = dato
 
     return {
-      abriendo,
       actualizados,
       aplicables,
       aspirante,
@@ -250,7 +246,6 @@ export function useEvaluacionEvaluar() {
       documentos,
       enCorreccion,
       error,
-      errorDocumento,
       evaluacion,
       excluidos,
       faltantes,
@@ -265,12 +260,10 @@ export function useEvaluacionEvaluar() {
       pesos,
       postulacionId,
       respuestas,
-      setAbriendo,
       setCargando,
       setDato,
       setDocumentos,
       setError,
-      setErrorDocumento,
       setGuardando,
       setObservaciones,
       setRespuestas,
@@ -278,6 +271,7 @@ export function useEvaluacionEvaluar() {
       sinResponder,
       total,
       verDocumento,
+      visor,
       volverAlListado,
     }
 }

@@ -32,9 +32,10 @@ export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  const { actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, visor, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
+      {visor}
       {volverAlListado}
 
       <header className={`${CLASE_TARJETA} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5`}>
@@ -107,7 +108,6 @@ export default function EvaluacionEvaluar() {
             </p>
           </div>
 
-          {errorDocumento && <MensajeError>{errorDocumento}</MensajeError>}
 
           {total === 0 ? (
             <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>Sin documentos obligatorios aplicables.</p>
@@ -122,7 +122,6 @@ export default function EvaluacionEvaluar() {
                   actualizado={actualizados.includes(documento.id)}
                   onChange={(valor) => setRespuestas((prev) => ({ ...prev, [documento.id]: valor }))}
                   onVerDocumento={() => verDocumento(documento)}
-                  abriendo={abriendo === documento.id}
                 />
               ))}
             </ul>

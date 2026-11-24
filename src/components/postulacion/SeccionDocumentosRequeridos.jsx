@@ -163,7 +163,7 @@ export default function SeccionDocumentosRequeridos({
                   {archivoMostrar && (
                     <Boton variante="contorno" tamano="tactil"
                       disabled={enProceso}
-                      onClick={() => ver(archivoMostrar)}>
+                      onClick={() => ver(archivoMostrar, parametro.nombre)}>
                       Ver
                     </Boton>
                   )}

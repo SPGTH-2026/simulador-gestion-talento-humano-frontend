@@ -38,9 +38,10 @@ export default function PanelDocumentosPostulacion({
 }) {
   const ctx = usePanelDocumentosPostulacion({ postulacionId, convocatoria, documentosConvocatoria, skillsConvocatoriaNombres, miPostulacion, onEstadoChange, onPostulacionCreada, modoCorreccion, onCorreccionEnviada })
   if (isValidElement(ctx)) return ctx
-  const { alGuardarSexo, asegurar, aviso, correccion, correccionVigente, corregidos, editable, editableSexo, enviandoCorreccion, enviarCorreccionAhora, error, esBorrador, esRetirada, infoCorreccion, marcados, motivo, motivoVolver, puedeVolver, reactivando, recargar, setError, sexo, vista, volverAPostularme } = ctx
+  const { alGuardarSexo, asegurar, aviso, correccion, correccionVigente, corregidos, editable, editableSexo, enviandoCorreccion, enviarCorreccionAhora, error, esBorrador, esRetirada, infoCorreccion, marcados, motivo, motivoVolver, puedeVolver, reactivando, recargar, setError, sexo, vista, visor, volverAPostularme } = ctx
   return (
     <div className="flex flex-col gap-4">
+      {visor}
       {error && (
         <p
           role="alert"

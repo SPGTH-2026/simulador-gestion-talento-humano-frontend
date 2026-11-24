@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { CODIGO_LIBRETA_MILITAR, motivoNoEditable } from '../../lib/postulacionDocumentos'
+import { EsqueletoDetalle } from '../ui/Esqueleto'
 
 // Bloque de usePanelDocumentosPostulacion movido a su propio hook. Recibe sus dependencias en `deps`.
 export function useVistaDocumentos(deps) {
@@ -42,7 +43,7 @@ export function useVistaDocumentos(deps) {
   // Sin estado todavía: mientras llega el GET, o el error de acceso.
   if (idPostulacion && !estado && !error) {
     return (
-      <p className="text-slate-600 dark:text-sena-texto-suave">Cargando tus datos…</p>
+      <EsqueletoDetalle texto="Cargando tus datos…" bloques={2} />
     )
   }
   if (idPostulacion && !estado && error) {

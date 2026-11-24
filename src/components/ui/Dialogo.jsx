@@ -3,6 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 const FOCALIZABLES =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+// Pila de diálogos abiertos: con uno encima de otro (p. ej. el visor de un documento abierto desde un diálogo), solo el de
+// arriba atiende Escape y el giro de Tab; al cerrarlo, el de abajo vuelve a ser el activo y el foco regresa a quien lo abrió.
+const pila = []
+
 // Diálogo modal: fondo oscuro, caja centrada y el comportamiento que un modal
 // debe tener con teclado y lector de pantalla.
 //  - Al abrirse, el foco entra en la caja (salvo que un hijo ya lo haya pedido
@@ -35,9 +39,22 @@ export default function Dialogo({
     return () => quienTeniaElFoco?.focus?.()
   }, [quienTeniaElFoco])
 
+  // Una identidad por diálogo montado (estable aunque React monte dos veces en desarrollo).
+  const [identidad] = useState(() => Symbol('dialogo'))
+  useEffect(() => {
+    pila.push(identidad)
+    return () => {
+      const i = pila.indexOf(identidad)
+      if (i !== -1) pila.splice(i, 1)
+    }
+  }, [identidad])
+
   useEffect(() => {
     const alPulsar = (evento) => {
+      if (pila[pila.length - 1] !== identidad || evento.defaultPrevented) return
       if (evento.key === 'Escape') {
+        // Se marca como atendido: si al cerrarse este diálogo el de abajo pasa a ser el activo en el mismo evento, no lo cierra también.
+        evento.preventDefault()
         onCerrar()
         return
       }
@@ -62,7 +79,7 @@ export default function Dialogo({
     }
     window.addEventListener('keydown', alPulsar)
     return () => window.removeEventListener('keydown', alPulsar)
-  }, [onCerrar])
+  }, [onCerrar, identidad])
 
   return (
     <div
