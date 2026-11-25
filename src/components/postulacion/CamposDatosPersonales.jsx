@@ -13,7 +13,7 @@ import Icono from '../ui/Icono'
 // Con menos de 16 años avisa al instante y no deja continuar; con 16 o 17 años pide los datos del representante legal.
 // El servidor repite las mismas reglas.
 export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onContinuar = null }) {
-  const { alSalirDeCampo, bajoMinimo, campo, cambiarYGuardar, catalogos, errorDe, esMenor, form, guardando, municipios } = d
+  const { bajoMinimo, campo, cambiar, catalogos, errorDe, esMenor, form, municipios } = d
 
   return (
     <section id={ID_SECCION_DATOS} className={`${CLASE_TARJETA} scroll-mt-24 p-4`}>
@@ -22,8 +22,8 @@ export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onCo
         Llénalos para esta postulación. Los campos con * son obligatorios.
       </p>
 
-      {/* Los cambios se guardan al salir de un campo (solo después de autorizar); el blur burbujea como focusout. */}
-      <form onSubmit={(e) => e.preventDefault()} onBlur={alSalirDeCampo} noValidate className="mt-3 flex flex-col gap-4">
+      {/* Sin botón de guardar: en cuanto el formulario está completo se guarda solo (ver useSeccionDatosPersonales). */}
+      <form onSubmit={(e) => e.preventDefault()} noValidate className="mt-3 flex flex-col gap-4">
         <div className="grid gap-4 md:grid-cols-2">
           <Campo etiqueta="Nombres" requerido error={errorDe('nombres')}>
             <input type="text" autoComplete="given-name" maxLength={100} className={CLASE_CAMPO} {...campo('nombres')} />
@@ -73,7 +73,7 @@ export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onCo
               autoComplete="address-level2"
               className={CLASE_CAMPO}
               {...campo('municipio')}
-              disabled={!form.departamento || !editable || guardando}
+              disabled={!form.departamento || !editable}
             >
               <option value="">{form.departamento ? 'Selecciona un municipio' : 'Primero elige el departamento'}</option>
               {municipios.map((municipio) => (
@@ -88,13 +88,13 @@ export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onCo
 
         <GrupoSexo
           valor={form.sexo}
-          onCambio={(codigo) => cambiarYGuardar('sexo', codigo)}
-          deshabilitado={!editable || guardando}
+          onCambio={(codigo) => cambiar('sexo', codigo)}
+          deshabilitado={!editable}
           error={errorDe('sexo')}
         />
 
         {esMenor && (
-          <fieldset className={`${CLASE_CAJA_SUAVE} flex min-w-0 flex-col gap-3 p-3`} disabled={!editable || guardando}>
+          <fieldset className={`${CLASE_CAJA_SUAVE} flex min-w-0 flex-col gap-3 p-3`} disabled={!editable}>
             <legend className="px-1 text-sm font-semibold text-sena-azul dark:text-sena-texto">Representante legal</legend>
             <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
               Como tienes entre {EDAD_MINIMA} y 17 años, necesitamos los datos de la persona que autoriza tu postulación.
@@ -126,10 +126,10 @@ export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onCo
       {/* Paso siguiente. Solo se ofrece cuando las secciones van en pestañas; bloqueado hasta autorizar los datos. */}
       {onContinuar && (
         <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-sena-linea/70 pt-4 dark:border-sena-borde/50">
-          {!d.yaGuardado && (
-            <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>Autoriza el tratamiento de tus datos para continuar.</p>
+          {!d.autorizado && (
+            <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>Completa tus datos y marca la autorización para continuar.</p>
           )}
-          <Boton variante="primario" tamano="tactil" disabled={!d.yaGuardado || d.guardando} onClick={onContinuar}>
+          <Boton variante="primario" tamano="tactil" disabled={!d.autorizado || d.guardando} onClick={onContinuar}>
             Continuar a documentos
             <Icono nombre="flechaDerecha" className="size-4" />
           </Boton>

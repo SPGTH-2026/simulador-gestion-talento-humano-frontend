@@ -1,10 +1,14 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 afterEach(cleanup)
 
 vi.mock('../../api/convocatorias', () => ({
-  listaParametros: vi.fn().mockResolvedValue({ data: [] }),
+  listaParametros: vi.fn(async (tema) => ({
+    data: tema === 'tipo_documento_identidad'
+      ? [{ id: 1, codigo: 'cc', nombre: 'Cédula de ciudadanía' }]
+      : [{ id: 2, codigo: 'tecnologo', nombre: 'Tecnólogo' }],
+  })),
 }))
 vi.mock('../../api/ubicaciones', () => ({
   listaDepartamentos: vi.fn().mockResolvedValue([
@@ -36,16 +40,39 @@ const anios = (n) => {
   return f.toISOString().slice(0, 10)
 }
 
-const props = () => ({
-  datos: null,
-  editable: true,
-  asegurar: vi.fn().mockResolvedValue({ postulacionId: 7 }),
-  onRecargar: vi.fn().mockResolvedValue(undefined),
-  onError: vi.fn(),
-})
+// Estable entre renders: el guardado automático depende de ellos.
+const asegurar = vi.fn().mockResolvedValue({ postulacionId: 7 })
+const onRecargar = vi.fn().mockResolvedValue(undefined)
+const onError = vi.fn()
 
+const props = () => ({ datos: null, editable: true, asegurar, onRecargar, onError })
+
+const escribir = (etiqueta, valor) => fireEvent.change(screen.getByLabelText(etiqueta), { target: { value: valor } })
 const fecha = () => screen.getByLabelText(/fecha de nacimiento/i)
 const autorizacion = () => screen.getByRole('checkbox', { name: /autorizo el tratamiento/i })
+
+// Llena el formulario completo de un mayor de edad (el último campo es el que lo deja completo).
+async function llenarTodo({ sinMunicipio = false } = {}) {
+  await waitFor(() => expect(screen.getByRole('option', { name: 'Antioquia' })).toBeTruthy())
+  await waitFor(() => expect(screen.getByRole('option', { name: 'Cédula de ciudadanía' })).toBeTruthy())
+  escribir(/^nombres/i, 'Camilo')
+  escribir(/^apellidos/i, 'Rojas')
+  escribir(/^tipo de documento/i, 'cc')
+  escribir(/^número de documento/i, '1012345678')
+  escribir(/fecha de nacimiento/i, anios(25))
+  escribir(/^nivel de formación/i, 'tecnologo')
+  escribir(/^teléfono/i, '3001234567')
+  fireEvent.click(screen.getByRole('radio', { name: 'Masculino' }))
+  escribir(/^departamento/i, '05')
+  await waitFor(() => expect(screen.getByRole('option', { name: 'Medellín' })).toBeTruthy())
+  if (!sinMunicipio) escribir(/^municipio/i, '05001')
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  asegurar.mockResolvedValue({ postulacionId: 7 })
+  onRecargar.mockResolvedValue(undefined)
+})
 
 describe('SeccionDatosPersonales', () => {
   it('lleva la autorización dentro de datos personales y ningún botón de guardar', () => {
@@ -82,30 +109,51 @@ describe('SeccionDatosPersonales', () => {
     expect(screen.queryByText('Representante legal')).toBeNull()
   })
 
-  it('marcar la autorización guarda los datos y relee la postulación', async () => {
-    const p = props()
+  it('se guarda solo, sin botón, en cuanto el formulario está completo', async () => {
     guardarDatosPersonales.mockResolvedValue({})
-    render(<SeccionDatosPersonales {...p} />)
+    render(<SeccionDatosPersonales {...props()} />)
 
-    fireEvent.click(autorizacion())
+    await llenarTodo()
 
-    await waitFor(() => expect(guardarDatosPersonales).toHaveBeenCalledTimes(1))
-    expect(guardarDatosPersonales.mock.calls[0][0]).toBe(7)
-    expect(guardarDatosPersonales.mock.calls[0][1].acepta_tratamiento_datos).toBe(true)
-    expect(p.onRecargar).toHaveBeenCalled()
+    await waitFor(() => expect(guardarDatosPersonales).toHaveBeenCalledTimes(1), { timeout: 3000 })
+    const [postulacionId, cuerpo] = guardarDatosPersonales.mock.calls[0]
+    expect(postulacionId).toBe(7)
+    expect(cuerpo).toMatchObject({ sexo: 'hombre', departamento: '05', municipio: '05001', tipo_documento_identidad: 'cc', acepta_tratamiento_datos: false })
+    expect(asegurar).toHaveBeenCalled()
+    expect(onRecargar).toHaveBeenCalled()
   })
 
-  it('si el servidor rechaza los datos, la casilla vuelve a quedar sin marcar', async () => {
+  it('con el formulario a medias no guarda nada', async () => {
+    render(<SeccionDatosPersonales {...props()} />)
+
+    await llenarTodo({ sinMunicipio: true })
+    await new Promise((r) => setTimeout(r, 900))
+
+    expect(guardarDatosPersonales).not.toHaveBeenCalled()
+  })
+
+  it('marcar la autorización también se guarda solo, junto con los datos', async () => {
+    guardarDatosPersonales.mockResolvedValue({})
+    render(<SeccionDatosPersonales {...props()} />)
+
+    await llenarTodo()
+    fireEvent.click(autorizacion())
+
+    await waitFor(() => expect(guardarDatosPersonales.mock.calls.at(-1)?.[1]?.acepta_tratamiento_datos).toBe(true), { timeout: 3000 })
+  })
+
+  it('si el servidor rechaza los datos, muestra el error en el campo y no reintenta solo', async () => {
     guardarDatosPersonales.mockRejectedValue({ response: { status: 422, data: { errors: { nombres: ['El campo nombres es obligatorio.'] } } } })
     render(<SeccionDatosPersonales {...props()} />)
 
-    fireEvent.click(autorizacion())
+    await llenarTodo()
 
-    await waitFor(() => expect(screen.getByText('El campo nombres es obligatorio.')).toBeTruthy())
-    expect(autorizacion().checked).toBe(false)
+    await waitFor(() => expect(screen.getByText('El campo nombres es obligatorio.')).toBeTruthy(), { timeout: 3000 })
+    await new Promise((r) => setTimeout(r, 900))
+    expect(guardarDatosPersonales).toHaveBeenCalledTimes(1)
   })
 
-  it('con datos ya guardados la autorización queda marcada y bloqueada', () => {
+  it('con la autorización ya registrada queda marcada y bloqueada', () => {
     render(<SeccionDatosPersonales {...props()} datos={{ nombres: 'Ana', acepta_tratamiento_datos: true }} />)
 
     expect(autorizacion().checked).toBe(true)
@@ -113,15 +161,44 @@ describe('SeccionDatosPersonales', () => {
     expect(screen.getByText(/datos autorizados y guardados/i)).toBeTruthy()
   })
 
-  it('la flecha para continuar a documentos está bloqueada hasta autorizar', () => {
+  it('con datos guardados pero sin autorizar, la casilla sigue disponible', () => {
+    render(<SeccionDatosPersonales {...props()} datos={{ nombres: 'Ana', acepta_tratamiento_datos: false }} />)
+
+    expect(autorizacion().checked).toBe(false)
+    expect(autorizacion().disabled).toBe(false)
+  })
+
+  it('el municipio depende del departamento: se pide al elegirlo y se limpia al cambiarlo', async () => {
+    render(<SeccionDatosPersonales {...props()} />)
+    const municipio = () => screen.getByLabelText(/^municipio/i)
+
+    // Sin departamento, el municipio está bloqueado.
+    expect(municipio().disabled).toBe(true)
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Antioquia' })).toBeTruthy())
+
+    escribir(/^departamento/i, '05')
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Medellín' })).toBeTruthy())
+    expect(listaMunicipios).toHaveBeenCalledWith('05')
+    expect(municipio().disabled).toBe(false)
+
+    fireEvent.change(municipio(), { target: { value: '05001' } })
+    expect(municipio().value).toBe('05001')
+
+    // Otro departamento: el municipio anterior ya no vale y se limpia.
+    escribir(/^departamento/i, '13')
+    await waitFor(() => expect(screen.getByRole('option', { name: 'Cartagena de Indias' })).toBeTruthy())
+    expect(municipio().value).toBe('')
+  })
+
+  it('la flecha para continuar a documentos está bloqueada hasta que la autorización quede registrada', () => {
     const onContinuar = vi.fn()
     const { rerender } = render(<SeccionDatosPersonales {...props()} onContinuar={onContinuar} />)
     const continuar = () => screen.getByRole('button', { name: /continuar a documentos/i })
 
     expect(continuar().disabled).toBe(true)
-    expect(screen.getByText(/autoriza el tratamiento de tus datos para continuar/i)).toBeTruthy()
+    expect(screen.getByText(/completa tus datos y marca la autorización para continuar/i)).toBeTruthy()
 
-    rerender(<SeccionDatosPersonales {...props()} datos={{ nombres: 'Ana' }} onContinuar={onContinuar} />)
+    rerender(<SeccionDatosPersonales {...props()} datos={{ nombres: 'Ana', acepta_tratamiento_datos: true }} onContinuar={onContinuar} />)
     expect(continuar().disabled).toBe(false)
     fireEvent.click(continuar())
     expect(onContinuar).toHaveBeenCalledTimes(1)
@@ -131,29 +208,6 @@ describe('SeccionDatosPersonales', () => {
     render(<SeccionDatosPersonales {...props()} />)
 
     expect(screen.queryByRole('button', { name: /continuar a documentos/i })).toBeNull()
-  })
-
-  it('el municipio depende del departamento: se pide al elegirlo y se limpia al cambiarlo', async () => {
-    render(<SeccionDatosPersonales {...props()} />)
-    const departamento = screen.getByLabelText(/^departamento/i)
-    const municipio = () => screen.getByLabelText(/^municipio/i)
-
-    // Sin departamento, el municipio está bloqueado.
-    expect(municipio().disabled).toBe(true)
-    await waitFor(() => expect(screen.getByRole('option', { name: 'Antioquia' })).toBeTruthy())
-
-    fireEvent.change(departamento, { target: { value: '05' } })
-    await waitFor(() => expect(screen.getByRole('option', { name: 'Medellín' })).toBeTruthy())
-    expect(listaMunicipios).toHaveBeenCalledWith('05')
-    expect(municipio().disabled).toBe(false)
-
-    fireEvent.change(municipio(), { target: { value: '05001' } })
-    expect(municipio().value).toBe('05001')
-
-    // Otro departamento: el municipio anterior ya no vale y se limpia.
-    fireEvent.change(departamento, { target: { value: '13' } })
-    await waitFor(() => expect(screen.getByRole('option', { name: 'Cartagena de Indias' })).toBeTruthy())
-    expect(municipio().value).toBe('')
   })
 
   it('no editable muestra el motivo y bloquea la autorización', () => {

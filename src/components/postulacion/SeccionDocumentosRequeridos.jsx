@@ -70,6 +70,8 @@ export default function SeccionDocumentosRequeridos({
           const esLibreta = codigo === CODIGO_LIBRETA_MILITAR
           const noAplicaReal = estadoDoc === 'no_aplica'
           const noAplica = noAplicaReal || (esLibreta && sexoMujer)
+          // No aplica (mujer o menor de edad): no se muestra. Solo se ve a quien le corresponde presentarla.
+          if (esLibreta && noAplica) return null
           const bloqueoLibreta = esLibreta && (sexoMujer || sinSexo)
           const puedeEditar = editable && !enProceso
           // Con una corrección vigente, un documento NO marcado no se toca (regla del servidor).

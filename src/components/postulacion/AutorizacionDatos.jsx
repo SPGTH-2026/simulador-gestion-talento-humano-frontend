@@ -4,10 +4,10 @@ import Icono from '../ui/Icono'
 import Rueda from '../ui/Rueda'
 
 // Bloque «Autorización de datos», al final de la sección Datos personales: el consentimiento para tratar los datos
-// personales. Marcarlo GUARDA los datos del formulario (y crea el borrador si aún no existe); sin él el servidor no deja
-// enviar la postulación. Ya guardado no se desmarca aquí: para revocarlo se retira la postulación.
+// personales. Es una casilla más del formulario: se registra con el guardado automático (no hay botón) y sin ella el
+// servidor no deja enviar la postulación. Ya registrada no se desmarca aquí: para revocarla se retira la postulación.
 export default function AutorizacionDatos({ d, editable }) {
-  const { autorizar, bajoMinimo, errorDe, esMenor, form, guardando, yaGuardado } = d
+  const { autorizado, bajoMinimo, cambiar, errorDe, esMenor, form, guardando } = d
 
   return (
     <div id={ID_SECCION_AUTORIZACION} className="scroll-mt-24">
@@ -17,8 +17,8 @@ export default function AutorizacionDatos({ d, editable }) {
         <input
           type="checkbox"
           checked={form.acepta_tratamiento_datos}
-          disabled={!editable || guardando || yaGuardado || bajoMinimo}
-          onChange={(e) => autorizar(e.target.checked)}
+          disabled={!editable || autorizado || bajoMinimo}
+          onChange={(e) => cambiar('acepta_tratamiento_datos', e.target.checked)}
           className="mt-0.5 size-4 shrink-0 accent-sena-oscuro dark:accent-sena-acento"
         />
         <span>
@@ -33,15 +33,15 @@ export default function AutorizacionDatos({ d, editable }) {
             <Rueda /> Guardando…
           </p>
         )}
-        {!guardando && yaGuardado && (
+        {!guardando && autorizado && (
           <p className="flex items-center gap-1.5 text-sm text-exito">
             <Icono nombre="check" className="size-4 shrink-0" />
             Datos autorizados y guardados.
           </p>
         )}
-        {!guardando && !yaGuardado && editable && (
+        {!guardando && !autorizado && editable && (
           <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>
-            Llena tus datos y marca esta casilla para guardarlos. Sin autorización no podrás enviar la postulación.
+            Tus datos se guardan solos al completarlos. Marca esta casilla para poder continuar: sin autorización no podrás enviar la postulación.
           </p>
         )}
       </div>
