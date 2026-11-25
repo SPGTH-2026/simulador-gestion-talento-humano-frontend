@@ -1,12 +1,11 @@
 import PaginaInformativa from '../../components/informativo/PaginaInformativa'
 import { CampoPendiente } from '../../components/informativo/Pendiente'
+import { EnlaceContacto } from './contactoProyecto'
 
 // Acerca de SPGTH. Solo hechos confirmados: proyecto formativo del equipo ADSO de la ficha 3173334 que simula convocatorias,
 // evaluación y selección. No se presenta como sistema oficial del SENA ni se atribuyen responsabilidades a personas.
 const P = {
-  relacion: 'Descripción de la relación con el SENA',
-  contacto: 'Medio de contacto',
-  alcance: 'Alcance de la simulación respecto a datos reales',
+  relacion: 'Relación con el SENA y alcance de la autorización institucional',
   version: 'Versión y fecha del texto',
 }
 
@@ -42,9 +41,7 @@ export default function AcercaDe() {
                 <li>La <strong>evaluación</strong> de los documentos de cada aspirante, con correcciones.</li>
                 <li>La <strong>selección</strong>: preselección, ranking de candidatos y decisiones.</li>
               </ul>
-              <p>
-                Alcance de la simulación respecto a datos reales: <CampoPendiente dato={P.alcance} />
-              </p>
+              <p>En el simulador pueden usarse documentos reales y ficticios, y puede haber usuarios menores de edad. Cómo se tratan esos datos se explica en la página de privacidad.</p>
             </>
           ),
         },
@@ -56,7 +53,7 @@ export default function AcercaDe() {
             <>
               <p>SPGTH no se presenta como un sistema oficial del SENA.</p>
               <p>
-                Descripción de la relación del proyecto con el SENA: <CampoPendiente dato={P.relacion} />
+                Cómo se relaciona el proyecto con el SENA y qué autoriza la institución: <CampoPendiente dato={P.relacion} />
               </p>
             </>
           ),
@@ -64,10 +61,10 @@ export default function AcercaDe() {
         {
           id: 'contacto',
           titulo: 'Contacto',
-          tipo: 'borrador',
+          tipo: 'confirmado',
           children: (
             <p>
-              Cómo comunicarse con el equipo: <CampoPendiente dato={P.contacto} />
+              Para comunicarte con el equipo escribe a <EnlaceContacto />.
             </p>
           ),
         },

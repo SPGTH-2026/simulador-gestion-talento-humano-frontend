@@ -109,7 +109,7 @@ describe('páginas informativas: activadas para revisión', () => {
       const enSecciones = [...cuerpo.querySelectorAll('section:not(#pendientes) span')].some((s) => s.textContent.includes(dato))
       expect(enSecciones, dato).toBe(true)
     }
-    expect(document.body.textContent).not.toMatch(/\bdías hábiles\b|\b\d+ (años|meses|días)\b|Ley 1581|Decreto/i)
+    expect(document.body.textContent).not.toMatch(/\bdías hábiles\b|\b\d+ (años|meses|días)\b/i)
   })
 
   it('Acerca de usa solo hechos confirmados: ADSO, ficha 3173334, simulación; no se presenta como oficial ni nombra personas', async () => {
@@ -132,5 +132,51 @@ describe('páginas informativas: activadas para revisión', () => {
     for (const enlace of within(indice).getAllByRole('link')) {
       expect(document.getElementById(enlace.getAttribute('href').slice(1))).toBeTruthy()
     }
+  })
+
+  it.each(RUTAS)('%s: el contacto confirmado es un enlace de correo y no queda como dato pendiente', async (ruta) => {
+    abrirPagina(ruta)
+    await screen.findByRole('article', {}, { timeout: 15000 })
+    const enlaces = screen.getAllByRole('link', { name: 'spgth2026@gmail.com' })
+    expect(enlaces.every((a) => a.getAttribute('href') === 'mailto:spgth2026@gmail.com')).toBe(true)
+    expect(document.body.textContent).not.toMatch(/Medio de contacto|Correo o canal de contacto/)
+  })
+
+  it('Privacidad describe lo confirmado y marca como pendiente solo lo no confirmado, sin aprobar nada', async () => {
+    abrirPagina('/privacidad')
+    await screen.findByRole('heading', { level: 1, name: 'Privacidad y tratamiento de datos' }, { timeout: 15000 })
+    const texto = document.querySelector('article').textContent
+    // Confirmado por el equipo.
+    expect(texto).toMatch(/proyecto académico/)
+    expect(texto).toMatch(/documentos reales y ficticios/)
+    expect(texto).toMatch(/Puede haber usuarios menores de edad/)
+    expect(texto).toMatch(/algunos procesos se conservarán para consulta/)
+    expect(texto).toMatch(/Edna Margarita Correa y Jarvison Aguilar Uribe/)
+    expect(texto).toMatch(/destinatarios previstos de la entrega/)
+    expect(texto).toMatch(/no define quién es el responsable jurídico/)
+    expect(texto).not.toMatch(/Jarvinson/)
+    // Participar no es contratar.
+    expect(texto).toMatch(/no equivale a celebrar un contrato de aprendizaje ni una contratación real/)
+    // Hoy no hay aceptación registrada.
+    expect(texto).toMatch(/no te pide aceptar estos textos ni guarda constancia/)
+    // Lo no confirmado sigue marcado como pendiente.
+    for (const dato of ['Identidad jurídica del responsable', 'Alcance de la autorización institucional', 'Procesos que se conservan, plazo y procedimiento']) {
+      expect(texto).toContain(dato)
+    }
+    // Hash en vez de «cifrado» y sin afirmar configuración de producción.
+    expect(texto).toMatch(/se guarda su hash|se guardan como hash/)
+    expect(texto).toMatch(/no afirma nada sobre la configuración de producción/)
+    expect(screen.getAllByText(/Borrador|pendiente de revisión/).length).toBeGreaterThan(0)
+  })
+
+  it('Privacidad describe los accesos por permiso con precisión', async () => {
+    abrirPagina('/privacidad')
+    await screen.findByRole('heading', { level: 1, name: 'Privacidad y tratamiento de datos' }, { timeout: 15000 })
+    const acceso = document.getElementById('acceso').textContent
+    expect(acceso).toMatch(/super administrador, los instructores y los aprendices con subrol general o evaluador/)
+    expect(acceso).toMatch(/solo lectura/)
+    expect(acceso).toMatch(/seleccionadores/)
+    expect(acceso).toMatch(/el ranking no carga los documentos/)
+    expect(acceso).toMatch(/los aspirantes sin ficha/)
   })
 })

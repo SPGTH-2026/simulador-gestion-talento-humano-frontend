@@ -1,4 +1,5 @@
 import PaginaInformativa from '../../components/informativo/PaginaInformativa'
+import { EnlaceContacto } from './contactoProyecto'
 import { CampoPendiente } from '../../components/informativo/Pendiente'
 import { CLASE_CHIP, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 
@@ -8,7 +9,6 @@ const P = {
   duracion: 'Duración real de la sesión en producción',
   proveedor: 'Proveedor del envío de correos de verificación en producción',
   opcional: 'Decisión sobre usos opcionales futuros (analítica u otros)',
-  contacto: 'Medio de contacto',
 }
 
 const FILAS = [
@@ -81,10 +81,10 @@ export default function Cookies() {
         {
           id: 'contacto',
           titulo: 'Contacto',
-          tipo: 'borrador',
+          tipo: 'confirmado',
           children: (
             <p>
-              Para preguntas sobre esta página: <CampoPendiente dato={P.contacto} />
+              Para preguntas sobre esta página escribe a <EnlaceContacto />.
             </p>
           ),
         },

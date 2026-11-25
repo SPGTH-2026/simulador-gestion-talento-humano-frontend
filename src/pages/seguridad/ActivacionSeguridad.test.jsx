@@ -35,19 +35,16 @@ describe('Seguridad de la cuenta: activación', () => {
     expect(seguridadCuentaActiva()).toBe(true)
   })
 
-  it('apagada: la recuperación pública no añade la frase y la barra no ofrece el enlace', () => {
-    enRuta(<RecuperarContrasena />)
-    expect(screen.queryByText(/te registraste con Google/)).toBeNull()
-    cleanup()
+  it('apagada: la barra superior no ofrece el candado «Contraseña»', () => {
     enRuta(<Topbar onAbrirMenu={() => {}} />)
     expect(screen.queryByRole('button', { name: 'Contraseña' })).toBeNull()
   })
 
-  it('encendida: la recuperación usa un texto breve y general, sin nombrar Google ni métodos de ningún correo', () => {
-    vi.stubEnv('VITE_SEGURIDAD_CUENTA', 'true')
+  it.each([undefined, 'true'])('la recuperación pública usa la misma explicación breve con la bandera %j, sin nombrar Google ni métodos de ningún correo', (valor) => {
+    if (valor) vi.stubEnv('VITE_SEGURIDAD_CUENTA', valor)
     enRuta(<RecuperarContrasena />)
-    const frase = screen.getByText('Te enviaremos un código para que puedas elegir una nueva contraseña.')
-    // Sigue siendo la recuperación pública de siempre: pide el correo y no revela nada de ninguna cuenta.
+    const frase = screen.getByText('Escribe tu correo y te enviaremos un código para que puedas elegir una nueva contraseña.')
+    // Es el único recorrido para establecer o restablecer la contraseña: pide el correo y no revela nada de ninguna cuenta.
     expect(screen.getByRole('button', { name: /enviar código|Enviar/i })).toBeTruthy()
     expect(frase.textContent).not.toMatch(/Google|tu cuenta (tiene|usa)|vinculad/)
     expect(screen.queryByText(/te registraste con Google/)).toBeNull()
