@@ -6,6 +6,7 @@ import PermissionRoute from './auth/PermissionRoute'
 import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 import PantallaCarga from './components/ui/PantallaCarga'
+import LayoutInformativo from './layouts/LayoutInformativo'
 
 import Login from './pages/login/Login'
 const Registro = lazy(() => import('./pages/login/Registro'))
@@ -13,6 +14,13 @@ const RecuperarContrasena = lazy(() => import('./pages/login/RecuperarContrasena
 const VerificarCorreo = lazy(() => import('./pages/login/VerificarCorreo'))
 const CompletarFicha = lazy(() => import('./pages/login/CompletarFicha'))
 const NotFound = lazy(() => import('./pages/errores/NotFound'))
+
+// Páginas informativas: desactivadas por defecto (ver config/paginasInformativas). Con la bandera apagada ni siquiera se importan.
+const ACTIVAS = import.meta.env.VITE_PAGINAS_INFORMATIVAS === 'true'
+const AcercaDe = ACTIVAS ? lazy(() => import('./pages/informativas/AcercaDe')) : null
+const Terminos = ACTIVAS ? lazy(() => import('./pages/informativas/Terminos')) : null
+const Privacidad = ACTIVAS ? lazy(() => import('./pages/informativas/Privacidad')) : null
+const Cookies = ACTIVAS ? lazy(() => import('./pages/informativas/Cookies')) : null
 
 import Dashboard from './pages/dashboard/Dashboard'
 const ConvocatoriasListado = lazy(() => import('./pages/convocatorias/ConvocatoriasListado'))
@@ -50,6 +58,16 @@ export default function AppRouter() {
         <Route path="/recuperar" element={<RecuperarContrasena />} />
       </Route>
 
+      {/* Informativas (solo con la bandera activa): públicas, se leen con o sin sesión. */}
+      {ACTIVAS && (
+        <Route element={<LayoutInformativo />}>
+          <Route path="/acerca-de" element={<AcercaDe />} />
+          <Route path="/terminos" element={<Terminos />} />
+          <Route path="/privacidad" element={<Privacidad />} />
+          <Route path="/cookies" element={<Cookies />} />
+        </Route>
+      )}
+
       {/* Sin sesión o con sesión: el alta con Google espera la ficha antes de existir como cuenta. */}
       <Route path="/completar-ficha" element={<CompletarFicha />} />
 
@@ -60,6 +78,7 @@ export default function AppRouter() {
         <Route path="/verificar-correo" element={<VerificarCorreo />} />
 
         <Route element={<AppLayout />}>
+
           <Route element={<PermissionRoute permiso="dashboard:ver" />}>
             <Route index element={<Dashboard />} />
           </Route>
