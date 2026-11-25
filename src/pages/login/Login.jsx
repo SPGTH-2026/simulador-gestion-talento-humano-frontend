@@ -23,6 +23,13 @@ const MENSAJES_ERROR = {
     'La autenticación de Google se caducó o ya se usó. Vuelve a pulsar "Iniciar sesión con Google".',
   sin_correo: 'Tu cuenta de Google no compartió un correo, así que no podemos crear tu acceso.',
   desactivado: 'Tu usuario está desactivado. Contacta al instructor.',
+  // El acceso con Google solo continúa un inicio hecho desde este navegador (state): enlace ajeno, reenviado, ya usado o caducado.
+  oauth_estado:
+    'No pudimos confirmar que empezaste el inicio con Google desde este navegador. Vuelve a pulsar «Iniciar sesión con Google» desde esta página.',
+  correo_no_verificado: 'Google no confirmó que ese correo es tuyo, así que no pudimos entrar. Usa tu correo y contraseña o recupera tu acceso.',
+  // El correo ya pertenece a una cuenta vinculada a otra cuenta de Google: no se vincula solo por coincidir el correo.
+  google_distinto:
+    'Ese correo ya está vinculado a otra cuenta de Google, así que no se puede entrar con esta. Entra con la cuenta que usaste antes o recupera tu acceso con tu correo.',
 }
 
 const MENSAJE_EXITO = {
