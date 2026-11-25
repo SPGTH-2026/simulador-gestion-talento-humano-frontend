@@ -88,7 +88,7 @@ export default function SeccionDocumentosRequeridos({
             : sexoMujer
               ? 'No aplica para ti'
               : sinSexo
-                ? 'Elige tu sexo para saber si te aplica'
+                ? 'Llena tus datos personales para saber si te aplica'
                 : ''
 
           return (

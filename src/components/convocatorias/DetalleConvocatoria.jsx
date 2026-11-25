@@ -10,11 +10,14 @@ import { CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
 import SeccionesDescripcion from './detalle/SeccionesDescripcion'
 import BarraInferior from './detalle/BarraInferior'
 import { hay } from './detalle/formatosDetalle'
+import { PestanaDatosPersonales, PestanaDocumentos } from '../postulacion/SeccionesPostulacion'
 
 export default function DetalleConvocatoria({
   convocatoria,
   onVolver,
-  panelDocumentos = null,
+  // Función que envuelve las pestañas con el estado compartido de la postulación (ProveedorPostulacion). null = quien
+  // no postula: sin pestañas, solo la descripción.
+  envolverPostulacion = null,
   accionInferior = null,
   // Acciones de quien gestiona (Editar, Cerrar) y el error de la última: van dentro de la cabecera.
   accionesGestion = null,
@@ -39,31 +42,15 @@ export default function DetalleConvocatoria({
   // hay uno o los dos, se muestra el rango real.
   const contenidoDescripcion = <SeccionesDescripcion c={c} esGestion={esGestion} />
 
-  // ── Pestaña Documentos ────────────────────────────────────────────────
-  // Solo existe cuando la página inyecta el panel de postulación (el aspirante
-  // que puede postularse): ahí se suben los archivos y se envía. Para quien no
-  // postula no hay pestañas: la lista de documentos ya está en la descripción,
-  // y una segunda pestaña solo la repetiría.
-  const contenidoDocumentos = (
-    <div className="flex flex-col gap-5">
-      {/* Sin «Volver a descripción»: las pestañas de arriba ya llevan de una sección a la otra y el botón lo repetía. */}
-      {panelDocumentos}
-    </div>
-  )
-
-  // Orden fijado: Descripción y Documentos. Sin iconos: las dos pestañas
-  // compartían el mismo icono decorativo, que no ayudaba a distinguirlas.
+  // ── Pestañas de la postulación ────────────────────────────────────────
+  // Solo existen cuando la página inyecta el estado de la postulación (el aspirante que puede postularse): se llenan los
+  // datos, se autoriza su tratamiento, se suben los archivos y se envía. Para quien no postula no hay pestañas: la lista
+  // de documentos ya está en la descripción. Orden fijado: Descripción, Datos personales (con la autorización de datos) y
+  // Documentos. Sin iconos: no ayudaban a distinguirlas. Los ids se usan para saltar a una pestaña (tab-<id>).
   const pestanas = [
-    {
-      id: 'descripcion',
-      etiqueta: 'Descripción',
-      contenido: contenidoDescripcion,
-    },
-    {
-      id: 'documentos',
-      etiqueta: 'Documentos',
-      contenido: contenidoDocumentos,
-    },
+    { id: 'descripcion', etiqueta: 'Descripción', contenido: contenidoDescripcion },
+    { id: 'datos', etiqueta: 'Datos personales', contenido: <PestanaDatosPersonales /> },
+    { id: 'documentos', etiqueta: 'Documentos', contenido: <PestanaDocumentos /> },
   ]
 
   // Mismo criterio que la tarjeta del listado: el nombre de la convocatoria
@@ -118,23 +105,25 @@ export default function DetalleConvocatoria({
         {errorAccion && <MensajeError>{errorAccion}</MensajeError>}
       </header>
 
-      {/* Con panel de postulación hay dos pestañas, con todos los paneles
+      {/* Con la postulación hay tres pestañas, con todos los paneles
           montados (Pestanas los oculta con 'hidden') para no perder archivos
-          ni estado en vuelo al cambiar de sección. Sin panel, solo la
+          ni estado en vuelo al cambiar de sección. Sin ella, solo la
           descripción: sin barra de pestañas. */}
-      {panelDocumentos ? (
-        <Pestanas
-          pestanas={pestanas}
-          etiquetaAccesible="Secciones de la convocatoria"
-          activaId={pestanaActiva}
-          onCambiar={setPestanaActiva}
-        />
+      {envolverPostulacion ? (
+        envolverPostulacion(
+          <Pestanas
+            pestanas={pestanas}
+            etiquetaAccesible="Secciones de la convocatoria"
+            activaId={pestanaActiva}
+            onCambiar={setPestanaActiva}
+          />,
+        )
       ) : (
         contenidoDescripcion
       )}
 
       {/* Barra inferior: una sola línea y UNA sola acción principal. Se muestra
-          SOLO en la pestaña Descripción: en Documentos ya estás donde la acción
+          SOLO en la pestaña Descripción: en las demás ya estás donde la acción
           te llevaría, así que ahí no aporta. La arma la página, que decide si
           hay algo que hacer para el rol (aspirante publicado). */}
       {pestanaActiva === 'descripcion' && (

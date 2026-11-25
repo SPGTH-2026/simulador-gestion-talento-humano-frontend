@@ -32,7 +32,7 @@ export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, observaciones, pesos, postulacionId, puedePedirCorreccion, requisitosEdad, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
       {volverAlListado}
@@ -133,6 +133,30 @@ export default function EvaluacionEvaluar() {
                 />
               ))}
             </ul>
+          )}
+
+          {requisitosEdad.length > 0 && (
+            <div className="border-t border-sena-linea/70 pt-4 dark:border-sena-borde/50">
+              <h3 className={`text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>Requisito por edad</h3>
+              <p className={`mt-1 text-sm ${CLASE_TEXTO_SUAVE}`}>
+                El aspirante es menor de edad: revisa que la autorización esté firmada por su representante legal y que los datos
+                coincidan. No suma puntaje, pero debe cumplir para poder finalizar.
+              </p>
+              <ul className="@container mt-2 divide-y divide-sena-linea/70 dark:divide-sena-borde/50">
+                {requisitosEdad.map((documento) => (
+                  <RequisitoEvaluacion
+                    key={documento.id}
+                    documento={documento}
+                    sinPuntaje
+                    respuesta={respuestas[documento.id]}
+                    actualizado={actualizados.includes(documento.id)}
+                    onChange={(valor) => setRespuestas((prev) => ({ ...prev, [documento.id]: valor }))}
+                    onVerDocumento={() => verDocumento(documento)}
+                    abriendo={abriendo === documento.id}
+                  />
+                ))}
+              </ul>
+            </div>
           )}
 
           {excluidos.length > 0 && (

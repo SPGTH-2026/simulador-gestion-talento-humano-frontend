@@ -12,7 +12,7 @@ import { usePanelVerDocumentos } from './usePanelVerDocumentos'
 
 // Estado del panel de documentos de una postulación. Se reparte en cuatro piezas con una sola responsabilidad cada una:
 // el estado del servidor (usePanelEstadoDocumentos), la corrección del evaluador (usePanelCorreccion), el sexo del
-// aspirante (usePanelPerfilSexo) y el visor de archivos (usePanelVerDocumentos). Aquí se componen y se decide la vista
+// aspirante, solo lectura (usePanelPerfilSexo) y el visor de archivos (usePanelVerDocumentos). Aquí se componen y se decide la vista
 // (useVistaDocumentos). Devuelve únicamente lo que usa PanelDocumentosPostulacion.
 export function usePanelDocumentosPostulacion({
   postulacionId = null,
@@ -34,7 +34,7 @@ export function usePanelDocumentosPostulacion({
   const correccionPanel = usePanelCorreccion({ idPostulacion, rol, onCorreccionEnviada, setError })
   const { correccion, marcados, infoCorreccion, correccionVigente, corregidos, enviandoCorreccion, enviarCorreccionAhora, releerCorreccion } = correccionPanel
 
-  const { sexo, alGuardarSexo } = usePanelPerfilSexo({ estado, setError })
+  const { sexo } = usePanelPerfilSexo({ estado })
   usePanelVerDocumentos({ idPostulacion, setError })
 
   const [aviso, setAviso] = useState('')
@@ -87,17 +87,16 @@ export function usePanelDocumentosPostulacion({
   })
   // Mientras carga el estado (o si falla el acceso), useVistaDocumentos devuelve la propia pantalla (un elemento de React).
   if (isValidElement(vistaDocs)) return vistaDocs
-  const { editable, editableSexo, esBorrador, esRetirada, motivo, motivoVolver, puedeVolver, vista } = vistaDocs
+  const { editable, editableDatos, esBorrador, esRetirada, motivo, motivoVolver, puedeVolver, vista } = vistaDocs
 
   return {
-    alGuardarSexo,
     asegurar,
     aviso,
     correccion,
     correccionVigente,
     corregidos,
     editable,
-    editableSexo,
+    editableDatos,
     enviandoCorreccion,
     enviarCorreccionAhora,
     error,

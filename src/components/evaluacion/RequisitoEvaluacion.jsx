@@ -17,6 +17,7 @@ import RespuestaSiNo from './RespuestaSiNo'
 export default function RequisitoEvaluacion({
   documento,
   peso,
+  sinPuntaje = false,
   respuesta,
   actualizado = false,
   onChange,
@@ -56,7 +57,7 @@ export default function RequisitoEvaluacion({
             {documento.obligatorio ? 'Obligatorio' : 'Opcional'}
             <span aria-hidden="true"> · </span>
             <span className="sr-only">, </span>
-            Peso {formatearPeso(peso)}
+            {sinPuntaje ? 'Requisito por edad · No suma puntaje' : `Peso ${formatearPeso(peso)}`}
           </span>
         </p>
       </div>
