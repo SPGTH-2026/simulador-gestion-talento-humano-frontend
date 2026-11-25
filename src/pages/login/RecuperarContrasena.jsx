@@ -8,6 +8,7 @@ import Icono from '../../components/ui/Icono'
 import { MensajeError } from '../../components/ui/Mensaje'
 import { CLASE_CAMPO, CLASE_CAMPO_CODIGO } from '../../lib/estilos'
 import { mostrarAvisoGlobal } from '../../lib/validacionAcceso'
+import { seguridadCuentaActiva } from '../../config/seguridadCuenta'
 
 // El backend valida esto en Password::min(8)->letters()->numbers().
 
@@ -49,7 +50,9 @@ export default function RecuperarContrasena() {
           className="mt-4 flex flex-col gap-4"
         >
           <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
-            Escribe tu correo y te enviamos un código de 6 dígitos.
+            {seguridadCuentaActiva()
+              ? 'Te enviaremos un código para que puedas elegir una nueva contraseña.'
+              : 'Escribe tu correo y te enviamos un código de 6 dígitos.'}
           </p>
 
           <Campo etiqueta="Correo" error={errores.email}>

@@ -17,6 +17,9 @@ const NotFound = lazy(() => import('./pages/errores/NotFound'))
 
 // Páginas informativas: desactivadas por defecto (ver config/paginasInformativas). Con la bandera apagada ni siquiera se importan.
 const ACTIVAS = import.meta.env.VITE_PAGINAS_INFORMATIVAS === 'true'
+// Seguridad de la cuenta: desactivada por defecto (ver config/seguridadCuenta). Con la bandera apagada ni siquiera se importa.
+const SEGURIDAD_ACTIVA = import.meta.env.VITE_SEGURIDAD_CUENTA === 'true'
+const Seguridad = SEGURIDAD_ACTIVA ? lazy(() => import('./pages/seguridad/Seguridad')) : null
 const AcercaDe = ACTIVAS ? lazy(() => import('./pages/informativas/AcercaDe')) : null
 const Terminos = ACTIVAS ? lazy(() => import('./pages/informativas/Terminos')) : null
 const Privacidad = ACTIVAS ? lazy(() => import('./pages/informativas/Privacidad')) : null
@@ -78,6 +81,7 @@ export default function AppRouter() {
         <Route path="/verificar-correo" element={<VerificarCorreo />} />
 
         <Route element={<AppLayout />}>
+          {SEGURIDAD_ACTIVA && <Route path="seguridad" element={<Seguridad />} />}
 
           <Route element={<PermissionRoute permiso="dashboard:ver" />}>
             <Route index element={<Dashboard />} />

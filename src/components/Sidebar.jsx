@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { menu } from '../config/menu'
+import { seguridadCuentaActiva } from '../config/seguridadCuenta'
 import { CLASE_TEXTO_SUAVE } from '../lib/estilos'
+import AccesoContrasena from './cuenta/AccesoContrasena'
 import DatosUsuario from './DatosUsuario'
 import SidebarItem from './SidebarItem'
 import ThemeToggle from './ThemeToggle'
@@ -147,6 +149,19 @@ export default function Sidebar({ abierto = false, onCerrar, onNavegar }) {
               <DatosUsuario />
             </div>
             <ThemeToggle conTexto />
+            {seguridadCuentaActiva() && (
+              <AccesoContrasena
+                antesDeAbrir={onNavegar}
+                // El cajón se cierra al abrir el diálogo: el foco vuelve al botón del menú, que sí está a la vista.
+                alCerrar={() => document.querySelector('button[aria-label="Abrir menú"]')?.focus()}
+                boton={(abrir) => (
+                  <Boton variante="fantasma" tamano="tactil" onClick={abrir} aria-haspopup="dialog" className="w-full justify-start">
+                    <Icono nombre="candado" />
+                    Contraseña
+                  </Boton>
+                )}
+              />
+            )}
             <Boton
               variante="fantasma"
               tamano="tactil"
