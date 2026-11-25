@@ -24,6 +24,8 @@ export const listaDocumentos = (postulacionId) =>
           // null = la convocatoria no configuró porcentajes.
           ponderacion: d.ponderacion != null ? Number(d.ponderacion) : null,
           obligatorio: Boolean(d.obligatorio),
+          // Requisito por edad (autorización del representante de un menor): no es de la convocatoria ni pesa en el cumplimiento.
+          requisitoEdad: Boolean(d.requisito_edad),
           estado: d.estado,
           archivo: d.archivo ?? null,
         })),

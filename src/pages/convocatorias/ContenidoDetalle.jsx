@@ -1,7 +1,7 @@
 import { isValidElement } from 'react'
 import { useContenidoDetalle } from './useContenidoDetalle'
 import DetalleConvocatoria from '../../components/convocatorias/DetalleConvocatoria'
-import PanelDocumentosPostulacion from '../../components/postulacion/PanelDocumentosPostulacion'
+import ProveedorPostulacion from '../../components/postulacion/ProveedorPostulacion'
 
 // Contenido del detalle de una convocatoria: carga, permisos, postulación y acciones de gestión.
 export default function ContenidoDetalle({ id }) {
@@ -16,22 +16,28 @@ export default function ContenidoDetalle({ id }) {
         accionesGestion={accionesGestion}
         errorAccion={errorAccion}
         onVolver={() => navigate('/convocatorias')}
-        panelDocumentos={
-          mostrarPanel ? (
-            <PanelDocumentosPostulacion
-              convocatoria={detalle}
-              documentosConvocatoria={detalle.documentos}
-              skillsConvocatoriaNombres={detalle.skills}
-              miPostulacion={detalle.mi_postulacion}
-              onPostulacionCreada={aplicarPostulacion}
-              onVerDocumentos={(pid) => navigate(`/postulaciones/${pid}/documentos`)}
-              onEnviado={() =>
-                navigate('/mis-postulaciones', {
-                  state: { exito: `¡Tu postulación ha sido registrada!` },
-                })
-              }
-            />
-          ) : null
+        envolverPostulacion={
+          mostrarPanel
+            ? (pestanas) => (
+                <ProveedorPostulacion
+                  convocatoria={detalle}
+                  documentosConvocatoria={detalle.documentos}
+                  skillsConvocatoriaNombres={detalle.skills}
+                  miPostulacion={detalle.mi_postulacion}
+                  onPostulacionCreada={aplicarPostulacion}
+                  // Salta a otra pestaña (Pestanas pone el id tab-<id> a cada botón).
+                  irA={(pestana) => document.getElementById(`tab-${pestana}`)?.click()}
+                  onVerDocumentos={(pid) => navigate(`/postulaciones/${pid}/documentos`)}
+                  onEnviado={() =>
+                    navigate('/mis-postulaciones', {
+                      state: { exito: `¡Tu postulación ha sido registrada!` },
+                    })
+                  }
+                >
+                  {pestanas}
+                </ProveedorPostulacion>
+              )
+            : null
         }
         accionInferior={
           accionInferior

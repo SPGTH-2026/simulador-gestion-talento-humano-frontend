@@ -40,4 +40,33 @@ describe('SeccionDocumentosRequeridos', () => {
     expect(reemplazos[2].disabled).toBe(true)
     expect(screen.getByText(/solo puedes reemplazar los documentos que el evaluador marcó/i)).toBeTruthy()
   })
+
+  describe('libreta militar', () => {
+    const conLibreta = (estado) => ({
+      postulacion: { id: 5, estado: { codigo: 'borrador' } },
+      documentos: [
+        { id: 1, parametro: { id: 10, codigo: 'hoja_de_vida', nombre: 'Hoja de vida' }, obligatorio: true, estado: 'pendiente', archivo: null },
+        { id: 2, parametro: { id: 40, codigo: 'libreta_militar', nombre: 'Libreta militar' }, obligatorio: true, estado, archivo: null },
+      ],
+    })
+
+    it('se muestra a un hombre', () => {
+      render(<SeccionDocumentosRequeridos {...base} vista={conLibreta('pendiente')} sexo={{ codigo: 'hombre' }} />)
+
+      expect(screen.getByText('Libreta militar')).toBeTruthy()
+    })
+
+    it('no se muestra a una mujer', () => {
+      render(<SeccionDocumentosRequeridos {...base} vista={conLibreta('pendiente')} sexo={{ codigo: 'mujer' }} />)
+
+      expect(screen.queryByText('Libreta militar')).toBeNull()
+      expect(screen.getByText('Hoja de vida')).toBeTruthy()
+    })
+
+    it('no se muestra si el servidor la marca «no aplica» (por ejemplo, un menor de edad)', () => {
+      render(<SeccionDocumentosRequeridos {...base} vista={conLibreta('no_aplica')} sexo={{ codigo: 'hombre' }} />)
+
+      expect(screen.queryByText('Libreta militar')).toBeNull()
+    })
+  })
 })

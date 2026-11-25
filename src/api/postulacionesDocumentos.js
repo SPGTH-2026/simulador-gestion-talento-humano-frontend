@@ -143,3 +143,13 @@ export const obtenerCorreccion = (postulacionId) =>
 // El aspirante confirma que reemplazó todos los documentos marcados para corregir.
 export const enviarCorreccion = (postulacionId) =>
   client.post(`/postulaciones/${postulacionId}/correccion/enviar`).then((res) => res.data.data)
+
+// GET /api/postulaciones/{id}/datos-personales  ->  { data: { completo, es_menor, edad_minima, datos | null } }
+export const obtenerDatosPersonales = (postulacionId) =>
+  client.get(`/postulaciones/${postulacionId}/datos-personales`).then((res) => res.data.data)
+
+// PUT /api/postulaciones/{id}/datos-personales  (body: ver lib/datosPersonales.js)
+// Solo en borrador o retirada. Una postulación ya enviada responde 422: hay que retirarla para cambiarlos. Con menos de
+// 16 años responde 422 en `fecha_nacimiento`; con 16 o 17 exige los cuatro datos del representante.
+export const guardarDatosPersonales = (postulacionId, cuerpo) =>
+  client.put(`/postulaciones/${postulacionId}/datos-personales`, cuerpo).then((res) => res.data.data)
