@@ -1,5 +1,4 @@
 import Etiqueta from '../../components/ui/Etiqueta'
-import Icono from '../../components/ui/Icono'
 import Tarjeta from '../../components/ui/Tarjeta'
 import useDesbordeHorizontal from '../../hooks/useDesbordeHorizontal'
 import { CLASE_FILA, CLASE_TABLA, CLASE_TBODY, CLASE_THEAD, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
@@ -19,19 +18,13 @@ const CLASE_TH = 'px-2 py-3'
 const CLASE_TD = 'px-2 py-3'
 
 // Tabla de fichas: es la presentación principal en TODOS los anchos. Cada columna tiene su medida útil y no se encoge (los estados y los
-// botones no parten sus palabras); si el contenedor no alcanza, se desplaza SOLO la tabla (nunca la página), con un aviso visible
-// únicamente cuando hay desbordamiento y con la región enfocable para desplazarla con el teclado. La primera columna queda fija y, en
+// botones no parten sus palabras); si el contenedor no alcanza, se desplaza SOLO la tabla (nunca la página), con la región
+// enfocable para desplazarla con el teclado y un borde que se desvanece mientras hay más columnas (sin texto de aviso, como las demás tablas). La primera columna queda fija y, en
 // móvil, es angosta (6,5 rem como máximo) para que al llegar al final «Acciones» quepa completa a su lado y no quede tapada.
 export default function TablaFichas({ fichas, acciones }) {
   const { ref, desborda, alFinal, alDesplazar } = useDesbordeHorizontal()
   return (
     <Tarjeta className="relative overflow-hidden">
-      {desborda && (
-        <p className={`flex items-center justify-between gap-2 border-b border-sena-linea/70 px-3 py-2 text-xs dark:border-sena-borde/50 ${CLASE_TEXTO_SUAVE}`}>
-          <span>Desliza para ver más columnas</span>
-          <Icono nombre="chevron" className="size-4 -rotate-90" />
-        </p>
-      )}
       <div
         ref={ref}
         onScroll={alDesplazar}
@@ -96,7 +89,7 @@ export default function TablaFichas({ fichas, acciones }) {
         </table>
       </div>
       {desborda && !alFinal && (
-        <div aria-hidden="true" className="pointer-events-none absolute bottom-0 right-0 top-9 w-8 bg-gradient-to-l from-white to-transparent dark:from-sena-superficie" />
+        <div aria-hidden="true" className="pointer-events-none absolute bottom-0 right-0 top-0 w-8 bg-gradient-to-l from-white to-transparent dark:from-sena-superficie" />
       )}
     </Tarjeta>
   )

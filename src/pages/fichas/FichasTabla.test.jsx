@@ -40,16 +40,15 @@ describe('Fichas: la tabla es la presentación principal', () => {
     expect(screen.getByText('Consulta y gestiona las fichas de formación a las que tienes acceso')).toBeTruthy()
   })
 
-  it('sin desbordamiento no muestra el aviso de desplazamiento ni hace enfocable la región', async () => {
+  it('sin desbordamiento no hace enfocable la región', async () => {
     await pintar([ficha()])
-    expect(screen.queryByText('Desliza para ver más columnas')).toBeNull()
     expect(screen.getByRole('region', { name: /tabla desplazable/ }).getAttribute('tabindex')).toBeNull()
   })
 
-  it('con desbordamiento muestra el aviso y la región se puede enfocar y desplazar con el teclado', async () => {
+  it('con desbordamiento la región se puede enfocar y desplazar con el teclado, sin texto de aviso', async () => {
     medida = { desborda: true, alFinal: false }
     await pintar([ficha()])
-    expect(screen.getByText('Desliza para ver más columnas')).toBeTruthy()
+    expect(screen.queryByText('Desliza para ver más columnas')).toBeNull()
     expect(screen.getByRole('region', { name: /tabla desplazable/ }).getAttribute('tabindex')).toBe('0')
   })
 
