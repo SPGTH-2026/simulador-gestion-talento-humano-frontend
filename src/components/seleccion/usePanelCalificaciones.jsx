@@ -3,7 +3,7 @@ import { guardarCalificacion, obtenerCalificaciones } from '../../api/seleccion'
 import { mensajeError } from '../../api/mensajeError'
 import Boton from '../ui/Boton'
 import { MensajeError } from '../ui/Mensaje'
-import { EsqueletoDetalle } from '../ui/Esqueleto'
+import EsqueletoCalificaciones from './EsqueletoCalificaciones'
 
 export function razonSinEscritura(datos, puedeDecidir) {
   if (!puedeDecidir) return 'Tu rol puede consultar las calificaciones, pero no registrarlas.'
@@ -66,9 +66,7 @@ export function usePanelCalificaciones({ convocatoriaId, postulacionId, puedeDec
 
   if (datos == null && fallo) return avisoReintento
   if (datos == null) {
-    return (
-      <EsqueletoDetalle texto="Cargando calificaciones…" metricas={3} bloques={2} />
-    )
+    return <EsqueletoCalificaciones />
   }
 
   const resultado = datos.resultado_adicional

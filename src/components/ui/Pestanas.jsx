@@ -8,6 +8,8 @@ import { useRef, useState } from 'react'
 //   - 'pestanas': [{ id, etiqueta, contenido, icono? }]. El 'id' debe ser único
 //     y apto para un id de HTML (se usa en aria-controls/aria-labelledby).
 //   - 'etiquetaAccesible': nombre del tablist (aria-label).
+//   - 'barraSiUna': por defecto true. Con false y una sola pestaña no se dibuja la barra, pero el panel conserva su
+//     lugar en el árbol: si luego aparece otra pestaña, el contenido NO se desmonta ni vuelve a pedir sus datos.
 //   - 'activaId' / 'onCambiar': uso CONTROLADO opcional, para que quien monta
 //     (p. ej. la barra inferior del detalle) pueda saltar a una pestaña. Sin
 //     ellos, la primitiva maneja su propia pestaña activa.
@@ -24,6 +26,7 @@ export default function Pestanas({
   etiquetaAccesible = 'Secciones',
   activaId,
   onCambiar,
+  barraSiUna = true,
   // Separación entre la barra y el panel: 'gap-4' por defecto; una pantalla que necesite el contenido más
   // cerca de las pestañas pasa su propia clase (por ejemplo 'flex flex-col gap-3').
   className = 'flex flex-col gap-4',
@@ -79,6 +82,7 @@ export default function Pestanas({
   }
 
   const idActivo = pestanas[indiceActivo]?.id
+  const conBarra = barraSiUna || pestanas.length > 1
 
   return (
     <div className={className}>
@@ -86,6 +90,7 @@ export default function Pestanas({
           pestañas se deslizan sin arrastrar la página entera. overflow-y-hidden
           evita que el -mb-px de las pestañas genere una barra vertical de 1 px
           de alto con sus flechas; por eso el foco se dibuja hacia adentro. */}
+      {conBarra && (
       <div
         role="tablist"
         aria-label={etiquetaAccesible}
@@ -123,6 +128,7 @@ export default function Pestanas({
           )
         })}
       </div>
+      )}
 
       {/* Un tabpanel por pestaña, TODOS montados; solo el activo se ve. */}
       {pestanas.map((pestana) => {
@@ -130,10 +136,10 @@ export default function Pestanas({
         return (
           <div
             key={pestana.id}
-            role="tabpanel"
+            role={conBarra ? 'tabpanel' : undefined}
             id={`panel-${pestana.id}`}
-            aria-labelledby={`tab-${pestana.id}`}
-            tabIndex={0}
+            aria-labelledby={conBarra ? `tab-${pestana.id}` : undefined}
+            tabIndex={conBarra ? 0 : undefined}
             hidden={!seleccionada}
             className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sena/40"
           >

@@ -6,6 +6,7 @@ import Paginacion from '../../components/ui/Paginacion'
 import { EsqueletoTabla, EsqueletoTarjetas } from '../../components/ui/Esqueleto'
 import { formatearFechaHora } from '../../lib/ventanaPostulacion'
 import { CLASE_META_DT, CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
+import BloqueCitaciones from './BloqueCitaciones'
 import { BloqueConvocatoria, BloqueEstadoPostulacion, BloqueAcciones } from './PiezasMisPostulaciones'
 
 export default function MisPostulaciones() {
@@ -20,6 +21,9 @@ export default function MisPostulaciones() {
           reábrelas mientras la convocatoria lo permita.
         </p>
       </div>
+
+      {/* Entrevistas y pruebas técnicas programadas por Selección (solo aparece si hay alguna). */}
+      <div className="@container"><BloqueCitaciones /></div>
 
       {exito && (
         <div {...pausaExito}>
