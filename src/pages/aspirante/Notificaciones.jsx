@@ -1,21 +1,28 @@
 import Boton from '../../components/ui/Boton'
-import Cargando from '../../components/ui/Cargando'
-import EstadoVacio from '../../components/ui/EstadoVacio'
 import Paginacion from '../../components/ui/Paginacion'
 import { MensajeError } from '../../components/ui/Mensaje'
-import { formatearFechaHora } from '../../lib/ventanaPostulacion'
-import {
-  CLASE_CHIP,
-  CLASE_SUBTITULO_PAGINA,
-  CLASE_TARJETA,
-  CLASE_TEXTO_FUERTE,
-  CLASE_TEXTO_SUAVE,
-  CLASE_TITULO_PAGINA,
-} from '../../lib/estilos'
+import CargandoNotificaciones from '../../components/notificaciones/CargandoNotificaciones'
+import FilaNotificacion from '../../components/notificaciones/FilaNotificacion'
+import FiltrosNotificaciones from '../../components/notificaciones/FiltrosNotificaciones'
+import VacioNotificaciones from '../../components/notificaciones/VacioNotificaciones'
+import { CLASE_SUBTITULO_PAGINA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
+import { FILTROS_PAGINA } from '../../lib/notificaciones'
 import { useNotificaciones } from './useNotificaciones'
+
+// Plazo de retención: lo informa el servidor (`meta.retencion`: días, o null si la depuración está desactivada). Solo se anuncia si existe.
+function notaDelFiltro(filtro, retencion) {
+  if (filtro === 'ocultas') {
+    const plazo = retencion ? `Se eliminan ${retencion.ocultas_dias} días después de ocultarlas; r` : 'R'
+    return `Las notificaciones ocultas no cuentan como pendientes y conservan su estado de lectura. ${plazo}estaura una para verla de nuevo en Todas.`
+  }
+  if (filtro === 'leidas' && retencion) return `Las notificaciones leídas se eliminan ${retencion.leidas_dias} días después de leerlas.`
+  return null
+}
 
 export default function Notificaciones() {
   const n = useNotificaciones()
+  const sinDatos = n.items.length === 0
+  const nota = notaDelFiltro(n.filtro, n.meta.retencion)
 
   return (
     <div className="space-y-4">
@@ -24,44 +31,37 @@ export default function Notificaciones() {
           <h1 className={CLASE_TITULO_PAGINA}>Notificaciones</h1>
           <p className={CLASE_SUBTITULO_PAGINA}>Avisos de tu actividad en el sistema según tu rol.</p>
         </div>
-        {n.noLeidas > 0 && (
+        {n.noLeidas > 0 && n.filtro !== 'ocultas' && (
           <Boton variante="contorno" onClick={n.marcarTodas} ocupado={n.ocupado}>
             Marcar todas como leídas
           </Boton>
         )}
       </header>
 
-      {n.error && <MensajeError>{n.error}</MensajeError>}
+      <FiltrosNotificaciones opciones={FILTROS_PAGINA} valor={n.filtro} onCambiar={n.cambiarFiltro} />
+      {nota && <p className="text-sm text-slate-600 dark:text-sena-texto-suave">{nota}</p>}
 
-      {n.cargando ? (
-        <Cargando>Cargando notificaciones…</Cargando>
-      ) : n.items.length === 0 ? (
-        <EstadoVacio
-          titulo="No tienes notificaciones"
-          descripcion="Aquí aparecerán los avisos que correspondan a tu rol."
-        />
+      {n.error && (
+        <div className="flex flex-col items-start gap-2">
+          <MensajeError>{n.error}</MensajeError>
+          <Boton variante="contorno" tamano="tactil" onClick={n.recargar}>Reintentar</Boton>
+        </div>
+      )}
+
+      {n.cargando ? <CargandoNotificaciones /> : sinDatos ? (
+        !n.error && <VacioNotificaciones filtro={n.filtro} />
       ) : (
         <ul className="space-y-2" aria-label="Lista de notificaciones">
           {n.items.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => n.abrir(item)}
-                aria-label={item.leida ? undefined : `${item.titulo} (sin leer)`}
-                className={`${CLASE_TARJETA} w-full p-4 text-left transition-colors hover:bg-sena-hundido/60 dark:hover:bg-white/5 ${
-                  item.leida ? '' : 'border-sena-azul/50 dark:border-sena-texto-suave/60'
-                }`}
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className={`text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>{item.titulo}</h2>
-                  {!item.leida && <span className={CLASE_CHIP} aria-hidden="true">Nueva</span>}
-                </div>
-                <p className={`mt-1 text-sm ${CLASE_TEXTO_SUAVE}`}>{item.mensaje}</p>
-                <time dateTime={item.created_at} className={`mt-2 block text-xs ${CLASE_TEXTO_SUAVE}`}>
-                  {formatearFechaHora(item.created_at)}
-                </time>
-              </button>
-            </li>
+            <FilaNotificacion
+              key={item.id}
+              item={item}
+              ocupado={n.acciones.ocupadoId === item.id}
+              onAbrir={n.acciones.abrir}
+              onMarcar={n.acciones.marcar}
+              onOcultar={n.acciones.ocultar}
+              onRestaurar={n.filtro === 'ocultas' ? n.acciones.restaurar : undefined}
+            />
           ))}
         </ul>
       )}

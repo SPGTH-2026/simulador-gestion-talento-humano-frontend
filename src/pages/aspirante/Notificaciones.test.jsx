@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Notificaciones from './Notificaciones'
 import * as api from '../../api/notificaciones'
+import { reiniciarAlmacen } from '../../components/notificaciones/almacenNotificaciones'
 
 vi.mock('../../api/notificaciones', () => ({
   listaNotificaciones: vi.fn(),
@@ -25,9 +26,9 @@ const respuesta = (items, noLeidas = items.filter((i) => !i.leida).length) => ({
   meta: { current_page: 1, last_page: 1, per_page: 20, total: items.length, no_leidas: noLeidas },
 })
 
-function montar() {
+function montar(ruta = '/notificaciones?filtro=todas') {
   return render(
-    <MemoryRouter initialEntries={['/notificaciones']}>
+    <MemoryRouter initialEntries={[ruta]}>
       <Routes>
         <Route path="/notificaciones" element={<Notificaciones />} />
         <Route path="/mis-postulaciones" element={<p>Pantalla de postulaciones</p>} />
@@ -37,6 +38,7 @@ function montar() {
 }
 
 afterEach(() => {
+  reiniciarAlmacen()
   cleanup()
   vi.clearAllMocks()
 })
@@ -49,6 +51,32 @@ describe('Página de notificaciones', () => {
 
     expect(await screen.findByText('No tienes notificaciones')).toBeTruthy()
     expect(screen.queryByRole('button', { name: /marcar todas/i })).toBeNull()
+  })
+
+  it('sin «?filtro=» entra en No leídas y respeta el filtro que indique el enlace', async () => {
+    api.listaNotificaciones.mockResolvedValue(respuesta([]))
+    montar('/notificaciones')
+    await screen.findByText('Estás al día')
+    expect(api.listaNotificaciones).toHaveBeenLastCalledWith({ page: 1, estado: 'no_leidas' })
+    expect(screen.getByRole('button', { name: 'No leídas' }).getAttribute('aria-pressed')).toBe('true')
+    cleanup()
+    montar('/notificaciones?filtro=leidas')
+    await screen.findByText('No hay notificaciones en este filtro')
+    expect(api.listaNotificaciones).toHaveBeenLastCalledWith({ page: 1, estado: 'leidas' })
+    cleanup()
+    montar('/notificaciones?filtro=inventado')
+    await screen.findByText('Estás al día')
+  })
+
+  it('sin pendientes dice «Estás al día» sin negar el historial ni botones redundantes; Todas muestra el historial', async () => {
+    api.listaNotificaciones.mockImplementation(async ({ estado }) => respuesta(estado === 'todas' ? [aviso({ id: 4, titulo: 'Aviso viejo', leida: true })] : []))
+    montar('/notificaciones')
+    expect(await screen.findByText('Estás al día')).toBeTruthy()
+    expect(screen.getByText('No tienes notificaciones sin leer.')).toBeTruthy()
+    expect(screen.queryByText(/historial/i)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Consultar/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Todas' }))
+    expect(await screen.findByText('Aviso viejo')).toBeTruthy()
   })
 
   it('marca como nuevas las que no se han leído y ofrece marcar todas', async () => {
@@ -78,10 +106,13 @@ describe('Página de notificaciones', () => {
     )
 
     montar()
-    fireEvent.click(await screen.findByRole('button', { name: /debes corregir documentos \(sin leer\)/i }))
+    // «Ver postulación» es un enlace real de texto; la tarjeta ya no es un botón.
+    const enlace = await screen.findByRole('link', { name: 'Ver postulación' })
+    expect(screen.queryByRole('button', { name: /debes corregir documentos/i })).toBeNull()
+    fireEvent.click(enlace)
 
     expect(await screen.findByText('Pantalla de postulaciones')).toBeTruthy()
-    expect(api.marcarNotificacionLeida).toHaveBeenCalledWith(7)
+    await waitFor(() => expect(api.marcarNotificacionLeida).toHaveBeenCalledWith(7))
   })
 
   it('si un aviso no tiene destino, solo se marca como leído', async () => {
@@ -89,7 +120,10 @@ describe('Página de notificaciones', () => {
     api.marcarNotificacionLeida.mockResolvedValue(aviso({ id: 3, titulo: 'Aviso sin destino', leida: true }))
 
     montar()
-    fireEvent.click(await screen.findByRole('button', { name: /aviso sin destino \(sin leer\)/i }))
+    // Sin destino no parece navegable: no hay botón de fila ni acción, solo «Marcar como leída».
+    expect(screen.queryByText(/^Ver /)).toBeNull()
+    expect(screen.queryByRole('button', { name: /aviso sin destino/i })).toBeNull()
+    fireEvent.click(await screen.findByRole('button', { name: 'Marcar como leída' }))
 
     await waitFor(() => expect(screen.queryByText('Nueva')).toBeNull())
     expect(screen.queryByText('Pantalla de postulaciones')).toBeNull()
@@ -116,5 +150,30 @@ describe('Página de notificaciones', () => {
     montar()
 
     expect(await screen.findByText(/no pudimos conectarnos/i)).toBeTruthy()
+  })
+
+  it('un fallo al cargar se explica, se puede reintentar y los avisos ya vistos no se reemplazan por el esqueleto', async () => {
+    api.listaNotificaciones.mockRejectedValueOnce(new Error('sin respuesta')).mockResolvedValueOnce(respuesta([aviso({ id: 1, titulo: 'Uno' })]))
+
+    montar()
+    expect(await screen.findByText(/no pudimos conectarnos/i)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByText('Uno')).toBeTruthy()
+    expect(screen.queryByText(/no pudimos conectarnos/i)).toBeNull()
+  })
+
+  it('mientras carga muestra «Cargando notificaciones…» con un solo anuncio y no afirma que esté vacío', () => {
+    api.listaNotificaciones.mockReturnValue(new Promise(() => {}))
+    montar()
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByText('Cargando notificaciones…')).toBeTruthy()
+    expect(screen.queryByText(/Estás al día|No tienes notificaciones/)).toBeNull()
+  })
+
+  it('quita la aclaración «(hora de Colombia)» del texto sin cambiar la hora', async () => {
+    api.listaNotificaciones.mockResolvedValue(respuesta([aviso({ id: 1, titulo: 'Cita programada', tipo: 'citacion', url: '/mis-postulaciones?cita=4', mensaje: 'Tienes la entrevista: 30/11/2026 a las 10:30 (hora de Colombia).' })]))
+    montar()
+    expect(await screen.findByText('Tienes la entrevista: 30/11/2026 a las 10:30.')).toBeTruthy()
+    expect(screen.getByText('Ver citación')).toBeTruthy()
   })
 })
