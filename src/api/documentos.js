@@ -26,6 +26,8 @@ export const listaDocumentos = (postulacionId) =>
           obligatorio: Boolean(d.obligatorio),
           estado: d.estado,
           archivo: d.archivo ?? null,
+          // Checklist propio del documento en esta convocatoria (un ítem por elemento de la lista).
+          items: Array.isArray(d.items) ? d.items : [],
         })),
       skills: skills.map((s) => ({
         id: `skill-${s.id}`,

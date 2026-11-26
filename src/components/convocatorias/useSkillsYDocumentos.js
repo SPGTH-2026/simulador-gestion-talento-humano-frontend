@@ -178,6 +178,15 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
 
   const sumaPonderaciones = () => sumaDePonderaciones(form)
 
+  // Checklist de cada documento: texto libre con un ítem por línea.
+  const itemsDe = (identificador) => form.itemsDocumentos?.[identificador] ?? ''
+  const cambiarItems = (identificador, texto) => {
+    setForm((prev) => ({
+      ...prev,
+      itemsDocumentos: { ...(prev.itemsDocumentos ?? {}), [identificador]: String(texto).slice(0, 2000) },
+    }))
+  }
+
   // ── Porcentaje de cada habilidad ─────────────────────────────────────
   // Vacío = sin porcentaje. Con documentos y habilidades ponderados, el total debe ser 100 %.
   const cambiarPorcentajeSkill = (nombre, valor) => {
@@ -225,5 +234,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
     skillsCatalogo,
     skillsLibres,
     sumaPonderaciones,
+    itemsDe,
+    cambiarItems,
   }
 }

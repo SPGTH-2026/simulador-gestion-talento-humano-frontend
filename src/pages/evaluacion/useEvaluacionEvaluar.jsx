@@ -12,27 +12,6 @@ import { useConfirmacion } from '../../hooks/useConfirmacion'
 import { CLASE_TARJETA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { repartirPesos } from '../../lib/evaluacion'
 
-// Campos de los requisitos de la convocatoria, en el orden en que se muestran.
-const CAMPOS_REQUISITOS = [
-  { campo: 'formacion', grupo: 'Formación académica' },
-  { campo: 'experiencia', grupo: 'Experiencia' },
-  { campo: 'competencias', grupo: 'Competencias' },
-  { campo: 'conocimientos_especificos', grupo: 'Conocimientos específicos' },
-]
-
-// Cada línea de un requisito es un ítem del checklist. Su clave («req-campo-n») y la del documento que lo respalda
-// («reqdoc-campo-n») se guardan en el perfil de la evaluación. El servidor no las usa para el cumplimiento.
-function itemsDeRequisitos(requisitos) {
-  if (!requisitos) return []
-  return CAMPOS_REQUISITOS.flatMap(({ campo, grupo }) =>
-    String(requisitos[campo] ?? '')
-      .split('\n')
-      .map((linea) => linea.trim())
-      .filter(Boolean)
-      .map((texto, n) => ({ clave: `req-${campo}-${n}`, grupo, texto })),
-  )
-}
-
 // Lógica de EvaluacionEvaluar: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
 export function useEvaluacionEvaluar() {
   const { postulacionId } = useParams()
@@ -47,11 +26,10 @@ export function useEvaluacionEvaluar() {
   const [abriendo, setAbriendo] = useState(null)
 
   const [respuestas, setRespuestas] = useState({})
-  // Checklist de requisitos: marca («req-…» → true cumple / false no cumple) y documento que lo respalda («reqdoc-…» → id).
-  const [reqRespuestas, setReqRespuestas] = useState({})
-  const [reqDocumentos, setReqDocumentos] = useState({})
   // Marcas de las habilidades de la convocatoria: «skill-{id}» → true cumple / false no cumple.
   const [skillMarcas, setSkillMarcas] = useState({})
+  // Marcas del checklist de cada documento: «docitem-{documento}-{n}» → true cumple / false no cumple.
+  const [itemMarcas, setItemMarcas] = useState({})
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
   const botonBorrador = useRef(null)
@@ -86,16 +64,14 @@ export function useEvaluacionEvaluar() {
           // Una evaluación anterior pudo dejar «Cumple» en un documento que hoy no tiene archivo: ese valor es inválido
           // para el servidor y no se reenvía. No se reemplaza por «No cumple»: queda sin responder y lo decide el evaluador.
           const perfil = { ...(ev.data.evaluacion.perfil ?? {}) }
-          const perfilReq = Object.fromEntries(Object.entries(perfil).filter(([k]) => k.startsWith('req-')))
-          const perfilReqDoc = Object.fromEntries(Object.entries(perfil).filter(([k]) => k.startsWith('reqdoc-')))
-          for (const k of [...Object.keys(perfilReq), ...Object.keys(perfilReqDoc)]) delete perfil[k]
+          // Las marcas de habilidades y de ítems tienen su propio estado: no se mezclan con las de documentos.
+          for (const k of Object.keys(perfil)) if (/^(req-|reqdoc-|skill-|docitem-)/.test(k)) delete perfil[k]
           for (const d of docs.data ?? []) {
             if (d.obligatorio && d.estado === 'pendiente' && perfil[d.id] === true) delete perfil[d.id]
           }
           setRespuestas(perfil)
-          setReqRespuestas(perfilReq)
-          setReqDocumentos(perfilReqDoc)
           setSkillMarcas(Object.fromEntries(Object.entries(ev.data.evaluacion.perfil ?? {}).filter(([k]) => k.startsWith('skill-'))))
+          setItemMarcas(Object.fromEntries(Object.entries(ev.data.evaluacion.perfil ?? {}).filter(([k]) => k.startsWith('docitem-'))))
         }
         // Sin evaluación previa no se preselecciona nada: el evaluador decide
         // Cumple / No cumple en cada requisito.
@@ -119,8 +95,15 @@ export function useEvaluacionEvaluar() {
   const sinResponder = aplicables.filter((d) => respuestas[d.id] == null).length
   const sinCargar = faltantes.length
   const pesoTotal = Object.values(pesos).reduce((acc, valor) => acc + valor, 0)
+  // Un documento con checklist aporta la parte de sus ítems marcados como «Cumple» (sin ítems, todo su peso).
+  const fraccionDocumento = (d) => {
+    const items = d.items ?? []
+    if (items.length === 0) return 1
+    const pid = String(d.id).replace(/^doc-/, '')
+    return items.filter((_, n) => itemMarcas[`docitem-${pid}-${n}`] === true).length / items.length
+  }
   const pesoObtenido = aplicables.reduce(
-    (acc, d) => acc + (respuestas[d.id] === true ? (pesos[d.id] ?? 0) : 0),
+    (acc, d) => acc + (respuestas[d.id] === true ? (pesos[d.id] ?? 0) * fraccionDocumento(d) : 0),
     0,
   )
   // Habilidades ponderadas de la convocatoria (mismo criterio que el servidor): cuentan cuando el evaluador las marca
@@ -163,9 +146,8 @@ export function useEvaluacionEvaluar() {
       ...Object.fromEntries(
         Object.entries(respuestas).filter(([id, valor]) => !(valor === true && faltanIds.has(id))),
       ),
-      ...reqRespuestas,
-      ...reqDocumentos,
       ...skillMarcas,
+      ...itemMarcas,
     }
 
     let guardada
@@ -312,12 +294,16 @@ export function useEvaluacionEvaluar() {
       excluidos,
       bloqueoFinalizar,
       bloqueoPorNoCumple,
-      itemsRequisitos: itemsDeRequisitos(dato?.convocatoria?.requisitos),
-      reqRespuestas,
-      documentosConArchivo: documentos.filter((d) => d.archivo),
-      reqDocumentos,
       habilidades: dato?.skills ?? [],
       skillMarcas,
+      itemMarcas,
+      setItemMarca: (clave, valor) =>
+        setItemMarcas((prev) => {
+          const siguiente = { ...prev }
+          if (valor === undefined) delete siguiente[clave]
+          else siguiente[clave] = valor
+          return siguiente
+        }),
       setSkillMarca: (id, valor) =>
         setSkillMarcas((prev) => {
           const siguiente = { ...prev }
@@ -326,21 +312,7 @@ export function useEvaluacionEvaluar() {
           return siguiente
         }),
       pesoGlobal,
-      setReqRespuesta: (clave, valor) =>
-        setReqRespuestas((prev) => {
-          const siguiente = { ...prev }
-          if (valor === undefined) delete siguiente[clave]
-          else siguiente[clave] = valor
-          return siguiente
-        }),
-      setReqDocumento: (clave, documentoId) =>
-        setReqDocumentos((prev) => {
-          const siguiente = { ...prev }
-          const claveDoc = clave.replace(/^req-/, 'reqdoc-')
-          if (documentoId == null) delete siguiente[claveDoc]
-          else siguiente[claveDoc] = documentoId
-          return siguiente
-        }),
+
       faltantes,
       finalizar,
       guardando,

@@ -156,6 +156,12 @@ export function formInicial(valores) {
         .filter((d) => d && (d.codigo != null || d.id != null) && d.ponderacion != null)
         .map((d) => [d.codigo ?? d.id, String(d.ponderacion)]),
     ),
+    // Checklist de cada documento (texto con un ítem por línea), indexado igual que los porcentajes.
+    itemsDocumentos: Object.fromEntries(
+      (Array.isArray(valores?.documentos) ? valores.documentos : [])
+        .filter((d) => d && (d.codigo != null || d.id != null) && d.items)
+        .map((d) => [d.codigo ?? d.id, String(d.items)]),
+    ),
   }
 }
 

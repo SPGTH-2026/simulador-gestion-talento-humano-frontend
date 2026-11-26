@@ -13,7 +13,6 @@ import {
   EtiquetaEvaluacion,
 } from '../../components/evaluacion/PresentacionEvaluacion'
 import RequisitoEvaluacion from '../../components/evaluacion/RequisitoEvaluacion'
-import RequisitoConvocatoria from '../../components/evaluacion/RequisitoConvocatoria'
 import RespuestaSiNo from '../../components/evaluacion/RespuestaSiNo'
 import ResumenCumplimiento from '../../components/evaluacion/ResumenCumplimiento'
 import Boton from '../../components/ui/Boton'
@@ -34,7 +33,7 @@ export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, itemsRequisitos, reqRespuestas, reqDocumentos, setReqRespuesta, setReqDocumento, documentosConArchivo, habilidades, skillMarcas, setSkillMarca, pesoGlobal, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, habilidades, skillMarcas, setSkillMarca, itemMarcas, setItemMarca, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
       {volverAlListado}
@@ -66,6 +65,7 @@ export default function EvaluacionEvaluar() {
           )}
         </div>
       </header>
+
 
       {evaluacion?.reabierta && (
         <MensajeAviso>
@@ -100,45 +100,6 @@ export default function EvaluacionEvaluar() {
             sinResponder={sinResponder}
             sinCargar={sinCargar}
           />
-        <div className={`${CLASE_TARJETA} flex flex-col gap-3 p-4`}>
-          {itemsRequisitos.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <div>
-                <h3 className={`text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>Requisitos de la convocatoria</h3>
-                <p className={`mt-1 text-xs ${CLASE_TEXTO_SUAVE}`}>
-                  Elige el documento que respalda cada requisito, ábrelo y marca si cumple. Es informativo: no cambia el
-                  porcentaje.
-                </p>
-              </div>
-              {[...new Set(itemsRequisitos.map((item) => item.grupo))].map((grupo) => (
-                <div key={grupo} className="flex flex-col">
-                  <h4 className={`pb-1 text-xs font-semibold uppercase tracking-wide ${CLASE_TEXTO_SUAVE}`}>{grupo}</h4>
-                  <ul className="@container divide-y divide-sena-linea/70 dark:divide-sena-borde/50">
-                    {itemsRequisitos
-                      .filter((item) => item.grupo === grupo)
-                      .map((item) => {
-                        const claveDoc = item.clave.replace(/^req-/, 'reqdoc-')
-                        const documentoId = reqDocumentos[claveDoc] ?? null
-                        return (
-                          <RequisitoConvocatoria
-                            key={item.clave}
-                            texto={item.texto}
-                            documentos={documentosConArchivo}
-                            documentoId={documentoId}
-                            marca={reqRespuestas[item.clave]}
-                            onDocumento={(id) => setReqDocumento(item.clave, id)}
-                            onMarca={(valor) => setReqRespuesta(item.clave, valor)}
-                            onVerDocumento={(documento) => verDocumento(documento)}
-                            abriendo={abriendo !== null && abriendo === documentoId}
-                          />
-                        )
-                      })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
         </div>
 
         <section
@@ -171,6 +132,9 @@ export default function EvaluacionEvaluar() {
                   onChange={(valor) => setRespuestas((prev) => ({ ...prev, [documento.id]: valor }))}
                   onVerDocumento={() => verDocumento(documento)}
                   abriendo={abriendo === documento.id}
+                  items={documento.items ?? []}
+                  marcasItems={itemMarcas}
+                  onMarcaItem={setItemMarca}
                 />
               ))}
             </ul>

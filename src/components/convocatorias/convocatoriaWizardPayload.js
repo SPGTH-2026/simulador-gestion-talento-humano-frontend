@@ -44,6 +44,8 @@ export function construirPayload(form, { esNueva, fichas }) {
           : { codigo: identificador }),
         // null = sin configurar en esta convocatoria (reparto equitativo).
         ponderacion: peso === '' ? null : Number(peso),
+        // Checklist propio del documento: un ítem por línea (null = sin checklist).
+        items: String(form.itemsDocumentos?.[identificador] ?? '').trim() || null,
       }
     }),
     // La ficha solo se manda al crear y solo si el usuario tiene más de una:
