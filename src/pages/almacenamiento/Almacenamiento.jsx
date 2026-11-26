@@ -72,7 +72,7 @@ function FilaUso({ titulo, subtitulo, uso, nombre }) {
   const medido = uso?.porcentaje != null
 
   return (
-    <li className="flex flex-col gap-2 py-4 first:pt-0 last:pb-0">
+    <li className="flex flex-col gap-2 py-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="min-w-0">
           <p className={`font-semibold ${CLASE_TEXTO_FUERTE}`}>{titulo}</p>
@@ -166,7 +166,7 @@ export default function Almacenamiento() {
                   nombre="Uso de documentos"
                 />
               ) : (
-                <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-4 first:pt-0 last:pb-0">
+                <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-4">
                   <div>
                     <p className={`font-semibold ${CLASE_TEXTO_FUERTE}`}>Documentos de tus fichas</p>
                     <p className={`text-xs ${CLASE_TEXTO_SUAVE}`}>{datos.totales.documentos} documento(s) registrados</p>
