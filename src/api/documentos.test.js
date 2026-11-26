@@ -6,20 +6,13 @@ import client from './client'
 import { listaDocumentos } from './documentos'
 
 describe('listaDocumentos', () => {
-  it('marca la autorización de un menor como requisito por edad y sin porcentaje', async () => {
+  it('convierte cada documento de la postulación con su peso, obligatoriedad y archivo', async () => {
     client.get.mockResolvedValue({
       data: {
         data: {
           documentos: [
             { parametro: { id: 1, nombre: 'Hoja de vida' }, obligatorio: true, ponderacion: 60, estado: 'subido', archivo: { id: 9 } },
-            {
-              parametro: { id: 7, nombre: 'Autorización del representante legal' },
-              obligatorio: true,
-              requisito_edad: true,
-              ponderacion: null,
-              estado: 'pendiente',
-              archivo: null,
-            },
+            { parametro: { id: 2, nombre: 'Tarjeta profesional' }, obligatorio: false, ponderacion: null, estado: 'pendiente', archivo: null },
           ],
           skills: [],
         },
@@ -28,9 +21,9 @@ describe('listaDocumentos', () => {
 
     const { data } = await listaDocumentos(5)
 
-    expect(data.find((d) => d.id === 'doc-1').requisitoEdad).toBe(false)
-    const autorizacion = data.find((d) => d.id === 'doc-7')
-    expect(autorizacion.requisitoEdad).toBe(true)
-    expect(autorizacion.ponderacion).toBeNull()
+    expect(data).toEqual([
+      { id: 'doc-1', nombre: 'Hoja de vida', tipo: 'documento', ponderacion: 60, obligatorio: true, estado: 'subido', archivo: { id: 9 } },
+      { id: 'doc-2', nombre: 'Tarjeta profesional', tipo: 'documento', ponderacion: null, obligatorio: false, estado: 'pendiente', archivo: null },
+    ])
   })
 })

@@ -28,7 +28,7 @@ export default function Terminos() {
           titulo: 'Quién puede participar',
           children: (
             <>
-              <p>Pueden participar personas mayores y menores de edad. Si eres menor de edad, la postulación pide además los datos de tu representante legal y un documento suyo.</p>
+              <p>Pueden participar personas mayores y menores de edad. Si eres menor de edad, la postulación pide además los datos de tu representante legal; su autorización se firma en persona al momento de la contratación.</p>
               <p>Qué datos se piden y cómo se tratan está en <Enlace href="/privacidad">Privacidad</Enlace>.</p>
             </>
           ),

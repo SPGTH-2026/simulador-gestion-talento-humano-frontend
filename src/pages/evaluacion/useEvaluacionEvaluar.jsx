@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { obtenerDatosPersonalesRevision } from '../../api/datosPersonales'
 import { listaDocumentos } from '../../api/documentos'
 import { obtenerEvaluacion, guardarEvaluacion } from '../../api/evaluaciones'
 import { mensajeError } from '../../api/mensajeError'
@@ -20,6 +21,8 @@ export function useEvaluacionEvaluar() {
 
   const [dato, setDato] = useState(null)
   const [documentos, setDocumentos] = useState([])
+  // Datos personales de la postulación (y de su representante si es menor). Si no se pueden leer, la evaluación sigue sin ellos.
+  const [datosAspirante, setDatosAspirante] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const { abrir: abrirVisor, visor } = useVisorDocumento()
@@ -35,15 +38,12 @@ export function useEvaluacionEvaluar() {
   // la misma regla del backend: un documento opcional no resta y uno que "no
   // aplica" (la libreta militar de una mujer) se excluye. Los demás se listan
   // aparte, sin peso ni respuesta.
-  // El requisito por edad (autorización de un menor) se revisa aparte: no pesa, pero sí cuenta para poder finalizar.
-  const requisitosEdad = documentos.filter((d) => d.requisitoEdad)
-  const aplicables = documentos.filter((d) => !d.requisitoEdad && d.obligatorio && d.estado !== 'no_aplica')
-  const excluidos = documentos.filter((d) => !d.requisitoEdad && !(d.obligatorio && d.estado !== 'no_aplica'))
-  const revisables = [...aplicables, ...requisitosEdad]
+  const aplicables = documentos.filter((d) => d.obligatorio && d.estado !== 'no_aplica')
+  const excluidos = documentos.filter((d) => !(d.obligatorio && d.estado !== 'no_aplica'))
   const pesos = repartirPesos(aplicables)
   // Obligatorios aplicables que el aspirante no ha cargado. El servidor no deja marcarlos «Cumple» ni finalizar con
   // alguno faltante; sí deja guardar un borrador y pedir la corrección con el faltante marcado «No cumple».
-  const faltantes = revisables.filter((d) => d.estado === 'pendiente')
+  const faltantes = aplicables.filter((d) => d.estado === 'pendiente')
 
   useEffect(() => {
     if (!postulacionId) return
@@ -51,11 +51,16 @@ export function useEvaluacionEvaluar() {
     let vivo = true
     setCargando(true)
 
-    Promise.all([obtenerEvaluacion(postulacionId), listaDocumentos(postulacionId)])
-      .then(([ev, docs]) => {
+    Promise.all([
+      obtenerEvaluacion(postulacionId),
+      listaDocumentos(postulacionId),
+      obtenerDatosPersonalesRevision(postulacionId).catch(() => null),
+    ])
+      .then(([ev, docs, personales]) => {
         if (!vivo) return
         setDato(ev.data)
         setDocumentos(docs.data ?? [])
+        setDatosAspirante(personales)
 
         if (ev.data.evaluacion) {
           setObservaciones(ev.data.evaluacion.observaciones ?? '')
@@ -104,7 +109,7 @@ export function useEvaluacionEvaluar() {
   const puedePedirCorreccion = correccion ? Boolean(correccion.puede_solicitar) : true
   // Documentos marcados «No cumple». Mientras haya alguno y la corrección todavía pueda seguir, no se finaliza: si se
   // finaliza, el aspirante queda con un documento sin corregir y la selección usaría esa evaluación.
-  const noCumple = revisables.filter((d) => respuestas[d.id] === false)
+  const noCumple = aplicables.filter((d) => respuestas[d.id] === false)
   // Las correcciones se agotaron: no quedan rondas (plazo vencido sin respuesta o las dos ordinarias usadas) y el
   // evaluador no puede pedir otra. Solo entonces se puede finalizar con un documento «No cumple».
   const correccionAgotada = Boolean(correccion) && !correccion.puede_solicitar
@@ -255,6 +260,7 @@ export function useEvaluacionEvaluar() {
       correccion,
       cumplimiento,
       dato,
+      datosAspirante,
       documentos,
       enCorreccion,
       error,
@@ -274,7 +280,6 @@ export function useEvaluacionEvaluar() {
       pesoTotal,
       pesos,
       postulacionId,
-      requisitosEdad,
       respuestas,
       setCargando,
       setDato,

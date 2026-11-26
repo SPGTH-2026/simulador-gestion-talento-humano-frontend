@@ -85,10 +85,12 @@ describe('SeccionDatosPersonales', () => {
   })
 
   it('sin páginas informativas activas la casilla no enlaza a nada', () => {
+    vi.stubEnv('VITE_PAGINAS_INFORMATIVAS', 'false')
     render(<SeccionDatosPersonales {...props()} />)
 
     expect(screen.queryByRole('link', { name: /política de privacidad/i })).toBeNull()
     expect(autorizacion()).toBeTruthy()
+    vi.unstubAllEnvs()
   })
 
   it('con las páginas informativas activas enlaza a Privacidad en una pestaña nueva', () => {
@@ -119,6 +121,21 @@ describe('SeccionDatosPersonales', () => {
 
     expect(screen.getByText('Representante legal')).toBeTruthy()
     expect(autorizacion().disabled).toBe(false)
+  })
+
+  it('el bloque del representante pide los datos de contacto y avisa que la autorización se firma en persona', () => {
+    render(<SeccionDatosPersonales {...props()} />)
+    fireEvent.change(fecha(), { target: { value: anios(17) } })
+
+    expect(screen.getByLabelText(/^correo electrónico/i)).toBeTruthy()
+    // Solo la declaración, sin letra pequeña de ayuda debajo.
+    expect(screen.queryByText(/se firma en persona/i)).toBeNull()
+    expect(screen.getByRole('checkbox', { name: /declaro que mi representante legal conoce mi postulación/i })).toBeTruthy()
+    // La declaración no menciona la asistencia a la firma: eso se resuelve en persona.
+    expect(screen.queryByText(/asistirá/i)).toBeNull()
+    // Opcionales: se identifican como tales.
+    expect(screen.getByLabelText(/teléfono alterno \(opcional\)/i)).toBeTruthy()
+    expect(screen.getByLabelText(/departamento de residencia \(opcional\)/i)).toBeTruthy()
   })
 
   it('un mayor de edad no ve el bloque del representante', () => {
@@ -177,7 +194,7 @@ describe('SeccionDatosPersonales', () => {
 
     expect(autorizacion().checked).toBe(true)
     expect(autorizacion().disabled).toBe(true)
-    expect(screen.getByText(/datos autorizados y guardados/i)).toBeTruthy()
+    expect(screen.getByText('Autorizado')).toBeTruthy()
   })
 
   it('con datos guardados pero sin autorizar, la casilla sigue disponible', () => {

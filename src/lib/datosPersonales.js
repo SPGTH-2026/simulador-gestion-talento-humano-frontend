@@ -26,16 +26,40 @@ export const FORM_VACIO = {
   direccion: '',
   nivel_formacion: '',
   representante_nombre: '',
+  representante_tipo_documento: '',
   representante_documento: '',
   representante_telefono: '',
+  representante_correo: '',
+  representante_telefono_alterno: '',
+  representante_departamento: '',
+  representante_municipio: '',
   representante_parentesco: '',
+  representante_conoce: false,
   acepta_tratamiento_datos: false,
 }
 
+// Todos los datos del representante legal: solo viajan al servidor si la persona es menor de edad (16 y 17 años).
 export const CAMPOS_REPRESENTANTE = [
   'representante_nombre',
+  'representante_tipo_documento',
   'representante_documento',
   'representante_telefono',
+  'representante_correo',
+  'representante_telefono_alterno',
+  'representante_departamento',
+  'representante_municipio',
+  'representante_parentesco',
+  'representante_conoce',
+]
+
+// Los que un menor debe llenar. La residencia y el teléfono alterno son opcionales; además debe confirmar que su
+// representante conoce la postulación (la autorización en sí se firma en persona al contratar).
+const OBLIGATORIOS_REPRESENTANTE = [
+  'representante_nombre',
+  'representante_tipo_documento',
+  'representante_documento',
+  'representante_telefono',
+  'representante_correo',
   'representante_parentesco',
 ]
 
@@ -68,8 +92,9 @@ const OBLIGATORIOS = [
 
 // ¿Están todos los campos obligatorios llenos? Sirve para no guardar solos datos a medias.
 export function formCompleto(form, hoy = new Date()) {
-  const obligatorios = categoriaDeEdad(form.fecha_nacimiento, hoy) === 'menor' ? [...OBLIGATORIOS, ...CAMPOS_REPRESENTANTE] : OBLIGATORIOS
-  return obligatorios.every((campo) => String(form[campo] ?? '').trim() !== '')
+  const esMenor = categoriaDeEdad(form.fecha_nacimiento, hoy) === 'menor'
+  const obligatorios = esMenor ? [...OBLIGATORIOS, ...OBLIGATORIOS_REPRESENTANTE] : OBLIGATORIOS
+  return obligatorios.every((campo) => String(form[campo] ?? '').trim() !== '') && (!esMenor || form.representante_conoce === true)
 }
 
 // Valores del formulario a partir de lo guardado en la postulación (o vacío si aún no hay datos).
@@ -84,6 +109,9 @@ export function formDesdeDatos(datos) {
     // El servidor devuelve { codigo, nombre }; el formulario trabaja con los códigos oficiales (DIVIPOLA).
     departamento: datos.departamento?.codigo ?? '',
     municipio: datos.municipio?.codigo ?? '',
+    representante_tipo_documento: datos.representante_tipo_documento?.codigo ?? '',
+    representante_departamento: datos.representante_departamento?.codigo ?? '',
+    representante_municipio: datos.representante_municipio?.codigo ?? '',
     nivel_formacion: datos.nivel_formacion?.codigo ?? '',
   }
 }

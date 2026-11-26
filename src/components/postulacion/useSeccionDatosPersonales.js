@@ -51,24 +51,29 @@ export function useSeccionDatosPersonales({ datos, editable, asegurar, onRecarga
     }
   }, [onError])
 
-  // Los municipios del departamento elegido se piden al elegirlo (1.122 juntos serían demasiados para una lista).
-  const departamentoElegido = form.departamento
-  const yaPedido = departamentoElegido in municipiosPorDepto
+  // Los municipios de cada departamento elegido (el del aspirante y el de la residencia de su representante) se piden al
+  // elegirlo: 1.122 juntos serían demasiados para una lista. Los ya pedidos no se vuelven a pedir.
+  const porPedir = [form.departamento, form.representante_departamento]
+    .filter((codigo, i, lista) => codigo && lista.indexOf(codigo) === i && !(codigo in municipiosPorDepto))
+    .join(',')
   useEffect(() => {
-    if (!departamentoElegido || yaPedido) return undefined
+    if (!porPedir) return undefined
     let activo = true
-    listaMunicipios(departamentoElegido)
-      .then((municipios) => {
-        if (activo) setMunicipiosPorDepto((prev) => ({ ...prev, [departamentoElegido]: municipios }))
-      })
-      .catch((e) => {
-        if (activo) onError?.(mensajeError(e))
-      })
+    porPedir.split(',').forEach((codigo) => {
+      listaMunicipios(codigo)
+        .then((municipios) => {
+          if (activo) setMunicipiosPorDepto((prev) => ({ ...prev, [codigo]: municipios }))
+        })
+        .catch((e) => {
+          if (activo) onError?.(mensajeError(e))
+        })
+    })
     return () => {
       activo = false
     }
-  }, [departamentoElegido, yaPedido, onError])
-  const municipios = municipiosPorDepto[departamentoElegido] ?? []
+  }, [porPedir, onError])
+  const municipios = municipiosPorDepto[form.departamento] ?? []
+  const municipiosRepresentante = municipiosPorDepto[form.representante_departamento] ?? []
 
   const categoria = categoriaDeEdad(form.fecha_nacimiento)
   const bajoMinimo = categoria === 'bajo_minimo'
@@ -82,8 +87,9 @@ export function useSeccionDatosPersonales({ datos, editable, asegurar, onRecarga
 
   const cambiar = (campo, valor) => {
     // Cambiar de departamento invalida el municipio: pertenece al anterior.
-    setForm((prev) => ({ ...prev, [campo]: valor, ...(campo === 'departamento' ? { municipio: '' } : {}) }))
-    setErrores((prev) => ({ ...prev, [campo]: undefined, ...(campo === 'departamento' ? { municipio: undefined } : {}) }))
+    const hijo = { departamento: 'municipio', representante_departamento: 'representante_municipio' }[campo]
+    setForm((prev) => ({ ...prev, [campo]: valor, ...(hijo ? { [hijo]: '' } : {}) }))
+    setErrores((prev) => ({ ...prev, [campo]: undefined, ...(hijo ? { [hijo]: undefined } : {}) }))
   }
 
   // Props para un <input>/<select> controlado. No se deshabilitan mientras guarda: el guardado es automático y bloquear el
@@ -137,6 +143,7 @@ export function useSeccionDatosPersonales({ datos, editable, asegurar, onRecarga
     form,
     guardando,
     municipios,
+    municipiosRepresentante,
     yaGuardado,
   }
 }

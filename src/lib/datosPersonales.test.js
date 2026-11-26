@@ -31,7 +31,10 @@ describe('cuerpoDesdeForm', () => {
   const form = { ...FORM_VACIO, representante_nombre: 'Marta', fecha_nacimiento: '2000-01-01' }
 
   it('quita los datos del representante a un mayor de edad', () => {
-    expect(cuerpoDesdeForm(form, HOY)).not.toHaveProperty('representante_nombre')
+    const cuerpo = cuerpoDesdeForm({ ...form, representante_correo: 'a@b.co', representante_conoce: true }, HOY)
+    for (const campo of ['representante_nombre', 'representante_correo', 'representante_conoce', 'representante_tipo_documento']) {
+      expect(cuerpo).not.toHaveProperty(campo)
+    }
   })
 
   it('los conserva en un menor', () => {
@@ -54,9 +57,23 @@ describe('formCompleto', () => {
   it('un menor también necesita al representante', () => {
     const menor = { ...lleno, fecha_nacimiento: '2009-06-01' }
     expect(formCompleto(menor, HOY)).toBe(false)
-    expect(
-      formCompleto({ ...menor, representante_nombre: 'Marta', representante_documento: '52123456', representante_telefono: '3109876543', representante_parentesco: 'Madre' }, HOY),
-    ).toBe(true)
+    const representante = {
+      representante_nombre: 'Marta',
+      representante_tipo_documento: 'cc',
+      representante_documento: '52123456',
+      representante_telefono: '3109876543',
+      representante_correo: 'marta@example.com',
+      representante_parentesco: 'Madre',
+    }
+    // Sin confirmar que el representante conoce la postulación, todavía no está completo.
+    expect(formCompleto({ ...menor, ...representante }, HOY)).toBe(false)
+    expect(formCompleto({ ...menor, ...representante, representante_conoce: true }, HOY)).toBe(true)
+    // La residencia y el teléfono alterno son opcionales.
+    expect(formCompleto({ ...menor, ...representante, representante_conoce: true, representante_telefono_alterno: '', representante_municipio: '' }, HOY)).toBe(true)
+  })
+
+  it('un mayor de edad no necesita nada del representante', () => {
+    expect(formCompleto({ ...lleno, representante_conoce: false }, HOY)).toBe(true)
   })
 })
 

@@ -23,7 +23,7 @@ export default function Privacidad() {
                 <li><strong>Tu cuenta</strong>: nombre, correo, contraseña, rol y ficha. La contraseña no se guarda tal cual, sino como una huella que no permite recuperarla.</li>
                 <li><strong>Acceso con Google</strong> (opcional): nombre, correo e identificador de tu cuenta de Google.</li>
                 <li><strong>Datos de cada postulación</strong>: nombres y apellidos, tipo y número de documento, fecha de nacimiento, sexo, teléfono, departamento y municipio, dirección (opcional) y nivel de formación.</li>
-                <li><strong>Si eres menor de edad</strong>: también el nombre, documento, teléfono y parentesco de tu representante legal, y un documento suyo.</li>
+                <li><strong>Si eres menor de edad</strong>: también el nombre, tipo y número de documento, teléfono, correo electrónico y parentesco de tu representante legal y, si quieres, su teléfono alterno y su residencia.</li>
                 <li><strong>Documentos</strong>: los PDF que cargas (identidad, hoja de vida, certificados y adicionales), con sus títulos y notas, y tus habilidades con sus certificados.</li>
                 <li><strong>Evaluación y selección</strong>: resultados y observaciones, notas de entrevista y prueba técnica, citaciones y decisiones.</li>
                 <li><strong>Datos técnicos</strong>: dirección IP y navegador de tus sesiones, y tus notificaciones.</li>
@@ -58,7 +58,7 @@ export default function Privacidad() {
           titulo: 'Personas menores de edad',
           children: (
             <>
-              <p>Pueden participar personas menores de edad. En su caso la postulación pide los datos de su representante legal y un documento suyo, que se revisa como requisito de la postulación.</p>
+              <p>Pueden participar personas menores de edad. En su caso la postulación pide los datos de su representante legal para poder localizarlo. La autorización del representante se firma en persona al momento de la contratación: no se sube ningún documento a la postulación.</p>
               <p>Participar en el simulador no equivale a celebrar un contrato de aprendizaje ni una contratación real.</p>
             </>
           ),
