@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react'
-import { borrarDocumentos, listaDocumentosFicha } from '../../api/almacenamiento'
+import { borrarDocumentos, listaDocumentosFicha, listaIdsBorrablesFicha } from '../../api/almacenamiento'
 import { mensajeError } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import useDebounce from '../../lib/useDebounce'
 
-// Documentos de una ficha: selección, borrado por lote con confirmación y el aviso de lo que quedó sin borrar.
+// Documentos de una ficha: búsqueda y filtro de tipo, selección (de la página o de todos los resultados), borrado por
+// lote con confirmación y el aviso de lo que quedó sin borrar.
 export function useAlmacenamientoFicha(fichaId) {
   const confirmar = useConfirmacion()
   const [pagina, setPagina] = useState(1)
+  const [busqueda, setBusqueda] = useState('')
+  const [tipo, setTipo] = useState('')
+  // La búsqueda pide al servidor solo cuando el usuario deja de escribir (no en cada tecla).
+  const busquedaDiferida = useDebounce(busqueda, 300)
   const [ficha, setFicha] = useState(null)
   const [documentos, setDocumentos] = useState([])
   const [meta, setMeta] = useState({})
@@ -19,7 +25,11 @@ export function useAlmacenamientoFicha(fichaId) {
 
   useEffect(() => {
     let activo = true
-    listaDocumentosFicha(fichaId, { page: pagina })
+    const params = { page: pagina }
+    if (busquedaDiferida.trim()) params.q = busquedaDiferida.trim()
+    if (tipo) params.tipo = tipo
+
+    listaDocumentosFicha(fichaId, params)
       .then((res) => {
         if (!activo) return
         setFicha(res.ficha ?? null)
@@ -36,13 +46,27 @@ export function useAlmacenamientoFicha(fichaId) {
     return () => {
       activo = false
     }
-  }, [fichaId, pagina, recarga])
+  }, [fichaId, pagina, busquedaDiferida, tipo, recarga])
 
-  // Cambiar de página vacía la selección: lo marcado en otra página no se borra por accidente.
+  // Cualquier cambio de búsqueda, filtro o página vacía la selección: no se borra nada que no se vea marcado.
+  const reiniciarSeleccion = () => setSeleccion(new Set())
+
   const irAPagina = (n) => {
-    setSeleccion(new Set())
+    reiniciarSeleccion()
     setCargando(true)
     setPagina(n)
+  }
+
+  const cambiarBusqueda = (valor) => {
+    reiniciarSeleccion()
+    setPagina(1)
+    setBusqueda(valor)
+  }
+
+  const cambiarTipo = (valor) => {
+    reiniciarSeleccion()
+    setPagina(1)
+    setTipo(valor)
   }
 
   const alternar = (id) => {
@@ -63,6 +87,21 @@ export function useAlmacenamientoFicha(fichaId) {
 
       return todos ? new Set() : new Set(borrables)
     })
+  }
+
+  // Marca TODOS los que se pueden borrar de la búsqueda actual, aunque estén en otras páginas.
+  const seleccionarTodosLosResultados = async () => {
+    if (ocupado) return
+    setError('')
+    try {
+      const params = {}
+      if (busquedaDiferida.trim()) params.q = busquedaDiferida.trim()
+      if (tipo) params.tipo = tipo
+      const resultado = await listaIdsBorrablesFicha(fichaId, params)
+      setSeleccion(new Set(resultado.ids))
+    } catch (e) {
+      setError(mensajeError(e))
+    }
   }
 
   const borrarSeleccion = async () => {
@@ -101,6 +140,9 @@ export function useAlmacenamientoFicha(fichaId) {
     alternarTodos,
     aviso,
     borrarSeleccion,
+    busqueda,
+    cambiarBusqueda,
+    cambiarTipo,
     cargando,
     documentos,
     error,
@@ -109,6 +151,8 @@ export function useAlmacenamientoFicha(fichaId) {
     meta,
     ocupado,
     seleccion,
+    seleccionarTodosLosResultados,
+    tipo,
     todosMarcados,
   }
 }
