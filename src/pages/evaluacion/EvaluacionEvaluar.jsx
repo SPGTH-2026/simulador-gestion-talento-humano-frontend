@@ -33,7 +33,7 @@ export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, habilidades, skillMarcas, setSkillMarca, itemMarcas, setItemMarca, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  const { abriendo, abriendoCertificado, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, habilidades, skillMarcas, setSkillMarca, itemMarcas, setItemMarca, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verCertificado, verDocumento, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
       {volverAlListado}
@@ -170,7 +170,19 @@ export default function EvaluacionEvaluar() {
                           <span>{skill.ponderacion != null ? `Peso ${skill.ponderacion} %` : 'Sin porcentaje'}</span>
                         </p>
                       </div>
-                      <div className="flex shrink-0 items-center">
+                      <div className="flex shrink-0 flex-wrap items-center gap-2">
+                        {skill.certificada && skill.postulacion_skill_id && (
+                          <Boton
+                            variante="contorno"
+                            tamano="tactil"
+                            onClick={() => verCertificado(skill)}
+                            disabled={abriendoCertificado === skill.postulacion_skill_id}
+                            aria-busy={abriendoCertificado === skill.postulacion_skill_id}
+                            aria-label={`Ver documento: ${skill.nombre}`}
+                          >
+                            {abriendoCertificado === skill.postulacion_skill_id ? 'Abriendo…' : 'Ver documento'}
+                          </Boton>
+                        )}
                         <RespuestaSiNo
                           requisito={skill.nombre}
                           valor={skillMarcas[`skill-${skill.id}`]}

@@ -24,6 +24,8 @@ export function useEvaluacionEvaluar() {
   const [error, setError] = useState('')
   const [errorDocumento, setErrorDocumento] = useState('')
   const [abriendo, setAbriendo] = useState(null)
+  // Id de la habilidad (postulacion_skill_id) cuyo certificado se está abriendo.
+  const [abriendoCertificado, setAbriendoCertificado] = useState(null)
 
   const [respuestas, setRespuestas] = useState({})
   // Marcas de las habilidades de la convocatoria: «skill-{id}» → true cumple / false no cumple.
@@ -235,6 +237,22 @@ export function useEvaluacionEvaluar() {
     }
   }
 
+  // Certificado que el aspirante subió para una habilidad que declaró (id de la declaración: postulacion_skill_id).
+  const verCertificado = async (habilidad) => {
+    setErrorDocumento('')
+    setAbriendoCertificado(habilidad.postulacion_skill_id)
+    try {
+      await abrirArchivoEnPestana(
+        `/revision/postulaciones/${postulacionId}/skills/${habilidad.postulacion_skill_id}/certificado/archivo?inline=1`,
+        { nombre: `${habilidad.nombre} - certificado` },
+      )
+    } catch (e) {
+      setErrorDocumento((await mensajeErrorBlob(e)) || mensajeError(e))
+    } finally {
+      setAbriendoCertificado(null)
+    }
+  }
+
   const volverAlListado = (
     <Boton as={Link} to="/evaluacion" variante="fantasma" tamano="tactil" className="-ml-4 self-start">
       <IconoFlechaIzquierda className="h-4 w-4" />
@@ -273,6 +291,7 @@ export function useEvaluacionEvaluar() {
 
     return {
       abriendo,
+      abriendoCertificado,
       actualizados,
       aplicables,
       aspirante,
@@ -338,6 +357,7 @@ export function useEvaluacionEvaluar() {
       sinCargar,
       sinResponder,
       total,
+      verCertificado,
       verDocumento,
       volverAlListado,
     }
