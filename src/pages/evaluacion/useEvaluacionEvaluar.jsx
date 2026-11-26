@@ -12,6 +12,27 @@ import { useConfirmacion } from '../../hooks/useConfirmacion'
 import { CLASE_TARJETA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { repartirPesos } from '../../lib/evaluacion'
 
+// Campos de los requisitos de la convocatoria, en el orden en que se muestran.
+const CAMPOS_REQUISITOS = [
+  { campo: 'formacion', grupo: 'Formación académica' },
+  { campo: 'experiencia', grupo: 'Experiencia' },
+  { campo: 'competencias', grupo: 'Competencias' },
+  { campo: 'conocimientos_especificos', grupo: 'Conocimientos específicos' },
+]
+
+// Cada línea de un requisito es un ítem del checklist. Su clave («req-campo-n») y la del documento que lo respalda
+// («reqdoc-campo-n») se guardan en el perfil de la evaluación. El servidor no las usa para el cumplimiento.
+function itemsDeRequisitos(requisitos) {
+  if (!requisitos) return []
+  return CAMPOS_REQUISITOS.flatMap(({ campo, grupo }) =>
+    String(requisitos[campo] ?? '')
+      .split('\n')
+      .map((linea) => linea.trim())
+      .filter(Boolean)
+      .map((texto, n) => ({ clave: `req-${campo}-${n}`, grupo, texto })),
+  )
+}
+
 // Lógica de EvaluacionEvaluar: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
 export function useEvaluacionEvaluar() {
   const { postulacionId } = useParams()
@@ -26,6 +47,9 @@ export function useEvaluacionEvaluar() {
   const [abriendo, setAbriendo] = useState(null)
 
   const [respuestas, setRespuestas] = useState({})
+  // Checklist de requisitos: marca («req-…» → true cumple / false no cumple) y documento que lo respalda («reqdoc-…» → id).
+  const [reqRespuestas, setReqRespuestas] = useState({})
+  const [reqDocumentos, setReqDocumentos] = useState({})
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
   const botonBorrador = useRef(null)
@@ -60,10 +84,15 @@ export function useEvaluacionEvaluar() {
           // Una evaluación anterior pudo dejar «Cumple» en un documento que hoy no tiene archivo: ese valor es inválido
           // para el servidor y no se reenvía. No se reemplaza por «No cumple»: queda sin responder y lo decide el evaluador.
           const perfil = { ...(ev.data.evaluacion.perfil ?? {}) }
+          const perfilReq = Object.fromEntries(Object.entries(perfil).filter(([k]) => k.startsWith('req-')))
+          const perfilReqDoc = Object.fromEntries(Object.entries(perfil).filter(([k]) => k.startsWith('reqdoc-')))
+          for (const k of [...Object.keys(perfilReq), ...Object.keys(perfilReqDoc)]) delete perfil[k]
           for (const d of docs.data ?? []) {
             if (d.obligatorio && d.estado === 'pendiente' && perfil[d.id] === true) delete perfil[d.id]
           }
           setRespuestas(perfil)
+          setReqRespuestas(perfilReq)
+          setReqDocumentos(perfilReqDoc)
         }
         // Sin evaluación previa no se preselecciona nada: el evaluador decide
         // Cumple / No cumple en cada requisito.
@@ -116,9 +145,13 @@ export function useEvaluacionEvaluar() {
 
     // Por seguridad, aunque el formulario no lo permita, nunca viaja «Cumple» de un documento sin archivo.
     const faltanIds = new Set(faltantes.map((d) => d.id))
-    const perfil = Object.fromEntries(
-      Object.entries(respuestas).filter(([id, valor]) => !(valor === true && faltanIds.has(id))),
-    )
+    const perfil = {
+      ...Object.fromEntries(
+        Object.entries(respuestas).filter(([id, valor]) => !(valor === true && faltanIds.has(id))),
+      ),
+      ...reqRespuestas,
+      ...reqDocumentos,
+    }
 
     let guardada
     try {
@@ -264,6 +297,25 @@ export function useEvaluacionEvaluar() {
       excluidos,
       bloqueoFinalizar,
       bloqueoPorNoCumple,
+      itemsRequisitos: itemsDeRequisitos(dato?.convocatoria?.requisitos),
+      reqRespuestas,
+      documentosConArchivo: documentos.filter((d) => d.archivo),
+      reqDocumentos,
+      setReqRespuesta: (clave, valor) =>
+        setReqRespuestas((prev) => {
+          const siguiente = { ...prev }
+          if (valor === undefined) delete siguiente[clave]
+          else siguiente[clave] = valor
+          return siguiente
+        }),
+      setReqDocumento: (clave, documentoId) =>
+        setReqDocumentos((prev) => {
+          const siguiente = { ...prev }
+          const claveDoc = clave.replace(/^req-/, 'reqdoc-')
+          if (documentoId == null) delete siguiente[claveDoc]
+          else siguiente[claveDoc] = documentoId
+          return siguiente
+        }),
       faltantes,
       finalizar,
       guardando,

@@ -2,13 +2,38 @@ import Boton from '../../ui/Boton'
 import { CLASE_INPUT } from '../../../lib/estilos'
 import { MAX_SKILLS, MAX_SKILL_LONGITUD } from '../convocatoriaWizardUtils'
 
+// Campo de porcentaje de una habilidad: se habilita solo cuando la habilidad está elegida.
+function PorcentajeSkill({ ctx, nombre, habilitado, soloLectura }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <input
+        type="number"
+        min="0"
+        max="100"
+        step="0.01"
+        value={ctx.porcentajeSkill(nombre)}
+        onChange={(e) => ctx.cambiarPorcentajeSkill(nombre, e.target.value)}
+        disabled={!habilitado || soloLectura}
+        aria-label={`Porcentaje de ${nombre}`}
+        placeholder="—"
+        className={`${CLASE_INPUT} w-24 text-right`}
+      />
+      <span className="text-sm text-slate-500 dark:text-sena-texto-suave">%</span>
+    </div>
+  )
+}
+
 // Etapa 4 del asistente de convocatorias. Recibe el estado y las acciones del asistente en la prop ctx.
 export default function EtapaSkills({ ctx }) {
-  const { agregarSkill, alternarSkillCatalogo, errorDeSkills, errorSkill, form, nuevaSkill, quitarSkill, setNuevaSkill, skillEstaAgregada, skillsCatalogo, skillsLibres, soloLectura } = ctx
+  const { agregarSkill, alternarSkillCatalogo, errorDeSkills, errorSkill, form, nuevaSkill, quitarSkill, setNuevaSkill, skillEstaAgregada, skillsCatalogo, skillsLibres, soloLectura, sumaTotal } = ctx
   return (
       <div className="flex flex-col gap-4">
-        {/* Del catálogo: MISMO patrón que la etapa de Documentos (casillas
-            en una rejilla). La casilla marcada es la skill guardada. */}
+        <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
+          Porcentaje total de documentos y habilidades: <strong>{sumaTotal()}%</strong> de 100%. Cada habilidad elegida
+          necesita su porcentaje.
+        </p>
+
+        {/* Del catálogo: casillas en una rejilla. Al elegir una habilidad se habilita su porcentaje. */}
         <div className="flex flex-col gap-2">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
             Del catálogo
@@ -23,27 +48,32 @@ export default function EtapaSkills({ ctx }) {
             </p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
-              {skillsCatalogo.map((opcion) => (
-                <label
-                  key={opcion.id}
-                  className="flex items-center gap-2 rounded border border-slate-200 p-3 text-sm text-slate-700 dark:border-sena-borde dark:text-sena-texto"
-                >
-                  <input
-                    type="checkbox"
-                    checked={skillEstaAgregada(opcion.nombre)}
-                    onChange={() => alternarSkillCatalogo(opcion)}
-                    disabled={soloLectura}
-                    className="h-4 w-4 accent-sena"
-                  />
-                  <span>{opcion.nombre}</span>
-                </label>
-              ))}
+              {skillsCatalogo.map((opcion) => {
+                const elegida = skillEstaAgregada(opcion.nombre)
+                return (
+                  <div
+                    key={opcion.id}
+                    className="flex items-center justify-between gap-2 rounded border border-slate-200 p-3 text-sm text-slate-700 dark:border-sena-borde dark:text-sena-texto"
+                  >
+                    <label className="flex min-w-0 items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={elegida}
+                        onChange={() => alternarSkillCatalogo(opcion)}
+                        disabled={soloLectura}
+                        className="h-4 w-4 accent-sena"
+                      />
+                      <span className="min-w-0 break-words">{opcion.nombre}</span>
+                    </label>
+                    <PorcentajeSkill ctx={ctx} nombre={opcion.nombre} habilitado={elegida} soloLectura={soloLectura} />
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
 
-        {/* Texto libre: se escribe y se agrega. Solo se listan las que NO
-            vienen del catálogo (las del catálogo ya se ven marcadas). */}
+        {/* Texto libre: se escribe y se agrega. Solo se listan las que NO vienen del catálogo. */}
         {(!soloLectura || skillsLibres.length > 0) && (
           <div className="flex flex-col gap-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-sena-texto-suave">
@@ -80,15 +110,18 @@ export default function EtapaSkills({ ctx }) {
                     <span className="min-w-0 break-words text-sm text-slate-700 dark:text-sena-texto">
                       {s.nombre}
                     </span>
-                    {!soloLectura && (
-                      <Boton
+                    <div className="flex shrink-0 items-center gap-2">
+                      <PorcentajeSkill ctx={ctx} nombre={s.nombre} habilitado soloLectura={soloLectura} />
+                      {!soloLectura && (
+                        <Boton
                           variante="peligroSuave"
                           aria-label={`Quitar ${s.nombre}`}
                           onClick={() => quitarSkill(s.nombre)}
                         >
                           Quitar
                         </Boton>
-                    )}
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

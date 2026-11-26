@@ -87,16 +87,16 @@ export const MAX_SKILLS = 20
 // Longitud máxima del nombre de una skill (skills_max del backend).
 export const MAX_SKILL_LONGITUD = 100
 
-// Reparte el 100 % en partes iguales entre los documentos de la lista. El último absorbe el redondeo para que la suma
+// Reparte `totalPorReparto` (100 % por defecto) en partes iguales entre los documentos. El último absorbe el redondeo para que la suma
 // sea exactamente 100.
-export function repartoIgual(documentos) {
+export function repartoIgual(documentos, totalPorReparto = 100) {
   const total = documentos.length
   if (total === 0) return {}
-  const base = Math.floor((100 / total) * 100) / 100
+  const base = Math.floor((totalPorReparto / total) * 100) / 100
   const mapa = {}
   let acumulado = 0
   documentos.forEach((codigo, indice) => {
-    const valor = indice === total - 1 ? Math.round((100 - acumulado) * 100) / 100 : base
+    const valor = indice === total - 1 ? Math.round((totalPorReparto - acumulado) * 100) / 100 : base
     acumulado += valor
     mapa[codigo] = String(valor)
   })

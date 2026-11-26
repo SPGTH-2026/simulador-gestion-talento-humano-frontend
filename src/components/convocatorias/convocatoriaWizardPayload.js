@@ -24,10 +24,16 @@ export function construirPayload(form, { esNueva, fichas }) {
     fecha_cierre: form.fecha_cierre || null,
     fecha_evaluacion: form.fecha_evaluacion || null,
     // Cada skill viaja con su parametro_id (catálogo) o sin él (texto libre).
-    skills: form.skills.map((s) => ({
-      nombre: s.nombre,
-      parametro_id: s.parametro_id ?? null,
-    })),
+    // El porcentaje de cada habilidad viaja con ella (null = sin porcentaje).
+    skills: form.skills.map((s) => {
+      const porcentaje = String(s.ponderacion ?? '').trim()
+
+      return {
+        nombre: s.nombre,
+        parametro_id: s.parametro_id ?? null,
+        ponderacion: porcentaje === '' ? null : Number(porcentaje),
+      }
+    }),
     documentos: form.documentos.map((identificador) => {
       const peso = String(form.ponderaciones[identificador] ?? '').trim()
 
