@@ -27,7 +27,7 @@ export default function RequisitoEvaluacion({
   onMarcaItem = () => {},
 }) {
   const estado = ESTADO_DOCUMENTO[documento.estado] ?? ESTADO_DOCUMENTO.pendiente
-  // Checklist propio del documento: cada ítem se marca Cumple / No cumple. Clave «docitem-{documento}-{n}» en el perfil.
+  // Checklist propio del documento: cada ítem se marca con ✓ (cumple) o X (no cumple). Clave «docitem-{documento}-{n}» en el perfil.
   const pid = String(documento.id).replace(/^doc-/, '')
   const claveItem = (n) => `docitem-${pid}-${n}`
   const itemsCumplidos = items.filter((_, n) => marcasItems[claveItem(n)] === true).length
@@ -125,6 +125,7 @@ export default function RequisitoEvaluacion({
                     onChange={(valor) => onMarcaItem(claveItem(n), valor)}
                     textoSi="Cumple"
                     textoNo="No cumple"
+                    cuadrado
                   />
                 </div>
               </li>
