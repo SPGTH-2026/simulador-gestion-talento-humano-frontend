@@ -242,8 +242,8 @@ export default function Almacenamiento() {
           </TarjetaSeccion>
 
           <p className={`text-xs ${CLASE_TEXTO_SUAVE}`}>
-            El uso total compara la base de datos y los documentos con la capacidad de los planes. Los archivos guardados antes de
-            la organización por ficha cuentan en el total, pero no aparecen en ninguna ficha.
+            El uso total compara la base de datos y los documentos con la capacidad de los planes. Cada documento cuenta con el
+            tamaño que tenía al subirse, también los anteriores a la organización por ficha.
           </p>
         </>
       ) : null}

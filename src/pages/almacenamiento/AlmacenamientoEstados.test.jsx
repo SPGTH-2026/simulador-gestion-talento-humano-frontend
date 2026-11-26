@@ -18,6 +18,7 @@ vi.mock('../../api/almacenamiento', () => ({
   obtenerResumenAlmacenamiento: vi.fn(),
   listaDocumentosFicha: vi.fn(),
   borrarDocumentos: vi.fn(),
+  listaIdsBorrablesFicha: vi.fn(),
 }))
 
 vi.mock('../../hooks/useConfirmacion', () => ({
@@ -147,6 +148,67 @@ describe('Detalle de una ficha: estados y casos límite', () => {
 
     expect(api.borrarDocumentos).toHaveBeenCalledTimes(1)
     terminar({ borrados: [2], omitidos: [] })
+  })
+})
+
+describe('Búsqueda, filtro y selección de todos los resultados', () => {
+  it('escribir en el buscador pide la ficha con esa búsqueda', async () => {
+    api.listaDocumentosFicha.mockResolvedValue(listado([doc({ id: 2 })]))
+
+    montarFicha()
+    await screen.findByRole('checkbox', { name: /seleccionar diploma/i })
+    fireEvent.change(screen.getByPlaceholderText('Escribe para buscar…'), { target: { value: 'ana' } })
+
+    await waitFor(() =>
+      expect(api.listaDocumentosFicha).toHaveBeenLastCalledWith('7', expect.objectContaining({ q: 'ana', page: 1 })),
+    )
+  })
+
+  it('el filtro de tipo pide solo adicionales', async () => {
+    api.listaDocumentosFicha.mockResolvedValue(listado([doc({ id: 2 })]))
+
+    montarFicha()
+    await screen.findByRole('checkbox', { name: /seleccionar diploma/i })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'adicional' } })
+
+    await waitFor(() =>
+      expect(api.listaDocumentosFicha).toHaveBeenLastCalledWith('7', expect.objectContaining({ tipo: 'adicional' })),
+    )
+  })
+
+  it('«seleccionar todos los resultados» marca los que se pueden borrar de todas las páginas', async () => {
+    api.listaDocumentosFicha.mockResolvedValue(listado([doc({ id: 2 })], { last_page: 3, total: 55 }))
+    api.listaIdsBorrablesFicha.mockResolvedValue({ ids: [2, 9, 40, 51], total: 4 })
+
+    montarFicha()
+    fireEvent.click(await screen.findByRole('button', { name: /seleccionar todos los resultados/i }))
+
+    expect(api.listaIdsBorrablesFicha).toHaveBeenCalledWith('7', {})
+    expect(await screen.findByRole('button', { name: /borrar 4 seleccionado/i })).toBeTruthy()
+  })
+
+  it('la selección de todos los resultados respeta la búsqueda activa', async () => {
+    api.listaDocumentosFicha.mockResolvedValue(listado([doc({ id: 2 })]))
+    api.listaIdsBorrablesFicha.mockResolvedValue({ ids: [2], total: 1 })
+
+    montarFicha()
+    await screen.findByRole('checkbox', { name: /seleccionar diploma/i })
+    fireEvent.change(screen.getByPlaceholderText('Escribe para buscar…'), { target: { value: 'luis' } })
+    await waitFor(() => expect(api.listaDocumentosFicha).toHaveBeenLastCalledWith('7', expect.objectContaining({ q: 'luis' })))
+    fireEvent.click(screen.getByRole('button', { name: /seleccionar todos los resultados/i }))
+
+    await waitFor(() => expect(api.listaIdsBorrablesFicha).toHaveBeenCalledWith('7', { q: 'luis' }))
+  })
+
+  it('una búsqueda sin resultados lo dice con su propio mensaje', async () => {
+    api.listaDocumentosFicha.mockResolvedValueOnce(listado([doc({ id: 2 })])).mockResolvedValue(listado([]))
+
+    montarFicha()
+    await screen.findByRole('checkbox', { name: /seleccionar diploma/i })
+    fireEvent.change(screen.getByPlaceholderText('Escribe para buscar…'), { target: { value: 'nadie' } })
+
+    expect(await screen.findByText('Ningún documento coincide')).toBeTruthy()
+    expect(screen.queryByText('Esta ficha no tiene documentos')).toBeNull()
   })
 })
 

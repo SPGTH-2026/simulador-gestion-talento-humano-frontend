@@ -1,5 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import Boton from '../../components/ui/Boton'
+import Campo from '../../components/ui/Campo'
+import CampoBusqueda from '../../components/ui/CampoBusqueda'
 import Cargando from '../../components/ui/Cargando'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import Icono from '../../components/ui/Icono'
@@ -10,6 +12,7 @@ import { formatearTamano } from '../../lib/postulacionDocumentos'
 import { formatearFechaHora } from '../../lib/ventanaPostulacion'
 import { useAuth } from '../../auth/useAuth'
 import {
+  CLASE_CAMPO,
   CLASE_FILA,
   CLASE_SUBTITULO_PAGINA,
   CLASE_TABLA,
@@ -75,15 +78,41 @@ export default function AlmacenamientoFicha() {
         </div>
       )}
 
+      <div role="search" aria-label="Buscar documentos" className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        <Campo etiqueta="Buscar por aspirante, correo, documento o convocatoria" className="lg:flex-1">
+          <CampoBusqueda
+            placeholder="Escribe para buscar…"
+            value={a.busqueda}
+            onChange={(e) => a.cambiarBusqueda(e.target.value)}
+          />
+        </Campo>
+        <Campo etiqueta="Tipo" className="lg:w-56 lg:shrink-0">
+          <select value={a.tipo} onChange={(e) => a.cambiarTipo(e.target.value)} className={CLASE_CAMPO}>
+            <option value="">Todos</option>
+            <option value="adicional">Adicionales</option>
+            <option value="requerido">Requeridos</option>
+          </select>
+        </Campo>
+        {puedeBorrar && (
+          <Boton variante="contorno" onClick={a.seleccionarTodosLosResultados} disabled={a.ocupado || a.meta.total === 0}>
+            Seleccionar todos los resultados
+          </Boton>
+        )}
+      </div>
+
       {a.cargando && a.documentos.length === 0 ? (
         <Cargando>Cargando documentos…</Cargando>
       ) : a.documentos.length === 0 ? (
         // Con error, el mensaje ya está arriba: no se dice «no tiene documentos» de una ficha que no pudimos leer.
         a.error ? null : (
           <EstadoVacio
-            icono="📂"
-            titulo="Esta ficha no tiene documentos"
-            descripcion="Cuando los aspirantes suban archivos, aparecerán aquí."
+            icono={a.busqueda || a.tipo ? '🔎' : '📂'}
+            titulo={a.busqueda || a.tipo ? 'Ningún documento coincide' : 'Esta ficha no tiene documentos'}
+            descripcion={
+              a.busqueda || a.tipo
+                ? 'Prueba con otro nombre, correo o tipo de documento.'
+                : 'Cuando los aspirantes suban archivos, aparecerán aquí.'
+            }
           />
         )
       ) : (

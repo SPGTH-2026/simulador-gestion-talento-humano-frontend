@@ -17,6 +17,7 @@ vi.mock('../../api/almacenamiento', () => ({
   obtenerResumenAlmacenamiento: vi.fn(),
   listaDocumentosFicha: vi.fn(),
   borrarDocumentos: vi.fn(),
+  listaIdsBorrablesFicha: vi.fn(),
 }))
 
 vi.mock('../../hooks/useConfirmacion', () => ({

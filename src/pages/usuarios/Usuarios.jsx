@@ -190,7 +190,10 @@ export default function Usuarios() {
 
                           {form.role === 'instructor' && (
                             <fieldset className="flex flex-col gap-2 text-sm text-sena-azul dark:text-sena-texto">
-                              <legend className="font-medium">Fichas del instructor (al menos una)</legend>
+                              <legend className="font-medium">Fichas del instructor (opcional)</legend>
+                              <p className="text-xs text-sena-texto-suave">
+                                Si no le asignas ninguna, el instructor crea su propia ficha desde la sección Fichas.
+                              </p>
                               {fichas.map((f) => (
                                 <label key={f.id} className="flex items-center gap-2">
                                   <input

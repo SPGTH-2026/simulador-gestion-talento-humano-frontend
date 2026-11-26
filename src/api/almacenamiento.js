@@ -18,3 +18,8 @@ export const listaDocumentosFicha = (fichaId, params) =>
 // Los obligatorios y los de otras fichas quedan en `omitidos`; el resto se borra.
 export const borrarDocumentos = (ids) =>
   client.post('/almacenamiento/documentos/borrar', { ids }).then((res) => res.data.data)
+
+// GET /api/almacenamiento/fichas/{id}/documentos/ids?q=&tipo=  ->  { data: { ids: [...], total } }
+// Los ids de TODOS los documentos que se pueden borrar y cumplen la búsqueda y el tipo (no solo de la página).
+export const listaIdsBorrablesFicha = (fichaId, params) =>
+  client.get(`/almacenamiento/fichas/${fichaId}/documentos/ids`, { params }).then((res) => res.data.data)
