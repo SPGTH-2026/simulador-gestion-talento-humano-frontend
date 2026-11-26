@@ -48,6 +48,8 @@ const CorreccionesPostulacion = lazy(() => import('./pages/aspirante/Correccione
 const MisDocumentos = lazy(() => import('./pages/aspirante/MisDocumentos'))
 const MisEvaluaciones = lazy(() => import('./pages/aspirante/MisEvaluaciones'))
 const Notificaciones = lazy(() => import('./pages/aspirante/Notificaciones'))
+const Almacenamiento = lazy(() => import('./pages/almacenamiento/Almacenamiento'))
+const AlmacenamientoFicha = lazy(() => import('./pages/almacenamiento/AlmacenamientoFicha'))
 
 export default function AppRouter() {
   // El id distingue una espera de código de otra (cada ruta es una operación).
@@ -97,6 +99,11 @@ export default function AppRouter() {
           <Route element={<PermissionRoute permiso="convocatorias:gestionar" />}>
             <Route path="convocatorias/nueva" element={<ConvocatoriaNueva />} />
             <Route path="convocatorias/:id/editar" element={<ConvocatoriaEditar />} />
+          </Route>
+
+          <Route element={<PermissionRoute permiso="almacenamiento:ver" />}>
+            <Route path="almacenamiento" element={<Almacenamiento />} />
+            <Route path="almacenamiento/fichas/:fichaId" element={<AlmacenamientoFicha />} />
           </Route>
 
           <Route element={<PermissionRoute permiso="usuarios:gestionar" />}>
