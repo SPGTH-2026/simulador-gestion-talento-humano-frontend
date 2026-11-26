@@ -1,7 +1,7 @@
 // Constantes y funciones puras del asistente de convocatorias (sin estado ni efectos).
 // Se separaron de ConvocatoriaWizard.jsx: el componente las importa de aquí.
 
-import { DOCUMENTOS_OBLIGATORIOS } from '../../lib/documentosConvocatoria'
+import { CHECKLIST_POR_DEFECTO, DOCUMENTOS_OBLIGATORIOS, checklistConFijos } from '../../lib/documentosConvocatoria'
 
 export const ETAPAS = [
   { numero: 1, nombre: 'Información general', descripcion: 'Datos básicos del cargo y sus condiciones laborales.' },
@@ -156,12 +156,15 @@ export function formInicial(valores) {
         .filter((d) => d && (d.codigo != null || d.id != null) && d.ponderacion != null)
         .map((d) => [d.codigo ?? d.id, String(d.ponderacion)]),
     ),
-    // Checklist de cada documento (texto con un ítem por línea), indexado igual que los porcentajes.
-    itemsDocumentos: Object.fromEntries(
-      (Array.isArray(valores?.documentos) ? valores.documentos : [])
-        .filter((d) => d && (d.codigo != null || d.id != null) && d.items)
-        .map((d) => [d.codigo ?? d.id, String(d.items)]),
-    ),
+    // Checklist de cada documento (texto con un ítem por línea), indexado igual que los porcentajes. En una convocatoria
+    // nueva se precarga el checklist predeterminado; al editar solo cuenta lo que ya está guardado.
+    itemsDocumentos: valores
+      ? Object.fromEntries(
+          (Array.isArray(valores.documentos) ? valores.documentos : [])
+            .filter((d) => d && (d.codigo != null || d.id != null) && d.items)
+            .map((d) => [d.codigo ?? d.id, DOCUMENTOS_OBLIGATORIOS.includes(d.codigo) ? checklistConFijos(d.codigo, d.items) : String(d.items)]),
+        )
+      : { ...CHECKLIST_POR_DEFECTO },
   }
 }
 
