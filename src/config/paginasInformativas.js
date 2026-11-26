@@ -7,12 +7,13 @@ export const paginasInformativasActivas = () => import.meta.env.VITE_PAGINAS_INF
 
 export const RUTA_INFORMACION_LEGAL = '/informacion-legal'
 export const RUTA_ACERCA_DE = '/acerca-de'
+export const RUTA_PRIVACIDAD = '/privacidad'
 
 /** 'corto' es el nombre para la navegación estrecha (cabecera y pie); 'titulo' el de la página y de los enlaces largos. */
 /** Textos legales: se enlazan juntos desde «Información legal» y desde el pie de las pantallas de acceso. */
 export const PAGINAS_LEGALES = [
   { ruta: '/terminos', titulo: 'Términos de uso', corto: 'Términos', resumen: 'Qué es SPGTH, quién puede usarlo y cómo funcionan las cuentas.' },
-  { ruta: '/privacidad', titulo: 'Privacidad y datos personales', corto: 'Privacidad', resumen: 'Qué datos se tratan, para qué, quién puede verlos y cómo consultarlos.' },
+  { ruta: RUTA_PRIVACIDAD, titulo: 'Privacidad y datos personales', corto: 'Privacidad', resumen: 'Qué datos se tratan, para qué, quién puede verlos y cómo consultarlos.' },
   { ruta: '/cookies', titulo: 'Cookies', corto: 'Cookies', resumen: 'Qué guarda SPGTH en tu navegador y qué servicios externos intervienen.' },
 ]
 

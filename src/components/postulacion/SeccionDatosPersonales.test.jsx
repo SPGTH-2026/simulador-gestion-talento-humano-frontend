@@ -84,6 +84,25 @@ describe('SeccionDatosPersonales', () => {
     expect(screen.queryByText(/dato pendiente/i)).toBeNull()
   })
 
+  it('sin páginas informativas activas la casilla no enlaza a nada', () => {
+    render(<SeccionDatosPersonales {...props()} />)
+
+    expect(screen.queryByRole('link', { name: /política de privacidad/i })).toBeNull()
+    expect(autorizacion()).toBeTruthy()
+  })
+
+  it('con las páginas informativas activas enlaza a Privacidad en una pestaña nueva', () => {
+    vi.stubEnv('VITE_PAGINAS_INFORMATIVAS', 'true')
+    render(<SeccionDatosPersonales {...props()} />)
+
+    const enlace = screen.getByRole('link', { name: /política de privacidad y datos personales/i })
+    expect(enlace.getAttribute('href')).toBe('/privacidad')
+    expect(enlace.getAttribute('target')).toBe('_blank')
+    expect(enlace.getAttribute('rel')).toContain('noopener')
+    expect(autorizacion()).toBeTruthy()
+    vi.unstubAllEnvs()
+  })
+
   it('con menos de 16 años avisa y no deja autorizar', () => {
     render(<SeccionDatosPersonales {...props()} />)
     fireEvent.change(fecha(), { target: { value: anios(15) } })

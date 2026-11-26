@@ -28,7 +28,7 @@ export default function Privacidad() {
                 <li><strong>Evaluación y selección</strong>: resultados y observaciones, notas de entrevista y prueba técnica, citaciones y decisiones.</li>
                 <li><strong>Datos técnicos</strong>: dirección IP y navegador de tus sesiones, y tus notificaciones.</li>
               </Lista>
-              <p>En SPGTH pueden aparecer documentos reales y ficticios; la aplicación los trata igual.</p>
+              <p>En SPGTH pueden aparecer documentos reales y ficticios; la aplicación los trata igual. Te pedimos usar datos y documentos de práctica (ficticios); si subes documentos reales, los tratamos con el mismo cuidado.</p>
             </>
           ),
         },
@@ -66,7 +66,7 @@ export default function Privacidad() {
         {
           id: 'autorizacion',
           titulo: 'Autorización',
-          children: <p>Al crear una postulación se te pide autorizar el tratamiento de tus datos personales para ese proceso de selección (Ley 1581 de 2012). Sin esa autorización no puedes enviar la postulación.</p>,
+          children: <p>Al crear una postulación se te pide autorizar el tratamiento de tus datos personales para ese proceso de selección (Ley 1581 de 2012). Sin esa autorización no puedes enviar la postulación. Si eres menor de edad, tu representante legal también debe conocer y autorizar este tratamiento.</p>,
         },
         {
           id: 'derechos',
@@ -75,13 +75,14 @@ export default function Privacidad() {
             <>
               <p>Puedes pedir conocer los datos que tenemos sobre ti, actualizarlos o corregirlos, pedir prueba de la autorización que diste, saber cómo se usan tus datos y acceder a ellos sin costo. Cuando la ley lo permita, también puedes pedir la supresión de tus datos o revocar tu autorización.</p>
               <p>Escribe a <EnlaceContacto /> indicando tu nombre completo, el correo de tu cuenta y qué quieres consultar o cambiar. Si no estás de acuerdo con la respuesta, puedes presentar una queja ante la Superintendencia de Industria y Comercio, después de haber hecho tu consulta o reclamo.</p>
+              <p><strong>Para revocar tu autorización</strong> o pedir que se eliminen tus datos escribe al mismo correo: la administración retira tu postulación y elimina o anonimiza tus datos.</p>
             </>
           ),
         },
         {
           id: 'conservacion',
           titulo: 'Conservación',
-          children: <p>Algunos procesos se conservarán para consulta. SPGTH no elimina cuentas ni documentos de forma automática; la administración puede desactivar una cuenta.</p>,
+          children: <p>Algunos procesos se conservarán para consulta. Los datos de tu postulación se conservan mientras dure el proyecto formativo; cuando este termine, o antes si lo pides, se eliminan o se anonimizan. SPGTH no elimina cuentas ni documentos de forma automática: la eliminación la realiza la administración, que también puede desactivar una cuenta.</p>,
         },
         {
           id: 'servicios',

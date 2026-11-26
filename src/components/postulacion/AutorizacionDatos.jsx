@@ -1,5 +1,6 @@
 import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { ID_SECCION_AUTORIZACION } from '../../lib/datosPersonales'
+import { paginasInformativasActivas, RUTA_PRIVACIDAD } from '../../config/paginasInformativas'
 import Icono from '../ui/Icono'
 import Rueda from '../ui/Rueda'
 
@@ -8,6 +9,8 @@ import Rueda from '../ui/Rueda'
 // servidor no deja enviar la postulación. Ya registrada no se desmarca aquí: para revocarla se retira la postulación.
 export default function AutorizacionDatos({ d, editable }) {
   const { autorizado, bajoMinimo, cambiar, errorDe, esMenor, form, guardando } = d
+  // La página de Privacidad solo existe con las páginas informativas activas: sin ellas no hay a dónde enlazar.
+  const conEnlace = paginasInformativasActivas()
 
   return (
     <div id={ID_SECCION_AUTORIZACION} className="scroll-mt-24">
@@ -22,7 +25,23 @@ export default function AutorizacionDatos({ d, editable }) {
           className="mt-0.5 size-4 shrink-0 accent-sena-oscuro dark:accent-sena-acento"
         />
         <span>
-          Autorizo el tratamiento de mis datos personales para este proceso de selección (Ley 1581 de 2012). *
+          {conEnlace ? (
+            <>
+              He leído la{' '}
+              <a
+                href={RUTA_PRIVACIDAD}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-sena-oscuro underline underline-offset-2 dark:text-sena-acento"
+              >
+                política de privacidad y datos personales
+              </a>{' '}
+              y autorizo el tratamiento de mis datos para este proceso de selección (Ley 1581 de 2012).
+            </>
+          ) : (
+            'Autorizo el tratamiento de mis datos personales para este proceso de selección (Ley 1581 de 2012).'
+          )}{' '}
+          *
           {esMenor && ' Como eres menor de edad, tu representante legal también debe conocer y autorizar este tratamiento.'}
         </span>
       </label>
