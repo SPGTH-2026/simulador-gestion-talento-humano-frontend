@@ -97,6 +97,7 @@ export function BloqueAcciones({
   irADocumentos,
   cambiarEstado,
   reabrir,
+  descartar,
 }) {
   const codigo = postulacion.estado?.codigo
 
@@ -160,15 +161,28 @@ export function BloqueAcciones({
             >
               Ver documentos
             </Boton>
-            <Boton
-              variante="primario"
-              tamano="tactil"
-              className={CLASE_ACCION}
-              disabled={!ventanaAbierta || enVuelo}
-              onClick={() => reabrir(postulacion)}
-            >
-              {enVuelo ? 'Reabriendo...' : 'Reabrir'}
-            </Boton>
+            {/* Con la convocatoria abierta se puede reabrir; cuando ya cerró no hay nada que reabrir y se ofrece descartarla. */}
+            {ventanaAbierta ? (
+              <Boton
+                variante="primario"
+                tamano="tactil"
+                className={CLASE_ACCION}
+                disabled={enVuelo}
+                onClick={() => reabrir(postulacion)}
+              >
+                {enVuelo ? 'Reabriendo...' : 'Reabrir'}
+              </Boton>
+            ) : (
+              <Boton
+                variante="peligroSuave"
+                tamano="tactil"
+                className={CLASE_ACCION}
+                disabled={enVuelo}
+                onClick={() => descartar(postulacion)}
+              >
+                {enVuelo ? 'Descartando...' : 'Descartar'}
+              </Boton>
+            )}
           </>
         )}
       </div>
