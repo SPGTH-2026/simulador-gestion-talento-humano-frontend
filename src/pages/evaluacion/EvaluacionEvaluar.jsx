@@ -14,6 +14,7 @@ import {
 } from '../../components/evaluacion/PresentacionEvaluacion'
 import RequisitoEvaluacion from '../../components/evaluacion/RequisitoEvaluacion'
 import RequisitoConvocatoria from '../../components/evaluacion/RequisitoConvocatoria'
+import RespuestaSiNo from '../../components/evaluacion/RespuestaSiNo'
 import ResumenCumplimiento from '../../components/evaluacion/ResumenCumplimiento'
 import Boton from '../../components/ui/Boton'
 import Campo from '../../components/ui/Campo'
@@ -33,7 +34,7 @@ export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, itemsRequisitos, reqRespuestas, reqDocumentos, setReqRespuesta, setReqDocumento, documentosConArchivo, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
+  const { abriendo, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, itemsRequisitos, reqRespuestas, reqDocumentos, setReqRespuesta, setReqDocumento, documentosConArchivo, habilidades, skillMarcas, setSkillMarca, pesoGlobal, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verDocumento, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
       {volverAlListado}
@@ -173,6 +174,52 @@ export default function EvaluacionEvaluar() {
                 />
               ))}
             </ul>
+          )}
+
+          {habilidades.length > 0 && (
+            <div className="flex flex-col gap-3 border-t border-sena-linea/70 pt-4 dark:border-sena-borde/50">
+              <div>
+                <h3 className={`text-sm font-semibold ${CLASE_TEXTO_FUERTE}`}>Habilidades de la convocatoria</h3>
+                <p className={`mt-1 text-xs ${CLASE_TEXTO_SUAVE}`}>
+                  Marca si el aspirante cumple cada habilidad. Las que tienen porcentaje cuentan en el cumplimiento junto con
+                  los documentos (el total es 100 %).
+                </p>
+              </div>
+              <ul className="@container divide-y divide-sena-linea/70 dark:divide-sena-borde/50">
+                {habilidades.map((skill) => {
+                  const declarada = skill.declarada
+                  const estadoTexto = skill.certificada
+                    ? 'Declarada y certificada'
+                    : declarada
+                      ? 'Declarada, sin certificado'
+                      : 'No declarada por el aspirante'
+                  return (
+                    <li
+                      key={skill.id}
+                      className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 @min-[36rem]:flex-row @min-[36rem]:items-center @min-[36rem]:justify-between @min-[36rem]:gap-4"
+                    >
+                      <div className="min-w-0">
+                        <p className={`font-medium ${CLASE_TEXTO_FUERTE}`}>{skill.nombre}</p>
+                        <p className={`mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs ${CLASE_TEXTO_SUAVE}`}>
+                          <span>{estadoTexto}</span>
+                          <span aria-hidden="true">·</span>
+                          <span>{skill.ponderacion != null ? `Peso ${skill.ponderacion} %` : 'Sin porcentaje'}</span>
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center">
+                        <RespuestaSiNo
+                          requisito={skill.nombre}
+                          valor={skillMarcas[`skill-${skill.id}`]}
+                          onChange={(valor) => setSkillMarca(skill.id, valor)}
+                          textoSi="Cumple"
+                          textoNo="No cumple"
+                        />
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
           )}
 
           {excluidos.length > 0 && (

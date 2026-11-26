@@ -50,6 +50,8 @@ export function useEvaluacionEvaluar() {
   // Checklist de requisitos: marca («req-…» → true cumple / false no cumple) y documento que lo respalda («reqdoc-…» → id).
   const [reqRespuestas, setReqRespuestas] = useState({})
   const [reqDocumentos, setReqDocumentos] = useState({})
+  // Marcas de las habilidades de la convocatoria: «skill-{id}» → true cumple / false no cumple.
+  const [skillMarcas, setSkillMarcas] = useState({})
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
   const botonBorrador = useRef(null)
@@ -93,6 +95,7 @@ export function useEvaluacionEvaluar() {
           setRespuestas(perfil)
           setReqRespuestas(perfilReq)
           setReqDocumentos(perfilReqDoc)
+          setSkillMarcas(Object.fromEntries(Object.entries(ev.data.evaluacion.perfil ?? {}).filter(([k]) => k.startsWith('skill-'))))
         }
         // Sin evaluación previa no se preselecciona nada: el evaluador decide
         // Cumple / No cumple en cada requisito.
@@ -120,7 +123,18 @@ export function useEvaluacionEvaluar() {
     (acc, d) => acc + (respuestas[d.id] === true ? (pesos[d.id] ?? 0) : 0),
     0,
   )
-  const cumplimiento = pesoTotal > 0 ? Math.round((pesoObtenido / pesoTotal) * 100) : 0
+  // Habilidades ponderadas de la convocatoria (mismo criterio que el servidor): cuentan cuando el evaluador las marca
+  // «Cumple». Sin porcentaje no cuentan. Documentos y habilidades comparten el mismo 100 %.
+  const habilidadesPonderadas = (dato?.skills ?? []).filter((s) => s.ponderacion != null)
+  const pesoHabilidades = habilidadesPonderadas.reduce((acc, s) => acc + Number(s.ponderacion), 0)
+  const pesoHabilidadesObtenido = habilidadesPonderadas.reduce(
+    (acc, s) => acc + (skillMarcas[`skill-${s.id}`] === true ? Number(s.ponderacion) : 0),
+    0,
+  )
+  const pesoGlobal = pesoTotal + pesoHabilidades
+  const cumplimiento = pesoGlobal > 0
+    ? Math.round(((pesoObtenido + pesoHabilidadesObtenido) / pesoGlobal) * 100)
+    : 0
 
   // Documentos que el aspirante reemplazó después de que se le pidió corregir.
   const actualizados = dato?.evaluacion?.documentos_actualizados ?? []
@@ -151,6 +165,7 @@ export function useEvaluacionEvaluar() {
       ),
       ...reqRespuestas,
       ...reqDocumentos,
+      ...skillMarcas,
     }
 
     let guardada
@@ -301,6 +316,16 @@ export function useEvaluacionEvaluar() {
       reqRespuestas,
       documentosConArchivo: documentos.filter((d) => d.archivo),
       reqDocumentos,
+      habilidades: dato?.skills ?? [],
+      skillMarcas,
+      setSkillMarca: (id, valor) =>
+        setSkillMarcas((prev) => {
+          const siguiente = { ...prev }
+          if (valor === undefined) delete siguiente[`skill-${id}`]
+          else siguiente[`skill-${id}`] = valor
+          return siguiente
+        }),
+      pesoGlobal,
       setReqRespuesta: (clave, valor) =>
         setReqRespuestas((prev) => {
           const siguiente = { ...prev }
