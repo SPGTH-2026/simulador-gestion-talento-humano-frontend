@@ -11,13 +11,12 @@ import {
   CLASE_TEXTO_PARTIDO,
   CLASE_TEXTO_SUAVE,
 } from '../../lib/estilos'
-import { MAX_ELEMENTOS } from '../../lib/inicio'
+import { MAX_ELEMENTOS, postulacionActivaEnInicio } from '../../lib/inicio'
 import {
   estadoVentana,
   formatearFecha,
   formatearFechaHora,
   textoCierraPronto,
-  textoVentana,
 } from '../../lib/ventanaPostulacion'
 import BloqueInicio from './BloqueInicio'
 
@@ -46,16 +45,16 @@ function TituloConvocatoria({ convocatoria }) {
   )
 }
 
-// Postulaciones propias que piden atención: los borradores primero (hay algo
-// que completar) y luego las enviadas. Las retiradas quedan en "Mis
-// postulaciones". El endpoint pagina y no garantiza el orden de los estados
+// Postulaciones propias ACTIVAS: los borradores primero (hay algo que completar) y luego las enviadas. Un borrador cuya
+// convocatoria ya cerró y una postulación cuyo proceso ya terminó dejan de aparecer aquí, igual que las retiradas: quedan en
+// "Mis postulaciones" (ver postulacionActivaEnInicio). El endpoint pagina y no garantiza el orden de los estados
 // (un borrador no tiene fecha de postulación): solo se ve la primera página y no
 // se recorren las demás. Por eso, si hay más páginas, el bloque lo dice y no
 // afirma que no existan borradores o envíos que simplemente quedaron fuera.
 export function BloquePostulaciones({ recurso }) {
   const lista = recurso.datos?.data ?? []
   const hayMasPaginas = (recurso.datos?.meta?.last_page ?? 1) > 1
-  const activas = lista.filter((p) => ['borrador', 'postulada'].includes(p.estado?.codigo))
+  const activas = lista.filter(postulacionActivaEnInicio)
   const visibles = [
     ...activas.filter((p) => p.estado?.codigo === 'borrador'),
     ...activas.filter((p) => p.estado?.codigo === 'postulada'),
@@ -69,8 +68,8 @@ export function BloquePostulaciones({ recurso }) {
       vacio={visibles.length === 0}
       textoVacio={
         hayMasPaginas
-          ? 'Entre tus postulaciones más recientes no hay borradores ni enviadas. Revisa el listado completo para ver el resto.'
-          : 'No tienes postulaciones en borrador ni enviadas. Elige una convocatoria disponible para empezar.'
+          ? 'Entre tus postulaciones más recientes no hay ninguna activa. Revisa el listado completo para ver el resto.'
+          : 'No tienes postulaciones activas. Elige una convocatoria disponible para empezar.'
       }
       pie={
         <Boton as={Link} to="/mis-postulaciones" variante="enlace" tamano="flexible">
@@ -87,6 +86,7 @@ export function BloquePostulaciones({ recurso }) {
         {visibles.map((p) => {
           const codigo = p.estado?.codigo
           const ventana = estadoVentana(p.convocatoria)
+          // Un borrador solo llega aquí con la convocatoria abierta (postulacionActivaEnInicio).
           const abierta = codigo === 'borrador' && ventana === 'abierta'
           const cierraPronto = abierta ? textoCierraPronto(p.convocatoria?.fecha_cierre) : null
 
@@ -104,7 +104,6 @@ export function BloquePostulaciones({ recurso }) {
                     (p.completo
                       ? 'Documentos completos: falta enviarla.'
                       : 'Faltan documentos obligatorios.')}
-                  {codigo === 'borrador' && !abierta && textoVentana(p.convocatoria)}
                 </p>
               </div>
               {abierta && (
