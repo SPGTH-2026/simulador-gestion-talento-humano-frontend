@@ -38,7 +38,7 @@ function irAPestanaDatos() {
 // El servidor sigue validando. Si responde 422 con `faltantes[]` porque la información cambió después de cargar la
 // página, se relee el estado y esos faltantes se suman al MISMO aviso (no se pinta un segundo recuadro). Los demás
 // fallos (red, estado desactualizado) conservan su mensaje y el botón queda disponible para reintentar.
-export default function SeccionEnviarPostulacion({ estado, onExito, onError, onRecargar }) {
+export default function SeccionEnviarPostulacion({ estado, datosPendientes = false, onExito, onError, onRecargar }) {
   const postulacionId = estado.postulacion.id
   const idAviso = useId()
   const [enviando, setEnviando] = useState(false)
@@ -50,7 +50,8 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
   const pendientes = (estado.documentos ?? []).filter(
     (d) => d.obligatorio && d.estado !== 'subido' && d.estado !== 'no_aplica',
   )
-  const avisoDatos = estado.datos_personales?.completo === false
+  // También cuenta lo que se ve en el formulario: datos sin completar o con cambios sin guardar (el servidor decide con lo guardado).
+  const avisoDatos = estado.datos_personales?.completo === false || datosPendientes
 
   // Faltantes que dijo el servidor y la pantalla aún no lista (no repite los que ya están en `pendientes`).
   const nombresLocales = new Set(pendientes.map((d) => d.parametro.nombre))
@@ -144,7 +145,7 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
             ))}
             {avisoDatos && (
               <li className="flex flex-wrap items-center justify-between gap-x-3">
-                <span>Llena tus datos personales y autoriza su tratamiento para poder enviar la postulación.</span>
+                <span>Completa tus datos personales (y los de tu representante legal si eres menor), autoriza su tratamiento y espera a que se guarden para poder enviar la postulación.</span>
                 <Boton variante="enlace" tamano="tactil" onClick={() => irAPestanaDatos()}>
                   Ir a Datos personales
                 </Boton>

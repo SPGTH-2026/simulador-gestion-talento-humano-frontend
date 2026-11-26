@@ -47,6 +47,31 @@ const onError = vi.fn()
 
 const props = () => ({ datos: null, editable: true, asegurar, onRecargar, onError })
 
+// Datos ya guardados en el servidor, completos y autorizados (un adulto): lo que devuelve GET /datos-personales.
+const datosCompletos = {
+  sexo: { codigo: 'hombre', nombre: 'Masculino' },
+  nombres: 'Camilo',
+  apellidos: 'Rojas',
+  tipo_documento_identidad: { codigo: 'cc', nombre: 'Cédula de ciudadanía' },
+  numero_documento: '1012345678',
+  fecha_nacimiento: anios(25),
+  telefono: '3001234567',
+  departamento: { codigo: '05', nombre: 'Antioquia' },
+  municipio: { codigo: '05001', nombre: 'Medellín' },
+  nivel_formacion: { codigo: 'tecnologo', nombre: 'Tecnólogo' },
+  acepta_tratamiento_datos: true,
+}
+// Un menor con los datos guardados ANTES de que existieran los campos nuevos del representante.
+const datosDeMenorSinTerminar = {
+  ...datosCompletos,
+  fecha_nacimiento: anios(17),
+  representante_nombre: 'Marta Pérez',
+  representante_documento: '52123456',
+  representante_telefono: '3109876543',
+  representante_parentesco: 'Madre',
+  representante_conoce: false,
+}
+
 const escribir = (etiqueta, valor) => fireEvent.change(screen.getByLabelText(etiqueta), { target: { value: valor } })
 const fecha = () => screen.getByLabelText(/fecha de nacimiento/i)
 const autorizacion = () => screen.getByRole('checkbox', { name: /autorizo el tratamiento/i })
@@ -234,10 +259,28 @@ describe('SeccionDatosPersonales', () => {
     expect(continuar().disabled).toBe(true)
     expect(screen.getByText(/completa tus datos y marca la autorización para continuar/i)).toBeTruthy()
 
-    rerender(<SeccionDatosPersonales {...props()} datos={{ nombres: 'Ana', acepta_tratamiento_datos: true }} onContinuar={onContinuar} />)
+    rerender(<SeccionDatosPersonales {...props()} datos={datosCompletos} onContinuar={onContinuar} />)
     expect(continuar().disabled).toBe(false)
     fireEvent.click(continuar())
     expect(onContinuar).toHaveBeenCalledTimes(1)
+  })
+
+  it('un menor con los datos del representante sin terminar no puede continuar, aunque ya estén autorizados', () => {
+    render(<SeccionDatosPersonales {...props()} datos={datosDeMenorSinTerminar} onContinuar={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: /continuar a documentos/i }).disabled).toBe(true)
+    expect(screen.getByText('Representante legal')).toBeTruthy()
+  })
+
+  it('un cambio sin guardar bloquea el paso siguiente hasta que se guarde', () => {
+    render(<SeccionDatosPersonales {...props()} datos={datosCompletos} onContinuar={vi.fn()} />)
+    const continuar = () => screen.getByRole('button', { name: /continuar a documentos/i })
+    expect(continuar().disabled).toBe(false)
+
+    // La persona cambia su fecha de nacimiento a la de un menor: el formulario ya no coincide con lo guardado.
+    fireEvent.change(fecha(), { target: { value: anios(17) } })
+
+    expect(continuar().disabled).toBe(true)
   })
 
   it('sin pestañas (pantalla apilada) no ofrece la flecha', () => {

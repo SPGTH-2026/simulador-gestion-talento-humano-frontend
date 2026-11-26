@@ -81,6 +81,11 @@ export function useSeccionDatosPersonales({ datos, editable, asegurar, onRecarga
   const yaGuardado = Boolean(datos)
   // Autorizado = el SERVIDOR ya registró la autorización (no solo la casilla marcada en pantalla).
   const autorizado = Boolean(datos?.acepta_tratamiento_datos)
+  // «Listo» = lo que muestra el formulario está COMPLETO, AUTORIZADO y GUARDADO tal cual en el servidor. Mientras no lo esté
+  // (campos sin llenar, cambios pendientes de guardar o datos guardados antes de que existieran campos nuevos) no se puede
+  // pasar a documentos ni enviar: el servidor decide con lo guardado, no con lo que se ve en pantalla.
+  const guardadoEnServidor = JSON.stringify(cuerpoDesdeForm(formDesdeDatos(datos)))
+  const listo = yaGuardado && autorizado && formCompleto(form) && JSON.stringify(cuerpoDesdeForm(form)) === guardadoEnServidor
   const errorEdad = bajoMinimo
     ? `Eres menor de la edad permitida para postularte (${EDAD_MINIMA} años). No puedes continuar.`
     : undefined
@@ -142,6 +147,7 @@ export function useSeccionDatosPersonales({ datos, editable, asegurar, onRecarga
     esMenor,
     form,
     guardando,
+    listo,
     municipios,
     municipiosRepresentante,
     yaGuardado,

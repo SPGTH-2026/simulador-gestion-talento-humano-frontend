@@ -87,10 +87,11 @@ describe('formDesdeDatos', () => {
       nombres: 'Ana',
       direccion: null,
       tipo_documento_identidad: { codigo: 'cc', nombre: 'Cédula' },
+      sexo: { codigo: 'mujer', nombre: 'Femenino' },
       nivel_formacion: { codigo: 'tecnologo', nombre: 'Tecnólogo' },
       departamento: { codigo: '05', nombre: 'Antioquia' },
       municipio: { codigo: '05001', nombre: 'Medellín' },
     })
-    expect(form).toMatchObject({ nombres: 'Ana', direccion: '', tipo_documento_identidad: 'cc', nivel_formacion: 'tecnologo', departamento: '05', municipio: '05001' })
+    expect(form).toMatchObject({ nombres: 'Ana', direccion: '', tipo_documento_identidad: 'cc', nivel_formacion: 'tecnologo', departamento: '05', municipio: '05001', sexo: 'mujer' })
   })
 })

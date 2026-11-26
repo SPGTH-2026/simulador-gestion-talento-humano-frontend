@@ -70,14 +70,19 @@ function DocumentosBloqueados({ irA }) {
 }
 
 export function PestanaDocumentos({ conAvisos = true }) {
-  const { pantalla, panel, props } = usePostulacion()
+  const { pantalla, panel, datos, props } = usePostulacion()
   if (pantalla) return pantalla
 
   const { irA, onEnviado, onVerDocumentos, modoCorreccion = false } = props
+  // Datos personales sin completar, sin autorizar o con cambios sin guardar: no se envía ni se vuelve a postular.
+  const datosPendientes = !datos.listo
   const { asegurar, aviso, correccion, correccionVigente, corregidos, editable, enviandoCorreccion, enviarCorreccionAhora, esBorrador, esRetirada, infoCorreccion, marcados, motivo, motivoVolver, puedeVolver, reactivando, recargar, setError, sexo, vista, volverAPostularme } = panel
 
   const sinDatos = vista.datos_personales?.completo !== true
-  if (irA && sinDatos && (!vista.postulacion?.id || esBorrador)) return <DocumentosBloqueados irA={irA} />
+  // «Volver a postularme» exige además que los datos estén completos y guardados.
+  const puedeVolverAhora = puedeVolver && !datosPendientes
+  const motivoVolverAhora = datosPendientes ? 'Completa y autoriza tus datos personales para volver a postularte.' : motivoVolver
+  if (irA && (sinDatos || datosPendientes) && (!vista.postulacion?.id || esBorrador)) return <DocumentosBloqueados irA={irA} />
 
   return (
     <div className="flex flex-col gap-4">
@@ -163,6 +168,7 @@ export function PestanaDocumentos({ conAvisos = true }) {
       {!modoCorreccion && esBorrador && editable && (
         <SeccionEnviarPostulacion
           estado={vista}
+          datosPendientes={datosPendientes}
           onExito={() => onEnviado?.()}
           onError={setError}
           onRecargar={recargar}
@@ -172,9 +178,9 @@ export function PestanaDocumentos({ conAvisos = true }) {
       {esRetirada && (
         <div className={`${CLASE_CAJA_SUAVE} flex flex-wrap items-center justify-between gap-3 p-3`}>
           <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
-            {puedeVolver
+            {puedeVolverAhora
               ? 'Tus documentos obligatorios están completos.'
-              : motivoVolver}
+              : motivoVolverAhora}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {onVerDocumentos && (
@@ -184,8 +190,8 @@ export function PestanaDocumentos({ conAvisos = true }) {
               </Boton>
             )}
             <Boton variante="primario" tamano="tactil"
-              disabled={!puedeVolver || reactivando}
-              title={puedeVolver ? undefined : motivoVolver}
+              disabled={!puedeVolverAhora || reactivando}
+              title={puedeVolverAhora ? undefined : motivoVolverAhora}
               onClick={volverAPostularme}>
               {reactivando ? 'Postulando...' : 'Volver a postularme'}
             </Boton>

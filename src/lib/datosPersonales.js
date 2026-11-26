@@ -105,6 +105,7 @@ export function formDesdeDatos(datos) {
     ...Object.fromEntries(
       Object.entries(datos).filter(([campo, valor]) => campo in FORM_VACIO && valor !== null && typeof valor !== 'object'),
     ),
+    sexo: datos.sexo?.codigo ?? '',
     tipo_documento_identidad: datos.tipo_documento_identidad?.codigo ?? '',
     // El servidor devuelve { codigo, nombre }; el formulario trabaja con los códigos oficiales (DIVIPOLA).
     departamento: datos.departamento?.codigo ?? '',

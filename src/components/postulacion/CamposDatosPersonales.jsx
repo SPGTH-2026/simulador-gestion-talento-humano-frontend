@@ -181,10 +181,10 @@ export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onCo
       {/* Paso siguiente. Solo se ofrece cuando las secciones van en pestañas; bloqueado hasta autorizar los datos. */}
       {onContinuar && (
         <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-sena-linea/70 pt-4 dark:border-sena-borde/50">
-          {!d.autorizado && (
+          {!d.listo && (
             <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>Completa tus datos y marca la autorización para continuar.</p>
           )}
-          <Boton variante="primario" tamano="tactil" disabled={!d.autorizado || d.guardando} onClick={onContinuar}>
+          <Boton variante="primario" tamano="tactil" disabled={!d.listo || d.guardando} onClick={onContinuar}>
             Continuar a documentos
             <Icono nombre="flechaDerecha" className="size-4" />
           </Boton>
