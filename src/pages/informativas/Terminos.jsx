@@ -1,101 +1,80 @@
-import PaginaInformativa from '../../components/informativo/PaginaInformativa'
-import { CampoPendiente } from '../../components/informativo/Pendiente'
+import { Link } from 'react-router-dom'
+import DocumentoLegal from '../../components/informativo/DocumentoLegal'
 import { EnlaceContacto } from './contactoProyecto'
 
-// Términos de uso: lo que ya se sabe (proyecto académico, simulador, cuentas administradas, documentos reales y ficticios, menores)
-// y, en cada sección, lo que falta decidir. No se redactan obligaciones, límites de responsabilidad ni leyes aplicables que nadie
-// haya aprobado. Una referencia normativa solo puede incluirse si su texto oficial y su vigencia están verificados.
-const P = {
-  edad: 'Condiciones de edad y de participación de menores',
-  documentosReales: 'Reglas sobre qué documentos reales pueden subirse',
-  uso: 'Reglas de uso aceptable',
-  marcas: 'Uso del nombre y la identidad visual del SENA',
-  responsabilidad: 'Límites de responsabilidad',
-  cambios: 'Cómo se comunican los cambios y las versiones',
-  ley: 'Marco legal aplicable',
-}
-
-const Seccion = ({ texto, dato }) => (
-  <p>
-    {texto} <CampoPendiente dato={dato} />
-  </p>
+const Lista = ({ children }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>
+const Enlace = ({ href, children }) => (
+  <Link className="font-semibold text-sena-oscuro underline underline-offset-4 dark:text-sena-acento" to={href}>{children}</Link>
 )
 
 export default function Terminos() {
   return (
-    <PaginaInformativa
+    <DocumentoLegal
       titulo="Términos de uso"
-      introduccion="Qué es SPGTH, cómo se usa y qué reglas faltan por definir. Es un borrador para revisión: no está aprobado."
-      pendientes={Object.values(P)}
+      introduccion="Qué es SPGTH, quién puede participar y cómo funcionan las cuentas y los documentos."
       secciones={[
         {
-          id: 'objeto',
+          id: 'que-es',
           titulo: 'Qué es SPGTH',
-          tipo: 'confirmado',
           children: (
             <>
-              <p>SPGTH es un proyecto académico: un simulador de procesos de gestión de talento humano (convocatorias, evaluación y selección).</p>
-              <p>No es un sistema oficial del SENA. Participar en el simulador no equivale a celebrar un contrato de aprendizaje ni una contratación real.</p>
+              <p>SPGTH es un simulador académico de procesos de gestión de talento humano. Recorre una convocatoria hasta la decisión de selección, sin contratación real: participar no equivale a firmar un contrato de aprendizaje ni de trabajo.</p>
+              <p>No es un sistema oficial del SENA.</p>
             </>
           ),
         },
         {
           id: 'quien',
-          titulo: 'Quién puede usar SPGTH',
-          tipo: 'confirmado',
+          titulo: 'Quién puede participar',
           children: (
             <>
-              <p>Pueden participar personas mayores y menores de edad. La aplicación hoy no pide la fecha de nacimiento ni verifica la edad.</p>
-              <Seccion texto="Condiciones de edad y participación de menores:" dato={P.edad} />
+              <p>Pueden participar personas mayores y menores de edad. Si eres menor de edad, la postulación pide además los datos de tu representante legal y un documento suyo.</p>
+              <p>Qué datos se piden y cómo se tratan está en <Enlace href="/privacidad">Privacidad</Enlace>.</p>
             </>
           ),
         },
         {
           id: 'cuenta',
-          titulo: 'Cuenta y administración',
-          tipo: 'verificado',
+          titulo: 'Tu cuenta',
           children: (
             <>
-              <p>Entras con tu correo y contraseña o, de forma opcional, con tu cuenta de Google. Si olvidas la contraseña, la recuperas con «¿Olvidaste tu contraseña?», con un código que se envía a tu correo.</p>
-              <p>Los instructores Edna Margarita Correa y Jarvison Aguilar Uribe son los destinatarios previstos de la entrega y la administración del sistema. Un administrador puede activar o desactivar una cuenta y cambiar su rol. Esto no define responsabilidades jurídicas.</p>
+              <p>Entras con tu correo y contraseña o, si lo prefieres, con tu cuenta de Google. Si olvidas la contraseña, la recuperas desde «¿Olvidaste tu contraseña?» con un código que llega a tu correo.</p>
+              <p>Lo que puedes ver y hacer depende del rol y de los permisos de tu cuenta. La administración puede activar o desactivar cuentas y cambiar roles. Edna Margarita Correa y Jarvison Aguilar Uribe recibirán el sistema y las cuentas.</p>
             </>
           ),
         },
         {
-          id: 'contenido',
-          titulo: 'Documentos que aportas',
-          tipo: 'confirmado',
+          id: 'documentos',
+          titulo: 'Documentos que cargas',
           children: (
             <>
-              <p>En SPGTH pueden usarse documentos reales y ficticios. Los documentos se cargan en PDF y los ven las personas con permiso de revisión dentro del alcance de la ficha, como se explica en la página de privacidad.</p>
-              <Seccion texto="Reglas sobre los documentos reales:" dato={P.documentosReales} />
+              <p>Los documentos se cargan en PDF y pueden ser reales o ficticios. Los ven las personas con permiso de revisión, dentro del alcance de cada ficha; también los ven quienes evalúan y seleccionan cuando su etapa lo requiere.</p>
             </>
           ),
         },
-        { id: 'uso', titulo: 'Uso aceptable', tipo: 'borrador', children: <Seccion texto="Conductas permitidas y no permitidas:" dato={P.uso} /> },
         {
-          id: 'marcas',
-          titulo: 'Identidad visual y marcas',
-          tipo: 'borrador',
-          children: <Seccion texto="Cómo se usan el nombre y los logos del SENA:" dato={P.marcas} />,
-        },
-        {
-          id: 'responsabilidad',
-          titulo: 'Límites de responsabilidad',
-          tipo: 'borrador',
-          children: <Seccion texto="Qué garantiza y qué no el proyecto:" dato={P.responsabilidad} />,
-        },
-        { id: 'cambios', titulo: 'Cambios y versiones', tipo: 'borrador', children: <Seccion texto="Avisos de cambios:" dato={P.cambios} /> },
-        {
-          id: 'ley',
-          titulo: 'Contacto y marco aplicable',
-          tipo: 'borrador',
+          id: 'proceso',
+          titulo: 'Qué pasa con tu postulación',
           children: (
             <>
-              <p>Puedes escribir al equipo a <EnlaceContacto />.</p>
-              <Seccion texto="Marco legal aplicable:" dato={P.ley} />
+              <Lista>
+                <li>Envías tu postulación con tus datos personales, tu autorización y los documentos obligatorios.</li>
+                <li>Se evalúan los documentos y, si hace falta, se te pide corregir alguno.</li>
+                <li>Si avanzas, hay preselección, posibles citaciones y una decisión.</li>
+              </Lista>
+              <p>Todo esto ocurre dentro de la simulación: las decisiones no equivalen a una contratación real.</p>
             </>
           ),
+        },
+        {
+          id: 'conservacion',
+          titulo: 'Conservación',
+          children: <p>Algunos procesos se conservarán para consulta. SPGTH no elimina cuentas ni documentos de forma automática.</p>,
+        },
+        {
+          id: 'contacto',
+          titulo: 'Contacto',
+          children: <p>Si tienes preguntas sobre estos términos escribe a <EnlaceContacto />.</p>,
         },
       ]}
     />

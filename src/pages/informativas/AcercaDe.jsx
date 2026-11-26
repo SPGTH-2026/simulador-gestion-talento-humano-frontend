@@ -1,82 +1,62 @@
-import PaginaInformativa from '../../components/informativo/PaginaInformativa'
-import { CampoPendiente } from '../../components/informativo/Pendiente'
+import { Link } from 'react-router-dom'
+import DocumentoLegal from '../../components/informativo/DocumentoLegal'
 import { EnlaceContacto } from './contactoProyecto'
 
-// Acerca de SPGTH. Solo hechos confirmados: proyecto formativo del equipo ADSO de la ficha 3173334 que simula convocatorias,
-// evaluación y selección. No se presenta como sistema oficial del SENA ni se atribuyen responsabilidades a personas.
-const P = {
-  relacion: 'Relación con el SENA y alcance de la autorización institucional',
-  version: 'Versión y fecha del texto',
-}
+const Lista = ({ children }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>
 
 export default function AcercaDe() {
   return (
-    <PaginaInformativa
+    <DocumentoLegal
       titulo="Acerca de SPGTH"
-      introduccion="SPGTH es el Simulador de Procesos de Gestión de Talento Humano."
-      pendientes={Object.values(P)}
+      introduccion="SPGTH es el Simulador de Procesos de Gestión de Talento Humano: un proyecto académico para practicar, de principio a fin, cómo se gestiona una convocatoria."
       secciones={[
         {
-          id: 'proposito',
-          titulo: 'Propósito formativo',
-          tipo: 'confirmado',
+          id: 'proyecto',
+          titulo: 'Un proyecto académico de simulación',
           children: (
             <>
-              <p>
-                SPGTH es un proyecto formativo del equipo ADSO de la ficha 3173334. Su propósito es aprender haciendo: construir y probar,
-                como ejercicio de formación, un sistema que recorre las etapas de una convocatoria.
-              </p>
+              <p>SPGTH se construyó como ejercicio de formación. Simula los procesos de una convocatoria; no es una contratación real y participar en él no equivale a firmar un contrato de aprendizaje ni de trabajo.</p>
             </>
           ),
         },
         {
-          id: 'simulacion',
+          id: 'simula',
           titulo: 'Qué simula',
-          tipo: 'verificado',
           children: (
             <>
-              <p>La aplicación simula, de principio a fin, tres procesos:</p>
-              <ul className="list-disc space-y-1 pl-5">
-                <li>La <strong>convocatoria</strong>: su creación, publicación, postulación y documentos requeridos.</li>
-                <li>La <strong>evaluación</strong> de los documentos de cada aspirante, con correcciones.</li>
-                <li>La <strong>selección</strong>: preselección, ranking de candidatos y decisiones.</li>
-              </ul>
-              <p>En el simulador pueden usarse documentos reales y ficticios, y puede haber usuarios menores de edad. Cómo se tratan esos datos se explica en la página de privacidad.</p>
+              <p>El recorrido llega hasta la decisión de selección:</p>
+              <Lista>
+                <li><strong>Convocatoria</strong>: se publica, las personas se postulan y adjuntan los documentos que se piden.</li>
+                <li><strong>Evaluación</strong>: se revisan los documentos de cada postulación y se pueden pedir correcciones.</li>
+                <li><strong>Selección</strong>: preselección, ranking, citaciones y decisión.</li>
+              </Lista>
             </>
           ),
         },
         {
-          id: 'sena',
-          titulo: 'Relación con el SENA',
-          tipo: 'confirmado',
+          id: 'participan',
+          titulo: 'Quiénes participan',
           children: (
             <>
-              <p>SPGTH no se presenta como un sistema oficial del SENA.</p>
-              <p>
-                Cómo se relaciona el proyecto con el SENA y qué autoriza la institución: <CampoPendiente dato={P.relacion} />
-              </p>
+              <p>Cada persona ve solo lo que le corresponde según el rol y los permisos de su cuenta: quienes se postulan, quienes evalúan y seleccionan, los instructores y la administración. También participan aprendices autorizados para revisar documentos.</p>
+              <p>En el simulador se usan documentos reales y ficticios, y pueden participar personas menores de edad. Cómo se cuidan esos datos se explica en <Link className="font-semibold text-sena-oscuro underline underline-offset-4 dark:text-sena-acento" to="/privacidad">Privacidad</Link>.</p>
+            </>
+          ),
+        },
+        {
+          id: 'entrega',
+          titulo: 'Entrega del sistema',
+          children: (
+            <>
+              <p>Los instructores Edna Margarita Correa y Jarvison Aguilar Uribe recibirán el sistema y las cuentas.</p>
+              <p>Algunos procesos se conservarán para consulta.</p>
             </>
           ),
         },
         {
           id: 'contacto',
           titulo: 'Contacto',
-          tipo: 'confirmado',
-          children: (
-            <p>
-              Para comunicarte con el equipo escribe a <EnlaceContacto />.
-            </p>
-          ),
-        },
-        {
-          id: 'version',
-          titulo: 'Versión de este texto',
-          tipo: 'borrador',
-          children: (
-            <p>
-              <CampoPendiente dato={P.version} />
-            </p>
-          ),
+          children: <p>Para preguntas sobre SPGTH escribe a <EnlaceContacto />.</p>,
         },
       ]}
     />

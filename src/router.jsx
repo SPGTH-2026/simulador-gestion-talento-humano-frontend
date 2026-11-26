@@ -7,6 +7,7 @@ import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 import PantallaCarga from './components/ui/PantallaCarga'
 import LayoutInformativo from './layouts/LayoutInformativo'
+import { paginasInformativasActivas } from './config/paginasInformativas'
 
 import Login from './pages/login/Login'
 const Registro = lazy(() => import('./pages/login/Registro'))
@@ -16,7 +17,7 @@ const CompletarFicha = lazy(() => import('./pages/login/CompletarFicha'))
 const NotFound = lazy(() => import('./pages/errores/NotFound'))
 
 // Páginas informativas: desactivadas por defecto (ver config/paginasInformativas). Con la bandera apagada ni siquiera se importan.
-const ACTIVAS = import.meta.env.VITE_PAGINAS_INFORMATIVAS === 'true'
+const ACTIVAS = paginasInformativasActivas()
 // Seguridad de la cuenta: desactivada por defecto (ver config/seguridadCuenta). Con la bandera apagada ni siquiera se importa.
 const SEGURIDAD_ACTIVA = import.meta.env.VITE_SEGURIDAD_CUENTA === 'true'
 const Seguridad = SEGURIDAD_ACTIVA ? lazy(() => import('./pages/seguridad/Seguridad')) : null
@@ -24,6 +25,7 @@ const AcercaDe = ACTIVAS ? lazy(() => import('./pages/informativas/AcercaDe')) :
 const Terminos = ACTIVAS ? lazy(() => import('./pages/informativas/Terminos')) : null
 const Privacidad = ACTIVAS ? lazy(() => import('./pages/informativas/Privacidad')) : null
 const Cookies = ACTIVAS ? lazy(() => import('./pages/informativas/Cookies')) : null
+const InformacionLegal = ACTIVAS ? lazy(() => import('./pages/informativas/InformacionLegal')) : null
 
 import Dashboard from './pages/dashboard/Dashboard'
 const ConvocatoriasListado = lazy(() => import('./pages/convocatorias/ConvocatoriasListado'))
@@ -68,6 +70,7 @@ export default function AppRouter() {
           <Route path="/terminos" element={<Terminos />} />
           <Route path="/privacidad" element={<Privacidad />} />
           <Route path="/cookies" element={<Cookies />} />
+          <Route path="/informacion-legal" element={<InformacionLegal />} />
         </Route>
       )}
 

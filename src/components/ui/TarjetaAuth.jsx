@@ -1,5 +1,6 @@
 import LogoSena from './LogoSena'
 import ThemeToggle from '../ThemeToggle'
+import { PieLegal } from '../informativo/EnlacesLegales'
 
 // Detalle gráfico del panel institucional: una red de nodos unidos por
 // conexiones, como las etapas de un proceso. Es estático, decorativo y muy
@@ -100,6 +101,8 @@ export default function TarjetaAuth({ children }) {
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col py-4 lg:justify-center">
           {children}
         </div>
+        {/* Accesos a las páginas informativas: solo con la bandera de páginas informativas activa. */}
+        <PieLegal className="mt-2" />
       </main>
     </div>
   )
