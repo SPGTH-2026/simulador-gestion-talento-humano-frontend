@@ -194,13 +194,15 @@ export default function EvaluacionListado() {
                   <caption className="sr-only">Aspirantes por evaluar</caption>
                   {/* Anchos medidos en pantalla: las cuatro columnas pequeñas son
                       fijas y caben su encabezado y su contenido más ancho (la
-                      etiqueta "Pasa a selección" mide 145 px). Aspirante toma un
-                      26 % y Convocatoria el resto. */}
+                      etiqueta "Pasa a selección" mide 145 px). "Documentos cargados"
+                      y "Cumplimiento" se ensancharon: su encabezado en mayúsculas
+                      no cabe en el ancho anterior y se montaba sobre la columna
+                      siguiente. Aspirante toma un 26 % y Convocatoria el resto. */}
                   <colgroup>
                     <col className="w-[26%]" />
                     <col />
-                    <col className="w-38" />
-                    <col className="w-22" />
+                    <col className="w-48" />
+                    <col className="w-28" />
                     <col className="w-44" />
                     <col className="w-28" />
                   </colgroup>

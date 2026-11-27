@@ -14,19 +14,37 @@ export function sumaDePonderaciones(form) {
   return form.documentos.reduce((acc, codigo) => acc + (Number(valorPonderacion(form, codigo)) || 0), 0)
 }
 
-// Devuelve el mensaje de error o null. Sin porcentajes configurados es válido.
+// Porcentaje escrito para una habilidad. Vacío = sin configurar.
+export function valorPorcentajeSkill(skill) {
+  return String(skill?.ponderacion ?? '')
+}
+
+// Suma de los porcentajes de documentos y habilidades: juntos deben sumar 100 %.
+export function sumaTotalPorcentajes(form) {
+  const docs = sumaDePonderaciones(form)
+  const skills = (form.skills ?? []).reduce((acc, s) => acc + (Number(valorPorcentajeSkill(s)) || 0), 0)
+  return Math.round((docs + skills) * 100) / 100
+}
+
+// Devuelve el mensaje de error o null. Sin porcentajes configurados es válido. Con porcentajes, todos los documentos y
+// todas las habilidades deben tener el suyo, y la suma total debe ser 100 %.
 export function validarPonderaciones(form) {
-  const configurados = form.documentos.filter((codigo) => String(valorPonderacion(form, codigo)).trim() !== '')
+  const docsConfigurados = form.documentos.filter((codigo) => String(valorPonderacion(form, codigo)).trim() !== '')
+  const skillsConfiguradas = (form.skills ?? []).filter((s) => valorPorcentajeSkill(s).trim() !== '')
 
-  if (configurados.length === 0) return null
+  if (docsConfigurados.length === 0 && skillsConfiguradas.length === 0) return null
 
-  if (configurados.length !== form.documentos.length) {
+  if (docsConfigurados.length !== form.documentos.length) {
     return 'Define el porcentaje de todos los documentos: deben sumar 100%.'
   }
 
-  const suma = sumaDePonderaciones(form)
+  if (skillsConfiguradas.length !== (form.skills ?? []).length) {
+    return 'Define el porcentaje de cada habilidad de la convocatoria.'
+  }
+
+  const suma = sumaTotalPorcentajes(form)
   if (Math.abs(suma - 100) > 0.01) {
-    return `Los porcentajes de los documentos deben sumar 100% (suman ${Math.round(suma * 100) / 100}%).`
+    return `Los porcentajes de documentos y habilidades deben sumar 100% (suman ${suma}%).`
   }
 
   return null

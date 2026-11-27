@@ -11,6 +11,10 @@ const ELEGIDA_SI = CLASE_OPCION_ELEGIDA
 const ELEGIDA_NO =
   'peer-checked:border-red-800 peer-checked:bg-red-800 peer-checked:text-white dark:peer-checked:border-red-900 dark:peer-checked:bg-red-900 dark:peer-checked:text-white'
 
+// Modo cuadrado: dos cuadros solo con icono (✓ y X), del tamaño mínimo táctil (44 px). Los «!» anulan el ancho, alto y
+// relleno de CLASE_OPCION_RADIO, que está pensada para botones con texto.
+const CLASE_CUADRADA = 'size-11! min-h-0! min-w-0! p-0!'
+
 // Pareja de opciones de una pregunta de dos respuestas. Son botones de radio nativos: el navegador ya da la selección
 // expuesta (checked), el recorrido con flechas y el agrupamiento. La opción elegida va rellena y con su icono: no depende
 // del color. 'valor' es true, false o undefined (sin responder: ninguna opción marcada).
@@ -23,6 +27,8 @@ const ELEGIDA_NO =
 //    quien navega con teclado se quedaría sin lugar): se marcan con aria-busy, se ignoran los cambios mientras dure y
 //    no se mueven ni reaccionan al puntero. La rueda va en la opción que se aplica (la contraria a la marcada), que se
 //    ve entera; la otra queda atenuada.
+//  - 'cuadrado': dos cuadros solo con icono (✓ y X), para marcar ítems de un checklist. El texto queda para lectores de
+//    pantalla y como sugerencia al pasar el puntero.
 export default function RespuestaSiNo({
   requisito,
   pregunta,
@@ -34,12 +40,14 @@ export default function RespuestaSiNo({
   deshabilitadoSi = false,
   deshabilitadoNo = false,
   ocupado = false,
+  cuadrado = false,
   className = '',
 }) {
   const nombre = useId()
+  const tamanoIcono = cuadrado ? 'size-5' : 'size-4'
   const opciones = [
-    { valor: true, texto: textoSi, icono: <Icono nombre="check" className="size-4" />, elegida: ELEGIDA_SI },
-    { valor: false, texto: textoNo, icono: <IconoX className="size-4" />, elegida: ELEGIDA_NO },
+    { valor: true, texto: textoSi, icono: <Icono nombre="check" className={tamanoIcono} />, elegida: ELEGIDA_SI },
+    { valor: false, texto: textoNo, icono: <IconoX className={tamanoIcono} />, elegida: ELEGIDA_NO },
   ]
 
   return (
@@ -53,7 +61,7 @@ export default function RespuestaSiNo({
         // Mientras guarda, la opción que se aplica es la que aún NO está marcada.
         const aplicando = ocupado && valor !== opcion.valor
         return (
-          <label key={String(opcion.valor)} className="relative">
+          <label key={String(opcion.valor)} className="relative" title={cuadrado ? opcion.texto : undefined}>
             <input
               type="radio"
               name={nombre}
@@ -66,12 +74,12 @@ export default function RespuestaSiNo({
               className="peer sr-only"
             />
             <span
-              className={`${CLASE_OPCION_RADIO} w-full ${opcion.elegida} ${
+              className={`${CLASE_OPCION_RADIO} ${cuadrado ? CLASE_CUADRADA : 'w-full'} ${opcion.elegida} ${
                 ocupado ? (aplicando ? '' : 'opacity-60') : 'peer-disabled:opacity-50'
               }`}
             >
               {aplicando ? <Rueda /> : opcion.icono}
-              {opcion.texto}
+              {cuadrado ? <span className="sr-only">{opcion.texto}</span> : opcion.texto}
             </span>
           </label>
         )

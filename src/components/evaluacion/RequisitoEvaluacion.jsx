@@ -22,14 +22,24 @@ export default function RequisitoEvaluacion({
   onChange,
   onVerDocumento,
   abriendo = false,
+  items = [],
+  marcasItems = {},
+  onMarcaItem = () => {},
 }) {
   const estado = ESTADO_DOCUMENTO[documento.estado] ?? ESTADO_DOCUMENTO.pendiente
+  // Checklist propio del documento: cada ítem se marca con ✓ (cumple) o X (no cumple). Clave «docitem-{documento}-{n}» en el perfil.
+  const pid = String(documento.id).replace(/^doc-/, '')
+  const claveItem = (n) => `docitem-${pid}-${n}`
+  const itemsCumplidos = items.filter((_, n) => marcasItems[claveItem(n)] === true).length
+  // Lo que aporta este documento: su peso por la parte del checklist que cumple (si está marcado «Cumple»).
+  const fraccion = items.length === 0 ? 1 : itemsCumplidos / items.length
+  const aporte = respuesta === true && peso != null ? peso * fraccion : null
   const sinArchivo = !documento.archivo
   const faltante = sinArchivo && documento.estado === 'pendiente'
   const ayudaId = useId()
 
   return (
-    <li className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 @min-[36rem]:flex-row @min-[36rem]:items-center @min-[36rem]:justify-between @min-[36rem]:gap-4">
+    <li className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 @min-[36rem]:flex-row @min-[36rem]:flex-wrap @min-[36rem]:items-center @min-[36rem]:justify-between @min-[36rem]:gap-4">
       <div className="min-w-0">
         <p className={`font-medium ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>{documento.nombre}</p>
         <p className={`mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs ${CLASE_TEXTO_SUAVE}`}>
@@ -46,6 +56,11 @@ export default function RequisitoEvaluacion({
             >
               {estado.texto}
             </EtiquetaConIcono>
+          )}
+          {peso != null && (
+            <span className="whitespace-nowrap font-medium">
+              {aporte != null ? `Aporta ${Math.round(aporte * 100) / 100} % de ${peso} %` : `Vale ${peso} %`}
+            </span>
           )}
           {actualizado && (
             <EtiquetaConIcono tono="azul" icono={<Icono nombre="reintentar" className="size-3.5" />}>
@@ -84,6 +99,40 @@ export default function RequisitoEvaluacion({
           className="col-span-2"
         />
       </div>
+
+      {items.length > 0 && (
+        <details className="group w-full rounded-xl border border-sena-linea/70 bg-sena-superficie/40 dark:border-sena-borde/50">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-sena-hundido/60 dark:hover:bg-white/5 [&::-webkit-details-marker]:hidden">
+            <span className={`text-sm font-medium ${CLASE_TEXTO_FUERTE}`}>
+              Checklist del documento
+              <span className={`ml-2 font-normal ${CLASE_TEXTO_SUAVE}`}>
+                · {itemsCumplidos} de {items.length} cumplen
+              </span>
+            </span>
+            <Icono nombre="chevron" className="size-4 shrink-0 transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <ul className="mt-2 flex flex-col divide-y divide-sena-linea/70 px-3 dark:divide-sena-borde/50">
+            {items.map((texto, n) => (
+              <li
+                key={claveItem(n)}
+                className="flex flex-col gap-2 py-3 @min-[28rem]:flex-row @min-[28rem]:items-center @min-[28rem]:justify-between @min-[28rem]:gap-4"
+              >
+                <span className={`min-w-0 whitespace-pre-line text-sm ${CLASE_TEXTO_PARTIDO} ${CLASE_TEXTO_FUERTE}`}>{texto}</span>
+                <div className="shrink-0">
+                  <RespuestaSiNo
+                    requisito={texto}
+                    valor={marcasItems[claveItem(n)]}
+                    onChange={(valor) => onMarcaItem(claveItem(n), valor)}
+                    textoSi="Cumple"
+                    textoNo="No cumple"
+                    cuadrado
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </li>
   )
 }

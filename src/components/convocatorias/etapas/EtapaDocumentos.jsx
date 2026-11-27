@@ -2,7 +2,7 @@ import Boton from '../../ui/Boton'
 
 // Etapa 6 del asistente de convocatorias. Recibe el estado y las acciones del asistente en la prop ctx.
 export default function EtapaDocumentos({ ctx }) {
-  const { agregarDocumentoCatalogo, bloquearDocumentos, documentosBloqueados, documentosObligatorios, documentosOpcionales, errorDe, errorDocumento, filaDocumento, guardandoDocumento, mostrarNuevoDocumento, nuevoDocumento, repartirPonderaciones, repartoAuto, setErrorDocumento, setMostrarNuevoDocumento, setNuevoDocumento, sumaPonderaciones } = ctx
+  const { agregarDocumentoCatalogo, bloquearDocumentos, documentosBloqueados, documentosObligatorios, documentosOpcionales, errorDe, errorDocumento, filaDocumento, guardandoDocumento, mostrarNuevoDocumento, nuevoDocumento, repartirPonderaciones, repartoAuto, setErrorDocumento, setMostrarNuevoDocumento, setNuevoDocumento, sumaPonderaciones, sumaTotal } = ctx
   return (
       <div className="flex flex-col gap-3">
         {/* Encabezado del paso con la acción de cargar un documento nuevo. */}
@@ -102,7 +102,7 @@ export default function EtapaDocumentos({ ctx }) {
                     : 'text-amber-700 dark:text-amber-300'
                 }`}
               >
-                Suma: {Math.round(sumaPonderaciones() * 100) / 100}%
+                Suma: {Math.round(sumaPonderaciones() * 100) / 100}% · Total con habilidades: {sumaTotal ? sumaTotal() : sumaPonderaciones()}% de 100%
               </span>
               {!documentosBloqueados && (
                 <Boton variante="contorno" tamano="flexible" onClick={repartirPonderaciones}>

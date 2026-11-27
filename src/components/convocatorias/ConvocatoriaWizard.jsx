@@ -171,6 +171,8 @@ export default function ConvocatoriaWizard({
       ponderacion={docs.ponderacionDe}
       alternar={docs.alternarDocumento}
       ponderar={docs.cambiarPonderacion}
+      itemsDe={docs.itemsDe}
+      cambiarItems={docs.cambiarItems}
     />
   )
 

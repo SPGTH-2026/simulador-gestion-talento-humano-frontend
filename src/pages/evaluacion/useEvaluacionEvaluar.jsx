@@ -28,6 +28,10 @@ export function useEvaluacionEvaluar() {
   const { abrir: abrirVisor, visor } = useVisorDocumento()
 
   const [respuestas, setRespuestas] = useState({})
+  // Marcas de las habilidades de la convocatoria: «skill-{id}» → true cumple / false no cumple.
+  const [skillMarcas, setSkillMarcas] = useState({})
+  // Marcas del checklist de cada documento: «docitem-{documento}-{n}» → true cumple / false no cumple.
+  const [itemMarcas, setItemMarcas] = useState({})
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
   const botonBorrador = useRef(null)
@@ -67,10 +71,14 @@ export function useEvaluacionEvaluar() {
           // Una evaluación anterior pudo dejar «Cumple» en un documento que hoy no tiene archivo: ese valor es inválido
           // para el servidor y no se reenvía. No se reemplaza por «No cumple»: queda sin responder y lo decide el evaluador.
           const perfil = { ...(ev.data.evaluacion.perfil ?? {}) }
+          // Las marcas de habilidades y de ítems tienen su propio estado: no se mezclan con las de documentos.
+          for (const k of Object.keys(perfil)) if (/^(req-|reqdoc-|skill-|docitem-)/.test(k)) delete perfil[k]
           for (const d of docs.data ?? []) {
             if (d.obligatorio && d.estado === 'pendiente' && perfil[d.id] === true) delete perfil[d.id]
           }
           setRespuestas(perfil)
+          setSkillMarcas(Object.fromEntries(Object.entries(ev.data.evaluacion.perfil ?? {}).filter(([k]) => k.startsWith('skill-'))))
+          setItemMarcas(Object.fromEntries(Object.entries(ev.data.evaluacion.perfil ?? {}).filter(([k]) => k.startsWith('docitem-'))))
         }
         // Sin evaluación previa no se preselecciona nada: el evaluador decide
         // Cumple / No cumple en cada requisito.
@@ -94,11 +102,29 @@ export function useEvaluacionEvaluar() {
   const sinResponder = aplicables.filter((d) => respuestas[d.id] == null).length
   const sinCargar = faltantes.length
   const pesoTotal = Object.values(pesos).reduce((acc, valor) => acc + valor, 0)
+  // Un documento con checklist aporta la parte de sus ítems marcados como «Cumple» (sin ítems, todo su peso).
+  const fraccionDocumento = (d) => {
+    const items = d.items ?? []
+    if (items.length === 0) return 1
+    const pid = String(d.id).replace(/^doc-/, '')
+    return items.filter((_, n) => itemMarcas[`docitem-${pid}-${n}`] === true).length / items.length
+  }
   const pesoObtenido = aplicables.reduce(
-    (acc, d) => acc + (respuestas[d.id] === true ? (pesos[d.id] ?? 0) : 0),
+    (acc, d) => acc + (respuestas[d.id] === true ? (pesos[d.id] ?? 0) * fraccionDocumento(d) : 0),
     0,
   )
-  const cumplimiento = pesoTotal > 0 ? Math.round((pesoObtenido / pesoTotal) * 100) : 0
+  // Habilidades ponderadas de la convocatoria (mismo criterio que el servidor): cuentan cuando el evaluador las marca
+  // «Cumple». Sin porcentaje no cuentan. Documentos y habilidades comparten el mismo 100 %.
+  const habilidadesPonderadas = (dato?.skills ?? []).filter((s) => s.ponderacion != null)
+  const pesoHabilidades = habilidadesPonderadas.reduce((acc, s) => acc + Number(s.ponderacion), 0)
+  const pesoHabilidadesObtenido = habilidadesPonderadas.reduce(
+    (acc, s) => acc + (skillMarcas[`skill-${s.id}`] === true ? Number(s.ponderacion) : 0),
+    0,
+  )
+  const pesoGlobal = pesoTotal + pesoHabilidades
+  const cumplimiento = pesoGlobal > 0
+    ? Math.round(((pesoObtenido + pesoHabilidadesObtenido) / pesoGlobal) * 100)
+    : 0
 
   // Documentos que el aspirante reemplazó después de que se le pidió corregir.
   const actualizados = dato?.evaluacion?.documentos_actualizados ?? []
@@ -123,9 +149,13 @@ export function useEvaluacionEvaluar() {
 
     // Por seguridad, aunque el formulario no lo permita, nunca viaja «Cumple» de un documento sin archivo.
     const faltanIds = new Set(faltantes.map((d) => d.id))
-    const perfil = Object.fromEntries(
-      Object.entries(respuestas).filter(([id, valor]) => !(valor === true && faltanIds.has(id))),
-    )
+    const perfil = {
+      ...Object.fromEntries(
+        Object.entries(respuestas).filter(([id, valor]) => !(valor === true && faltanIds.has(id))),
+      ),
+      ...skillMarcas,
+      ...itemMarcas,
+    }
 
     let guardada
     try {
@@ -204,6 +234,14 @@ export function useEvaluacionEvaluar() {
       nombre: documento.archivo.nombre_original,
     })
 
+  // Certificado que el aspirante subió para una habilidad que declaró (id de la declaración: postulacion_skill_id).
+  // Igual que los documentos, se muestra en el visor interno.
+  const verCertificado = (habilidad) =>
+    abrirVisor(`/revision/postulaciones/${postulacionId}/skills/${habilidad.postulacion_skill_id}/certificado/archivo?inline=1`, {
+      titulo: `${habilidad.nombre} - certificado`,
+      nombre: `${habilidad.nombre} - certificado`,
+    })
+
   const volverAlListado = (
     <Boton as={Link} to="/evaluacion" variante="fantasma" tamano="tactil" className="-ml-4 self-start">
       <IconoFlechaIzquierda className="h-4 w-4" />
@@ -268,6 +306,25 @@ export function useEvaluacionEvaluar() {
       excluidos,
       bloqueoFinalizar,
       bloqueoPorNoCumple,
+      habilidades: dato?.skills ?? [],
+      skillMarcas,
+      itemMarcas,
+      setItemMarca: (clave, valor) =>
+        setItemMarcas((prev) => {
+          const siguiente = { ...prev }
+          if (valor === undefined) delete siguiente[clave]
+          else siguiente[clave] = valor
+          return siguiente
+        }),
+      setSkillMarca: (id, valor) =>
+        setSkillMarcas((prev) => {
+          const siguiente = { ...prev }
+          if (valor === undefined) delete siguiente[`skill-${id}`]
+          else siguiente[`skill-${id}`] = valor
+          return siguiente
+        }),
+      pesoGlobal,
+
       faltantes,
       finalizar,
       guardando,
@@ -291,6 +348,7 @@ export function useEvaluacionEvaluar() {
       sinCargar,
       sinResponder,
       total,
+      verCertificado,
       verDocumento,
       visor,
       volverAlListado,

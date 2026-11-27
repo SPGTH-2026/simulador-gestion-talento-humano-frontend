@@ -3,7 +3,10 @@ import { crearDocumentoCatalogo } from '../../api/convocatorias'
 import { mensajeError } from '../../api/mensajeError'
 import { DOCUMENTOS_OBLIGATORIOS, esObligatorioFijo } from '../../lib/documentosConvocatoria'
 import { MAX_SKILLS, claveSkill, repartoIgual } from './convocatoriaWizardUtils'
-import { sumaDePonderaciones, valorPonderacion } from './convocatoriaWizardValidacion'
+import { sumaDePonderaciones, sumaTotalPorcentajes, valorPonderacion } from './convocatoriaWizardValidacion'
+
+// Porcentaje ya asignado a las habilidades: lo que queda para repartir entre los documentos.
+const sumaHabilidades = (skills) => (skills ?? []).reduce((acc, s) => acc + (Number(s.ponderacion) || 0), 0)
 
 // Skills y documentos del formulario de convocatoria: agregar y quitar skills (libres o del catálogo), elegir
 // documentos, crear uno nuevo en el catálogo y repartir o escribir sus porcentajes. Recibe el formulario y su setter.
@@ -41,7 +44,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
       return
     }
     setErrorSkill('')
-    setForm((prev) => ({ ...prev, skills: [...prev.skills, { nombre: valor, parametro_id: null }] }))
+    setForm((prev) => ({ ...prev, skills: [...prev.skills, { nombre: valor, parametro_id: null, ponderacion: '' }] }))
     setNuevaSkill('')
   }
 
@@ -76,7 +79,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
     setErrorSkill('')
     setForm((prev) => ({
       ...prev,
-      skills: [...prev.skills, { nombre: parametro.nombre, parametro_id: parametro.id }],
+      skills: [...prev.skills, { nombre: parametro.nombre, parametro_id: parametro.id, ponderacion: '' }],
     }))
   }
 
@@ -87,7 +90,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
       const documentos = prev.documentos.includes(identificador)
         ? prev.documentos.filter((c) => c !== identificador)
         : [...prev.documentos, identificador]
-      return { ...prev, documentos, ...(repartoAuto ? { ponderaciones: repartoIgual(documentos) } : {}) }
+      return { ...prev, documentos, ...(repartoAuto ? { ponderaciones: repartoIgual(documentos, 100 - sumaHabilidades(prev.skills)) } : {}) }
     })
   }
 
@@ -117,7 +120,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
 
       setForm((prev) => {
         const documentos = prev.documentos.includes(identificador) ? prev.documentos : [...prev.documentos, identificador]
-        return { ...prev, documentos, ...(repartoAuto ? { ponderaciones: repartoIgual(documentos) } : {}) }
+        return { ...prev, documentos, ...(repartoAuto ? { ponderaciones: repartoIgual(documentos, 100 - sumaHabilidades(prev.skills)) } : {}) }
       })
 
       setNuevoDocumento('')
@@ -170,10 +173,37 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
   const repartirPonderaciones = () => {
     if (form.documentos.length === 0) return
     setRepartoAuto(true)
-    setForm((prev) => ({ ...prev, ponderaciones: repartoIgual(prev.documentos) }))
+    setForm((prev) => ({ ...prev, ponderaciones: repartoIgual(prev.documentos, 100 - sumaHabilidades(prev.skills)) }))
   }
 
   const sumaPonderaciones = () => sumaDePonderaciones(form)
+
+  // Checklist de cada documento: texto libre con un ítem por línea.
+  const itemsDe = (identificador) => form.itemsDocumentos?.[identificador] ?? ''
+  const cambiarItems = (identificador, texto) => {
+    setForm((prev) => ({
+      ...prev,
+      itemsDocumentos: { ...(prev.itemsDocumentos ?? {}), [identificador]: String(texto).slice(0, 2000) },
+    }))
+  }
+
+  // ── Porcentaje de cada habilidad ─────────────────────────────────────
+  // Vacío = sin porcentaje. Con documentos y habilidades ponderados, el total debe ser 100 %.
+  const cambiarPorcentajeSkill = (nombre, valor) => {
+    const clave = claveSkill(nombre)
+    const limpio = String(valor).replace(/[^\d.]/g, '').slice(0, 6)
+    setForm((prev) => ({
+      ...prev,
+      skills: prev.skills.map((s) => (claveSkill(s.nombre) === clave ? { ...s, ponderacion: limpio } : s)),
+    }))
+  }
+
+  const porcentajeSkill = (nombre) => {
+    const clave = claveSkill(nombre)
+    return form.skills.find((s) => claveSkill(s.nombre) === clave)?.ponderacion ?? ''
+  }
+
+  const sumaTotal = () => sumaTotalPorcentajes(form)
 
   return {
     agregarDocumentoCatalogo,
@@ -181,6 +211,9 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
     alternarDocumento,
     alternarSkillCatalogo,
     cambiarPonderacion,
+    cambiarPorcentajeSkill,
+    porcentajeSkill,
+    sumaTotal,
     documentosObligatorios,
     documentosOpcionales,
     errorDocumento,
@@ -201,5 +234,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
     skillsCatalogo,
     skillsLibres,
     sumaPonderaciones,
+    itemsDe,
+    cambiarItems,
   }
 }

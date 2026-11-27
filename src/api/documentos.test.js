@@ -22,8 +22,8 @@ describe('listaDocumentos', () => {
     const { data } = await listaDocumentos(5)
 
     expect(data).toEqual([
-      { id: 'doc-1', nombre: 'Hoja de vida', tipo: 'documento', ponderacion: 60, obligatorio: true, estado: 'subido', archivo: { id: 9 } },
-      { id: 'doc-2', nombre: 'Tarjeta profesional', tipo: 'documento', ponderacion: null, obligatorio: false, estado: 'pendiente', archivo: null },
+      { id: 'doc-1', nombre: 'Hoja de vida', tipo: 'documento', ponderacion: 60, obligatorio: true, estado: 'subido', archivo: { id: 9 }, items: [] },
+      { id: 'doc-2', nombre: 'Tarjeta profesional', tipo: 'documento', ponderacion: null, obligatorio: false, estado: 'pendiente', archivo: null, items: [] },
     ])
   })
 })
