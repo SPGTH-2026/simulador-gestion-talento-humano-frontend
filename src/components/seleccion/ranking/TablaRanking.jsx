@@ -16,17 +16,17 @@ export default function TablaRanking({ alternar, cargando, columnaCasillas, comp
       {/* Puesto y Resultado son columnas propias en escritorio y solo existen con actividades (sin ellas no hay nada que
           mostrar). En móvil esos datos van bajo el nombre, con su etiqueta. 'Documental' tiene ancho de sobra para su
           encabezado en mayúsculas con el relleno de la celda: antes se recortaba contra el borde de la tarjeta. */}
-      {/* Desde 640 px Aspirante ocupa poco más de un tercio (o el 60 % sin Puesto ni Resultado) y las demás columnas
+      {/* Desde 560 px de panel (en una ventana de 1242 px el panel mide unos 590) Aspirante ocupa poco más de un tercio (o el 60 % sin Puesto ni Resultado) y las demás columnas
           se reparten el resto por igual, en vez de dejarle todo el ancho sobrante al nombre. Por debajo, anchos fijos
-          (el encabezado «Documental» necesita unos 115 px). */}
-      {/* Entre 640 y 860 px las cifras necesitan anchos fijos; desde 860 px Aspirante toma un tercio y las cifras se
+          (el encabezado «Documental» necesita unos 106 px). */}
+      {/* Entre 560 y 860 px las cifras necesitan anchos fijos; desde 860 px Aspirante toma un tercio y las cifras se
           reparten el resto por igual. La columna de casillas mide 96 px en modo comparación (su encabezado es más largo). */}
       <colgroup>
-        {columnaCasillas && <col className={enComparacion ? 'w-24' : 'w-14 @min-[640px]:w-20'} />}
+        {columnaCasillas && <col className={enComparacion ? 'w-24' : 'w-[4.25rem] @min-[560px]:w-20'} />}
         <col className={conPuesto ? '@min-[860px]:w-[34%]' : '@min-[860px]:w-[56%]'} />
-        {conPuesto && <col className="hidden w-16 @min-[640px]:table-column @min-[860px]:w-auto" />}
-        {conPuesto && <col className="hidden w-24 @min-[640px]:table-column @min-[860px]:w-auto" />}
-        <col className="hidden w-32 @min-[640px]:table-column @min-[860px]:w-auto" />
+        {conPuesto && <col className="hidden w-[4.5rem] @min-[560px]:table-column @min-[860px]:w-auto" />}
+        {conPuesto && <col className="hidden w-24 @min-[560px]:table-column @min-[860px]:w-auto" />}
+        <col className="hidden w-28 @min-[560px]:table-column @min-[860px]:w-auto" />
       </colgroup>
       <thead className={CLASE_THEAD}>
         <tr>
@@ -36,9 +36,9 @@ export default function TablaRanking({ alternar, cargando, columnaCasillas, comp
             </th>
           )}
           <th scope="col" className={CLASE_TH}>Aspirante</th>
-          {conPuesto && <th scope="col" className={`hidden @min-[640px]:table-cell ${CLASE_TH} text-right`}>Puesto</th>}
-          {conPuesto && <th scope="col" className={`hidden @min-[640px]:table-cell ${CLASE_TH} text-right`}>Resultado</th>}
-          <th scope="col" className={`hidden @min-[640px]:table-cell ${CLASE_TH} text-right`}>Documental</th>
+          {conPuesto && <th scope="col" className={`hidden @min-[560px]:table-cell ${CLASE_TH} text-right`}>Puesto</th>}
+          {conPuesto && <th scope="col" className={`hidden @min-[560px]:table-cell ${CLASE_TH} text-right`}>Resultado</th>}
+          <th scope="col" className={`hidden @min-[560px]:table-cell ${CLASE_TH} text-right`}>Documental</th>
         </tr>
       </thead>
       <tbody className={CLASE_TBODY}>
@@ -82,7 +82,7 @@ export default function TablaRanking({ alternar, cargando, columnaCasillas, comp
                     </span>
                     {/* En móvil los datos van bajo el nombre y dicen qué son: «Puesto 1 · Resultado 10,00 · Documental 100 %». */}
                     {(conPuesto || doc != null) && (
-                      <span className={`text-xs tabular-nums @min-[640px]:hidden ${CLASE_TEXTO_SUAVE}`}>
+                      <span className={`text-xs tabular-nums @min-[560px]:hidden ${CLASE_TEXTO_SUAVE}`}>
                         {[
                           conPuesto && `Puesto ${f.posicion ?? '—'}`,
                           conPuesto && `Resultado ${res ?? '—'}`,
@@ -98,12 +98,12 @@ export default function TablaRanking({ alternar, cargando, columnaCasillas, comp
                 </div>
               </td>
               {conPuesto && (
-                <td className={`hidden @min-[640px]:table-cell ${CLASE_TD} text-right`}>
+                <td className={`hidden @min-[560px]:table-cell ${CLASE_TD} text-right`}>
                   <span className={`font-semibold tabular-nums ${CLASE_TEXTO_FUERTE}`}>{f.posicion ?? '—'}</span>
                 </td>
               )}
               {conPuesto && (
-                <td className={`hidden @min-[640px]:table-cell ${CLASE_TD} text-right`}>
+                <td className={`hidden @min-[560px]:table-cell ${CLASE_TD} text-right`}>
                   {res == null ? (
                     <SinDato lectura="Sin resultado" />
                   ) : (
@@ -111,7 +111,7 @@ export default function TablaRanking({ alternar, cargando, columnaCasillas, comp
                   )}
                 </td>
               )}
-              <td className={`hidden @min-[640px]:table-cell ${CLASE_TD} text-right`}>
+              <td className={`hidden @min-[560px]:table-cell ${CLASE_TD} text-right`}>
                 {doc == null ? (
                   <SinDato lectura="Sin dato de cumplimiento" />
                 ) : (

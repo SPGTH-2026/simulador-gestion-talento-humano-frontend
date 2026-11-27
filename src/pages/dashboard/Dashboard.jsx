@@ -3,6 +3,7 @@ import { listaConvocatorias } from '../../api/convocatorias'
 import { misEvaluaciones } from '../../api/evaluaciones'
 import { listaConvocatoriasSeleccion } from '../../api/seleccion'
 import { listaMisPostulaciones } from '../../api/postulaciones'
+import AvisoCrearFicha from '../../components/inicio/AvisoCrearFicha'
 import Carrusel from '../../components/inicio/Carrusel'
 import {
   BloqueConvocatoriasAspirante,
@@ -99,6 +100,7 @@ function Inicio() {
         {/* Selección (seleccionador): sus dos columnas tienen casi la misma altura, así que el último bloque de cada una
             crece y terminan parejas, sin hueco en la esquina. Los demás perfiles conservan su composición. */}
         <div className={`flex min-w-0 flex-col gap-5 ${estirar ? 'lg:[&>:last-child]:flex-1' : ''}`}>
+          {user?.role === 'instructor' && <AvisoCrearFicha />}
           <Carrusel />
           {principales}
         </div>

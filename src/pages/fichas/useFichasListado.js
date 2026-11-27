@@ -1,131 +1,63 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
-import { listaFichas, crearFicha, actualizarFicha, eliminarFicha, asignarInstructor, quitarInstructor } from '../../api/fichas'
-import { listaUsuarios } from '../../api/usuarios'
-import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
+import { eliminarFicha, listaFichas } from '../../api/fichas'
+import { mensajeError } from '../../api/mensajeError'
+import useAvisoTransitorio from '../../hooks/useAvisoTransitorio'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
+import { ordenarPorCodigo } from './constantesFichas'
 
-export const FORM_VACIO = { codigo: '', nombre_programa: '', estado: 'activa' }
-
-export const NUEVA = 'nueva'
-
-// Lógica de FichasListado: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
+// Lógica de la pantalla de fichas: carga, los diálogos (crear, editar, instructores) y eliminar. Es solo presentación: las
+// operaciones y los permisos son los de siempre (GET /api/fichas devuelve todas las fichas del alcance, sin paginar).
 export function useFichasListado() {
   const { user } = useAuth()
-  // Solo el super admin reparte los grupos: asignar/quitar instructor.
+  const confirmar = useConfirmacion()
+  // Solo el super admin reparte los grupos; el backend lo vuelve a exigir.
   const esSuperAdmin = user?.role === 'super_admin'
 
   const [fichas, setFichas] = useState([])
-  const [instructores, setInstructores] = useState([])
   const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
-  const [exito, setExito] = useState('')
+  const [errorCarga, setErrorCarga] = useState('')
+  // Éxito: aviso breve que se retira solo (patrón de la app). Error: se queda hasta la siguiente acción.
+  const [exito, setExito] = useState(null) // { texto }
+  const [errorAccion, setErrorAccion] = useState('')
+  const pausaExito = useAvisoTransitorio(exito, () => setExito(null))
+  // null | { tipo: 'ficha', ficha: objeto | null (alta) } | { tipo: 'instructores', fichaId }
+  const [dialogo, setDialogo] = useState(null)
+  const [eliminandoId, setEliminandoId] = useState(null)
+  const enVuelo = useRef(false)
 
-  const [editandoId, setEditandoId] = useState(null)
-  const [form, setForm] = useState(FORM_VACIO)
-  const [errores, setErrores] = useState({})
-  const [guardando, setGuardando] = useState(false)
-
-  // Instructor elegido por ficha: { [fichaId]: usuarioId }
-  const [elegido, setElegido] = useState({})
-  const [asignandoId, setAsignandoId] = useState(null)
-
-  const recargar = () =>
+  const traer = () =>
     listaFichas()
       .then((res) => {
         setFichas(res.data)
-        setError('')
+        setErrorCarga('')
       })
-      .catch((e) => setError(mensajeError(e)))
+      .catch((err) => setErrorCarga(mensajeError(err)))
+      .finally(() => setCargando(false))
 
   useEffect(() => {
-    recargar().finally(() => setCargando(false))
+    traer()
   }, [])
 
-  useEffect(() => {
-    if (!esSuperAdmin) return
+  // La respuesta del backend trae la ficha ya presentada (con sus instructores y cantidades): se refleja sin recargar todo.
+  const aplicarFicha = (ficha) =>
+    setFichas((actuales) => ordenarPorCodigo(actuales.some((f) => f.id === ficha.id) ? actuales.map((f) => (f.id === ficha.id ? ficha : f)) : [...actuales, ficha]))
 
-    // El backend pagina: se piden todas las páginas de instructores (no solo la primera de 20), porque el super admin
-    // puede asignar cualquiera de ellos. Si una página falla, el resto de la pantalla sigue funcionando.
-    let vigente = true
-    const cargarTodos = async () => {
-      const acumulados = []
-      let pagina = 1
-      let ultima = 1
-      do {
-        const res = await listaUsuarios({ role: 'instructor', per_page: 100, page: pagina })
-        acumulados.push(...(res.data ?? []))
-        ultima = res.meta?.last_page ?? 1
-        pagina += 1
-      } while (pagina <= ultima)
-      return acumulados
-    }
-    cargarTodos()
-      .then((lista) => {
-        if (vigente) setInstructores(lista)
-      })
-      .catch(() => {})
-    return () => {
-      vigente = false
-    }
-  }, [esSuperAdmin])
+  const abrirAlta = () => setDialogo({ tipo: 'ficha', ficha: null })
+  const abrirEdicion = (ficha) => setDialogo({ tipo: 'ficha', ficha })
+  const abrirInstructores = (ficha) => setDialogo({ tipo: 'instructores', fichaId: ficha.id })
+  const cerrarDialogo = () => setDialogo(null)
 
-  const empezarAlta = () => {
-    setEditandoId(NUEVA)
-    setForm(FORM_VACIO)
-    setErrores({})
-    setExito('')
+  const alGuardar = (ficha, editando) => {
+    aplicarFicha(ficha)
+    setDialogo(null)
+    setErrorAccion('')
+    setExito({ texto: editando ? 'Ficha actualizada correctamente.' : 'Ficha creada correctamente. Ya eres su dueño.' })
   }
 
-  const empezarEdicion = (ficha) => {
-    setEditandoId(ficha.id)
-    setForm({
-      codigo: ficha.codigo,
-      nombre_programa: ficha.nombre_programa,
-      estado: ficha.estado,
-    })
-    setErrores({})
-    setExito('')
-  }
-
-  const cancelar = () => {
-    setEditandoId(null)
-    setErrores({})
-  }
-
-  const guardar = async (e) => {
-    e.preventDefault()
-    setGuardando(true)
-    setErrores({})
-    setExito('')
-
-    const cuerpo = {
-      codigo: form.codigo,
-      nombre_programa: form.nombre_programa,
-      estado: form.estado,
-    }
-
-    try {
-      if (editandoId === NUEVA) {
-        await crearFicha(cuerpo)
-        setExito('Ficha creada correctamente. Ya eres su dueño.')
-      } else {
-        await actualizarFicha(editandoId, cuerpo)
-        setExito('Ficha actualizada correctamente.')
-      }
-      setEditandoId(null)
-      await recargar()
-    } catch (err) {
-      setErrores(erroresDeCampo(err))
-      setError(mensajeError(err))
-    } finally {
-      setGuardando(false)
-    }
-  }
-
-  const confirmar = useConfirmacion()
-
+  // Devuelve true si la ficha se eliminó (la pantalla usa eso para devolver el foco: el botón desaparece con la tarjeta).
   const eliminar = async (ficha) => {
+    if (enVuelo.current) return false
     const ok = await confirmar({
       titulo: 'Eliminar ficha',
       mensaje: `¿Estás seguro de eliminar la ficha "${ficha.codigo}"?`,
@@ -133,89 +65,30 @@ export function useFichasListado() {
       textoCancelar: 'Cancelar',
       peligro: true,
     })
-    if (!ok) return
-
+    if (!ok || enVuelo.current) return false
+    enVuelo.current = true
+    setEliminandoId(ficha.id)
+    setExito(null)
+    setErrorAccion('')
     try {
       await eliminarFicha(ficha.id)
-      setExito('Ficha eliminada correctamente.')
-      setError('')
-      await recargar()
+      setFichas((actuales) => actuales.filter((f) => f.id !== ficha.id))
+      setExito({ texto: 'Ficha eliminada correctamente.' })
+      return true
     } catch (err) {
-      setError(mensajeError(err))
-    }
-  }
-
-  const asignar = async (ficha) => {
-    const usuarioId = elegido[ficha.id]
-    if (!usuarioId) return
-
-    setAsignandoId(ficha.id)
-    try {
-      await asignarInstructor(ficha.id, Number(usuarioId))
-      setExito('Instructor asignado a la ficha.')
-      setError('')
-      setElegido({ ...elegido, [ficha.id]: '' })
-      await recargar()
-    } catch (err) {
-      setError(mensajeError(err))
+      // Por ejemplo, 422 si tiene convocatorias o personas: el mensaje del backend se muestra tal cual.
+      setErrorAccion(mensajeError(err))
+      return false
     } finally {
-      setAsignandoId(null)
+      setEliminandoId(null)
+      enVuelo.current = false
     }
   }
 
-  const quitar = async (ficha, instructor) => {
-    const ok = await confirmar({
-      titulo: 'Quitar instructor',
-      mensaje: `¿Estás seguro de quitar a ${instructor.name} de la ficha "${ficha.codigo}"?`,
-      textoConfirmar: 'Quitar',
-      textoCancelar: 'Cancelar',
-      peligro: true,
-    })
-    if (!ok) return
+  const fichaDelDialogo = dialogo?.tipo === 'instructores' ? fichas.find((f) => f.id === dialogo.fichaId) : null
 
-    try {
-      await quitarInstructor(ficha.id, instructor.id)
-      setExito('Instructor quitado de la ficha.')
-      setError('')
-      await recargar()
-    } catch (err) {
-      setError(mensajeError(err))
-    }
+  return {
+    abrirAlta, abrirEdicion, abrirInstructores, alGuardar, aplicarFicha, cargando, cerrarDialogo, dialogo, eliminandoId, eliminar, errorCarga, esSuperAdmin,
+    errorAccion, exito, fichaDelDialogo, fichas, pausaExito,
   }
-
-    return {
-      asignandoId,
-      asignar,
-      cancelar,
-      cargando,
-      confirmar,
-      editandoId,
-      elegido,
-      eliminar,
-      empezarAlta,
-      empezarEdicion,
-      error,
-      errores,
-      esSuperAdmin,
-      exito,
-      fichas,
-      form,
-      guardando,
-      guardar,
-      instructores,
-      quitar,
-      recargar,
-      setAsignandoId,
-      setCargando,
-      setEditandoId,
-      setElegido,
-      setError,
-      setErrores,
-      setExito,
-      setFichas,
-      setForm,
-      setGuardando,
-      setInstructores,
-      user,
-    }
 }

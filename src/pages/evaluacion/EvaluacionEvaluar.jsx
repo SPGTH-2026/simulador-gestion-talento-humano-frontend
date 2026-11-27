@@ -12,6 +12,7 @@ import {
   EtiquetaConIcono,
   EtiquetaEvaluacion,
 } from '../../components/evaluacion/PresentacionEvaluacion'
+import DatosAspirante from '../../components/evaluacion/DatosAspirante'
 import RequisitoEvaluacion from '../../components/evaluacion/RequisitoEvaluacion'
 import RespuestaSiNo from '../../components/evaluacion/RespuestaSiNo'
 import ResumenCumplimiento from '../../components/evaluacion/ResumenCumplimiento'
@@ -33,9 +34,10 @@ export default function EvaluacionEvaluar() {
   const ctx = useEvaluacionEvaluar()
   // Mientras carga, sin postulación o sin datos, el hook devuelve la propia pantalla (un elemento de React) y no el contexto.
   if (isValidElement(ctx)) return ctx
-  const { abriendo, abriendoCertificado, actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, enCorreccion, error, errorDocumento, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, noCumple, habilidades, skillMarcas, setSkillMarca, itemMarcas, setItemMarca, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setObservaciones, setRespuestas, sinCargar, sinResponder, total, verCertificado, verDocumento, volverAlListado } = ctx
+  const { actualizados, aplicables, aspirante, botonBorrador, botonCorregir, botonFinalizar, bloqueoFinalizar, bloqueoPorNoCumple, convocatoria, correccion, cumplidos, cumplimiento, datosAspirante, enCorreccion, error, evaluacion, excluidos, faltantes, finalizar, guardando, guardar, habilidades, itemMarcas, noCumple, observaciones, pesos, postulacionId, puedePedirCorreccion, respuestas, setDato, setItemMarca, setObservaciones, setRespuestas, setSkillMarca, skillMarcas, sinCargar, sinResponder, total, verCertificado, verDocumento, visor, volverAlListado } = ctx
   return (
     <div className="flex flex-col gap-4">
+      {visor}
       {volverAlListado}
 
       <header className={`${CLASE_TARJETA} flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5`}>
@@ -66,6 +68,7 @@ export default function EvaluacionEvaluar() {
         </div>
       </header>
 
+      {datosAspirante?.datos && <DatosAspirante datos={datosAspirante.datos} esMenor={datosAspirante.es_menor} />}
 
       {evaluacion?.reabierta && (
         <MensajeAviso>
@@ -116,7 +119,6 @@ export default function EvaluacionEvaluar() {
             </p>
           </div>
 
-          {errorDocumento && <MensajeError>{errorDocumento}</MensajeError>}
 
           {total === 0 ? (
             <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>Sin documentos obligatorios aplicables.</p>
@@ -131,7 +133,6 @@ export default function EvaluacionEvaluar() {
                   actualizado={actualizados.includes(documento.id)}
                   onChange={(valor) => setRespuestas((prev) => ({ ...prev, [documento.id]: valor }))}
                   onVerDocumento={() => verDocumento(documento)}
-                  abriendo={abriendo === documento.id}
                   items={documento.items ?? []}
                   marcasItems={itemMarcas}
                   onMarcaItem={setItemMarca}
@@ -176,11 +177,9 @@ export default function EvaluacionEvaluar() {
                             variante="contorno"
                             tamano="tactil"
                             onClick={() => verCertificado(skill)}
-                            disabled={abriendoCertificado === skill.postulacion_skill_id}
-                            aria-busy={abriendoCertificado === skill.postulacion_skill_id}
                             aria-label={`Ver documento: ${skill.nombre}`}
                           >
-                            {abriendoCertificado === skill.postulacion_skill_id ? 'Abriendo…' : 'Ver documento'}
+                            Ver documento
                           </Boton>
                         )}
                         <RespuestaSiNo

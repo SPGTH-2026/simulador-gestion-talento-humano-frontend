@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { IconoX } from '../../components/convocatorias/Iconos'
 import { DatosAspirante, EtiquetaConIcono, EtiquetaEvaluacion, Puntaje, Resultado } from '../../components/evaluacion/PresentacionEvaluacion'
 import Boton from '../../components/ui/Boton'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoLista } from '../../components/ui/Esqueleto'
 import Dialogo from '../../components/ui/Dialogo'
 import Icono from '../../components/ui/Icono'
 import Mensaje, { MensajeAviso } from '../../components/ui/Mensaje'
@@ -195,7 +195,7 @@ export function DetalleEvaluacion({ evaluacion, documentos, estadoDocumentos, on
       <div className="mt-4">
         <TituloBloque>Documentos</TituloBloque>
         {estadoDocumentos === 'cargando' ? (
-          <Cargando>Cargando documentos…</Cargando>
+          <EsqueletoLista texto="Cargando documentos…" filas={2} avatar={false} />
         ) : estadoDocumentos === 'error' ? (
           <p className={`text-sm ${CLASE_TEXTO_SUAVE}`}>No se pudieron cargar los documentos.</p>
         ) : documentos.length === 0 ? (

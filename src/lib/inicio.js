@@ -1,3 +1,5 @@
+import { estadoVentana } from './ventanaPostulacion'
+
 // Qué bloques de Inicio le corresponden al usuario. Se autoriza con permisos,
 // pero también con el rol y el alcance REAL del endpoint: los permisos
 // 'propio:*' los tienen también el instructor y el super admin, y eso no los
@@ -33,6 +35,27 @@ export function alcanceConvocatorias(user) {
   if (user?.role === 'super_admin') return 'Convocatorias de todas las fichas.'
   if (user?.role === 'instructor') return 'Convocatorias de las fichas que tienes a cargo.'
   return 'Convocatorias de tu ficha.'
+}
+
+// ¿Esta postulación del aspirante sigue viva y merece estar en Inicio? Solo se muestran las que todavía piden algo o están
+// en curso:
+//  - borrador: solo mientras la convocatoria siga RECIBIENDO postulaciones (ventana abierta); si ya cerró, no hay nada que
+//    continuar y deja de aparecer.
+//  - enviada: mientras la convocatoria siga publicada o en proceso; cuando el proceso termina (convocatoria cerrada) deja de
+//    aparecer.
+//  - retirada: nunca (queda en «Mis postulaciones»).
+// Todo lo demás sigue en el listado completo de «Mis postulaciones».
+export function postulacionActivaEnInicio(postulacion) {
+  const estadoConvocatoria = postulacion?.convocatoria?.estado?.codigo
+
+  switch (postulacion?.estado?.codigo) {
+    case 'borrador':
+      return estadoVentana(postulacion.convocatoria) === 'abierta'
+    case 'postulada':
+      return estadoConvocatoria === 'publicada' || estadoConvocatoria === 'en_proceso'
+    default:
+      return false
+  }
 }
 
 // Cuántos elementos se muestran por lista. Inicio solo adelanta lo más útil;

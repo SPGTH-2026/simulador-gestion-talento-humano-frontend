@@ -8,18 +8,23 @@ import Icono from '../ui/Icono'
 import Pestanas from '../ui/Pestanas'
 import PanelCalificaciones from './PanelCalificaciones'
 import PanelReferencia from './PanelReferencia'
+import PanelCitaciones from './citaciones/PanelCitaciones'
+import { useCitacionesCandidato } from './citaciones/useCitacionesCandidato'
 import { CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { estadoDocumental, textoCumplimiento } from '../../lib/seleccion'
 
 // Detalle de UN candidato: calificaciones (siempre) y referencia documental (solo Instructor y Superadministrador).
 // El padre lo monta con key = id del candidato, así que al abrir otro empieza de cero y las respuestas del anterior
 // no lo alcanzan. 'fila' es la fila viva de la lista: el estado del encabezado cambia cuando el servidor lo cambia.
-export default function DetalleCandidato({ convocatoriaId, fila, puedeDecidir, puedeDesignar, onCerrar, onCambio }) {
+export default function DetalleCandidato({ convocatoriaId, fila, puedeDecidir, puedeDesignar, pestanaInicial = 'calificaciones', onCerrar, onCambio }) {
   const idTitulo = useId()
-  const [pestana, setPestana] = useState('calificaciones')
+  const [pestana, setPestana] = useState(puedeDesignar || pestanaInicial !== 'referencia' ? pestanaInicial : 'calificaciones')
   // Sube cuando cambia la referencia: las calificaciones dependen de la habilitación documental.
   const [recarga, setRecarga] = useState(0)
   const doc = estadoDocumental(fila.estado_documental)
+  // Las citaciones solo aparecen si la convocatoria tiene actividades presenciales (o ya hay citas guardadas): sin ellas no se ofrecen.
+  const citaciones = useCitacionesCandidato(convocatoriaId, fila.id)
+  const conCitaciones = citaciones.datos !== null && (citaciones.datos.actividades.length > 0 || citaciones.datos.citaciones.length > 0)
 
   const alCambiar = (cambio) => {
     onCambio(cambio)
@@ -37,9 +42,19 @@ export default function DetalleCandidato({ convocatoriaId, fila, puedeDecidir, p
           puedeDecidir={puedeDecidir}
           recarga={recarga}
           onCambio={alCambiar}
+          onIrAConfiguracion={onCerrar}
         />
       ),
     },
+    ...(conCitaciones
+      ? [
+          {
+            id: 'citaciones',
+            etiqueta: 'Citaciones',
+            contenido: <PanelCitaciones convocatoriaId={convocatoriaId} postulacionId={fila.id} puedeDecidir={puedeDecidir} ctx={citaciones} />,
+          },
+        ]
+      : []),
     ...(puedeDesignar
       ? [
           {
@@ -85,16 +100,15 @@ export default function DetalleCandidato({ convocatoriaId, fila, puedeDecidir, p
           </Boton>
         </header>
 
-        {pestanas.length > 1 ? (
-          <Pestanas
-            etiquetaAccesible="Detalle del candidato"
-            pestanas={pestanas}
-            activaId={pestana}
-            onCambiar={setPestana}
-          />
-        ) : (
-          pestanas[0].contenido
-        )}
+        {/* Siempre el mismo árbol: si las citaciones llegan después y aparece su pestaña, las calificaciones no se
+            desmontan (antes lo hacían y volvían a pedirse, con su carga de nuevo a la vista). */}
+        <Pestanas
+          etiquetaAccesible="Detalle del candidato"
+          pestanas={pestanas}
+          activaId={pestana}
+          onCambiar={setPestana}
+          barraSiUna={false}
+        />
       </div>
     </Dialogo>
   )

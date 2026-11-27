@@ -1,6 +1,3 @@
-export const CLASE_ESQUELETO =
-  'animate-pulse rounded-md bg-sena-hundido motion-reduce:animate-none dark:bg-sena-superficie-alta'
-
 // Botones de la tarjeta: 44 px de alto en pantallas táctiles y 40 px desde 'lg',
 // como el resto de la aplicación. Cada acción lleva su icono junto al texto, del
 // sistema compartido (components/ui/Icono): el mismo tamaño y trazo en todos.

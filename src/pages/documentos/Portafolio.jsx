@@ -1,5 +1,6 @@
 import { isValidElement } from 'react'
 import { usePortafolio } from './usePortafolio'
+import { EsqueletoDetalle } from '../../components/ui/Esqueleto'
 import { Link } from 'react-router-dom'
 import { descargarDocumentoRevision, descargarCertificadoRevision } from '../../api/portafolios'
 import Mensaje, { MensajeAviso } from '../../components/ui/Mensaje'
@@ -37,10 +38,20 @@ export const TITULO_BLOQUE = `text-base font-semibold ${CLASE_TEXTO_FUERTE}`
 export default function Portafolio({ userId }) {
   const ctx = usePortafolio({ userId })
   // Mientras carga o si falla, el hook devuelve la propia pantalla (un elemento de React) o null, no el contexto.
+  // Con los datos en carga, «Volver al listado» (que no depende de la API) se ve y el esqueleto sustituye solo el contenido.
+  if (isValidElement(ctx) && ctx.type === EsqueletoDetalle) {
+    return (
+      <div className="flex flex-col gap-5">
+        <Volver to="/documentos">Volver al listado</Volver>
+        {ctx}
+      </div>
+    )
+  }
   if (ctx === null || isValidElement(ctx)) return ctx
-  const { abriendoId, botonesLectura, encabezadoRevision, errorRevision, handleVerDocumentos, portafolio, postulacionSel, postulaciones, revision, rutaArchivo, setPostulacionSel, setRevision, usuario, verArchivo } = ctx
+  const { abriendoId, botonesLectura, encabezadoRevision, errorRevision, handleVerDocumentos, portafolio, postulacionSel, postulaciones, revision, rutaArchivo, setPostulacionSel, setRevision, usuario, verArchivo, visor } = ctx
   return (
     <>
+      {visor}
       <div className="flex flex-col gap-5">
         <header className="flex flex-col">
           <Volver to="/documentos">Volver al listado</Volver>
@@ -170,7 +181,7 @@ export default function Portafolio({ userId }) {
                           {botonesLectura(
                             `doc-${d.archivo.id}`,
                             d.archivo.nombre_original,
-                            () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
+                            () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original, d.parametro?.nombre ?? d.parametro?.codigo),
                             () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
                           )}
                         </div>
@@ -200,7 +211,7 @@ export default function Portafolio({ userId }) {
                         {botonesLectura(
                           `adic-${d.archivo.id}`,
                           d.archivo.nombre_original,
-                          () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original),
+                          () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original, d.titulo),
                           () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
                         )}
                       </div>
@@ -233,7 +244,7 @@ export default function Portafolio({ userId }) {
                         botonesLectura(
                           `skill-${s.id}`,
                           s.certificado.nombre_original,
-                          () => verArchivo(rutaArchivo(`skills/${s.id}/certificado/archivo?inline=1`), s.certificado.nombre_original),
+                          () => verArchivo(rutaArchivo(`skills/${s.id}/certificado/archivo?inline=1`), s.certificado.nombre_original, s.nombre ? `Certificado: ${s.nombre}` : undefined),
                           () => descargarCertificadoRevision(postulacionSel.id, s.id, s.certificado.nombre_original),
                         )}
                     </div>

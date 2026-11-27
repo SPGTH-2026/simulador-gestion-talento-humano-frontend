@@ -4,7 +4,7 @@ import Boton from '../../components/ui/Boton'
 import Paginacion from '../../components/ui/Paginacion'
 import Campo from '../../components/ui/Campo'
 import CampoBusqueda from '../../components/ui/CampoBusqueda'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoLista } from '../../components/ui/Esqueleto'
 import Icono from '../../components/ui/Icono'
 import EstadoVacio from '../../components/ui/EstadoVacio'
 import Etiqueta from '../../components/ui/Etiqueta'
@@ -107,7 +107,7 @@ export default function Usuarios() {
               <tr>
                 <td colSpan="6">
                   <div className="sticky left-0 w-[100cqw]">
-                    <Cargando>Cargando usuarios…</Cargando>
+                    <EsqueletoLista texto="Cargando usuarios…" filas={4} />
                   </div>
                 </td>
               </tr>
@@ -190,7 +190,10 @@ export default function Usuarios() {
 
                           {form.role === 'instructor' && (
                             <fieldset className="flex flex-col gap-2 text-sm text-sena-azul dark:text-sena-texto">
-                              <legend className="font-medium">Fichas del instructor (al menos una)</legend>
+                              <legend className="font-medium">Fichas del instructor (opcional)</legend>
+                              <p className="text-xs text-sena-texto-suave">
+                                Si no le asignas ninguna, el instructor crea su propia ficha desde la sección Fichas.
+                              </p>
                               {fichas.map((f) => (
                                 <label key={f.id} className="flex items-center gap-2">
                                   <input

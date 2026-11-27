@@ -32,7 +32,7 @@ export function useAccionesDetalle(deps) {
   // a la API ni crea nada (el borrador lo crea el panel, de forma silenciosa, en
   // su primera acción de guardado). Aquí solo se salta a la pestaña Documentos,
   // donde vive el panel.
-  const irADocumentos = () => document.getElementById('tab-documentos')?.click()
+  const irADocumentos = () => document.getElementById('tab-datos')?.click()
 
   let accionInferior = null
   if (esAspirantePublicada) {
@@ -60,14 +60,14 @@ export function useAccionesDetalle(deps) {
       }
     } else {
       // Sin postulación o con una en borrador: la acción es la misma y siempre
-      // lleva a la pestaña Documentos. El texto corto evita repetir "Siguiente".
+      // lleva a la primera pestaña de la postulación (Datos personales). El texto corto evita repetir "Siguiente".
       accionInferior = {
-        etiqueta: 'Continuar a documentos',
+        etiqueta: 'Continuar con mi postulación',
         motivo: cerrada ? textoVentana(detalle) : '',
         ayuda:
           estadoPostulacion === 'borrador'
-            ? 'Tu postulación está en borrador. Complétala y envíala desde la pestaña Documentos.'
-            : 'Completa tus datos y adjunta los documentos en la pestaña Documentos.',
+            ? 'Tu postulación está en borrador. Complétala y envíala desde las pestañas Datos personales y Documentos.'
+            : 'Llena tus datos personales, autoriza su tratamiento y adjunta los documentos en las pestañas de arriba.',
         deshabilitado: cerrada,
         onClick: irADocumentos,
         insignia: estadoPostulacion === 'borrador',

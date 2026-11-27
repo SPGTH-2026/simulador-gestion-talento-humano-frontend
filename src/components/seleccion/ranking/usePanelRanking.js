@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { rankingConvocatoria } from '../../../api/seleccion'
 import { mensajeError } from '../../../api/mensajeError'
 import useAvisoTransitorio from '../../../hooks/useAvisoTransitorio'
+import { FALTA_PARA_ESTAR_LISTO, rutaDecidir } from '../../../lib/pasosSeleccion'
 
 // Lógica de PanelRanking: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
 export function usePanelRanking({ convocatoriaId, activo = true, enProceso, puedeDecidir, comparacion, onConfirmada }) {
@@ -115,7 +116,7 @@ export function usePanelRanking({ convocatoriaId, activo = true, enProceso, pued
   const objetivo = useObjetivoRanking({ convocatoriaId, meta, recargar, montado, botonCambiar })
   const { abrirObjetivo, avisoObjetivo, cerrarObjetivo, errorObjetivo, guardandoObjetivo, guardarObjetivo, objetivoActual, objetivoCambio, objetivoNumero, objetivoTexto, objetivoValido, pausaObjetivo, setAvisoObjetivo, setErrorObjetivo, setGuardandoObjetivo, setObjetivoTexto, textoObjetivo } = objetivo
 
-  const seleccionRanking = useSeleccionRanking({ borradorActual, cargadoClave, convocatoriaId, filas, intentoActual, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista })
+  const seleccionRanking = useSeleccionRanking({ borradorActual, puedeDecidir, cargadoClave, convocatoriaId, filas, intentoActual, meta, montado, onConfirmada, paginaActual, recargar, seleccionActual, setAviso, setBorrador, setBuscando, setDesactualizado, setEstado, setPagina, setRevision, setSeleccion, sugeridosEnCache, versionVista })
   const { abrirRevision, alConfirmar, alRankingDesactualizado, alternar, leerRankingCompleto, leerSugeridos, limpiar, manejarCambioDeRanking, sincronizar, usarSugerencia } = seleccionRanking
   // Avisos del estado: una línea por tema, sin repetir lo que ya dicen las cifras.
   const avisos = []
@@ -134,17 +135,19 @@ export function usePanelRanking({ convocatoriaId, activo = true, enProceso, pued
   if (modo !== 'pendiente_de_configurar' && meta?.no_listos > 0) {
     avisos.push({
       tono: 'info',
-      texto: `${meta.no_listos} ${meta?.no_listos === 1 ? 'candidato aún no está listo' : 'candidatos aún no están listos'}: les falta habilitación documental o alguna nota.`,
+      texto: `${meta.no_listos} ${meta?.no_listos === 1 ? 'candidato aún no está listo: le falta' : 'candidatos aún no están listos: les falta'} ${FALTA_PARA_ESTAR_LISTO[modo] ?? FALTA_PARA_ESTAR_LISTO.con_actividades}.`,
     })
   }
   if (lista) {
     const resumenLista = `Lista confirmada v${lista.version} · ${lista.total} ${lista.total === 1 ? 'finalista' : 'finalistas'}`
-    avisos.push(
-      lista.requiere_revision
-        ? // El ranking solo informa que la lista requiere revisión; el motivo de cada finalista se entrega en «Finalistas».
-          { tono: 'aviso', texto: `${resumenLista} · Requiere revisión: ya no coincide con el ranking. Revísala en «Finalistas», donde se indica el motivo de cada finalista.` }
-        : { tono: 'exito', texto: `${resumenLista} · Al día` },
-    )
+    const entradaLista = lista.requiere_revision
+      ? // El ranking solo informa que la lista requiere revisión; el motivo de cada finalista se entrega en «Finalistas».
+        { tono: 'aviso', texto: `${resumenLista} · Requiere revisión: ya no coincide con el ranking. Revísala en «Finalistas», donde se indica el motivo de cada finalista.` }
+      : { tono: 'exito', texto: `${resumenLista} · Al día` }
+    // Con una lista confirmada, quien puede decidir tiene el paso siguiente a mano (también con la lista en revisión: se
+    // puede liberar un cupo).
+    if (puedeDecidir) entradaLista.enlace = { texto: 'Ir a Decidir', to: rutaDecidir(convocatoriaId) }
+    avisos.push(entradaLista)
   }
   const hayAlerta = avisos.some((a) => a.tono === 'aviso')
 

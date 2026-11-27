@@ -17,6 +17,10 @@ const ESTILO_TITULO = CLASE_TITULO_SECCION
 // archivo. Máximo 5; no bloquean la completitud del paso. La primera acción de
 // guardado dispara el borrador silencioso (asegurar), así que funciona con y sin
 // postulación existente.
+//
+// Solo se edita mientras la persona PUEDE editar (sin postulación, borrador o retirada). Con la postulación enviada, en
+// corrección o con la convocatoria cerrada la sección es de solo lectura: sin formulario ni «Eliminar», y si no hay ningún
+// adicional no se dibuja nada.
 export default function SeccionAdicionales({
   vista,
   editable,
@@ -26,21 +30,29 @@ export default function SeccionAdicionales({
   // Corrección vigente: el backend no admite agregar ni eliminar adicionales mientras dura.
   bloqueoCorreccion = false,
 }) {
-  const ctx = useSeccionAdicionales({ vista, editable, asegurar, onRecargar, onError })
+  const ctx = useSeccionAdicionales({ vista, editable, asegurar, onRecargar, onError, bloqueoCorreccion })
   const { adicionalesMostrar, agregado, archivo, elegirArchivo, eliminar, enVueloIds, enviando, enviar, errores, nota, pausaAgregado, progresoEnvio, puedeAgregar, refArchivo, setArchivo, setNota, setTitulo, titulo, tope, ver } = ctx
+  const puedeEditarAdicionales = editable && !bloqueoCorreccion
+  // Nada que agregar y nada que mostrar: la sección sobra.
+  if (!puedeEditarAdicionales && adicionalesMostrar.length === 0) return null
+
   return (
     <section className={ESTILO_TARJETA}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className={ESTILO_TITULO}>Documentos adicionales</h2>
-        <span className="text-xs text-slate-600 dark:text-sena-texto-suave">
-          {adicionalesMostrar.length} de {MAX_DOCUMENTOS_ADICIONALES}
-        </span>
+        {puedeEditarAdicionales && (
+          <span className="text-xs text-slate-600 dark:text-sena-texto-suave">
+            {adicionalesMostrar.length} de {MAX_DOCUMENTOS_ADICIONALES}
+          </span>
+        )}
       </div>
 
-      <p className="mt-2 text-sm text-slate-600 dark:text-sena-texto-suave">
-        No son obligatorios, pero pueden sumar a tu postulación (maestría, cursos,
-        reconocimientos...). No bloquean tu postulación.
-      </p>
+      {puedeEditarAdicionales && (
+        <p className="mt-2 text-sm text-slate-600 dark:text-sena-texto-suave">
+          No son obligatorios, pero pueden sumar a tu postulación (maestría, cursos,
+          reconocimientos...). No bloquean tu postulación.
+        </p>
+      )}
 
       <ul className="mt-3 flex flex-col divide-y divide-slate-100 dark:divide-sena-borde">
         {adicionalesMostrar.map((adicional) => {

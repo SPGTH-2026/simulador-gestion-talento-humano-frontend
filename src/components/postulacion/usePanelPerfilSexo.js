@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { obtenerPerfil } from '../../api/postulacionesDocumentos'
 
-// Sexo del aspirante, necesario para la libreta militar. Es del usuario, así que se carga aunque no haya postulación.
-export function usePanelPerfilSexo({ estado, setError }) {
+// Sexo del aspirante, necesario para la libreta militar. Se pregunta en el formulario de datos personales; aquí solo se
+// lee. Manda el del estado de la postulación (el servidor lo relee tras cada guardado); mientras no hay postulación se usa
+// el del perfil del usuario, que existe aunque no haya postulación.
+export function usePanelPerfilSexo({ estado }) {
   const [perfil, setPerfil] = useState(null)
 
   useEffect(() => {
@@ -17,12 +19,5 @@ export function usePanelPerfilSexo({ estado, setError }) {
     }
   }, [])
 
-  const sexo = perfil?.sexo ?? estado?.sexo ?? null
-
-  const alGuardarSexo = (sexoNuevo) => {
-    setPerfil((prev) => ({ ...(prev ?? {}), sexo: sexoNuevo }))
-    setError('')
-  }
-
-  return { sexo, alGuardarSexo }
+  return { sexo: estado?.sexo ?? perfil?.sexo ?? null }
 }

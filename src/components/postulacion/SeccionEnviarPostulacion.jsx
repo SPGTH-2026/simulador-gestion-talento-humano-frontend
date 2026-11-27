@@ -2,7 +2,8 @@ import { useId, useState } from 'react'
 import { enviarPostulacion } from '../../api/postulaciones'
 import { mensajeError, erroresDeCampo } from '../../api/mensajeError'
 import { CLASE_TARJETA, CLASE_TITULO_SECCION } from '../../lib/estilos'
-import { ID_SECCION_SEXO, idFilaDocumento } from '../../lib/postulacionDocumentos'
+import { idFilaDocumento } from '../../lib/postulacionDocumentos'
+import { ID_SECCION_DATOS } from '../../lib/datosPersonales'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import Boton from '../ui/Boton'
 import Icono from '../ui/Icono'
@@ -11,7 +12,7 @@ const ESTILO_TARJETA = `${CLASE_TARJETA} p-4`
 
 const ESTILO_TITULO = CLASE_TITULO_SECCION
 
-// Lleva a la fila del documento (o a la sección de sexo) y deja el foco en su primera acción disponible, para que
+// Lleva a la fila del documento (o a los datos personales) y deja el foco en su primera acción disponible, para que
 // quien navega con teclado no tenga que buscarla. Con movimiento reducido no hay desplazamiento animado.
 function irA(id) {
   const destino = document.getElementById(id)
@@ -21,17 +22,23 @@ function irA(id) {
   destino.querySelector('button:not(:disabled), input:not(:disabled)')?.focus({ preventScroll: true })
 }
 
+// Los datos personales pueden estar en otra pestaña (oculta): se abre primero y luego se baja hasta la sección.
+function irAPestanaDatos() {
+  document.getElementById('tab-datos')?.click()
+  setTimeout(() => irA(ID_SECCION_DATOS), 0)
+}
+
 // Envío del BORRADOR a 'postulada'. Solo se muestra mientras la postulación está
 // en borrador y el paso es editable.
 //
 // El botón se deshabilita mientras falte algo obligatorio que la pantalla ya conoce (documentos obligatorios sin
-// subir y el sexo si la convocatoria pide libreta). Así no se abre la confirmación ni se envía una petición que el
+// subir y los datos personales). Así no se abre la confirmación ni se envía una petición que el
 // servidor va a rechazar. Hay UN solo aviso con los pendientes, y cada uno lleva a su fila.
 //
 // El servidor sigue validando. Si responde 422 con `faltantes[]` porque la información cambió después de cargar la
 // página, se relee el estado y esos faltantes se suman al MISMO aviso (no se pinta un segundo recuadro). Los demás
 // fallos (red, estado desactualizado) conservan su mensaje y el botón queda disponible para reintentar.
-export default function SeccionEnviarPostulacion({ estado, onExito, onError, onRecargar }) {
+export default function SeccionEnviarPostulacion({ estado, datosPendientes = false, onExito, onError, onRecargar }) {
   const postulacionId = estado.postulacion.id
   const idAviso = useId()
   const [enviando, setEnviando] = useState(false)
@@ -39,11 +46,12 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
   // aviso pasa a calcularse solo con lo que la pantalla ya conoce.
   const [rechazo, setRechazo] = useState(null)
 
-  // Obligatorios sin subir (los 'no_aplica', como la libreta de una mujer, no cuentan) y el sexo pendiente.
+  // Obligatorios sin subir (los 'no_aplica', como la libreta de una mujer, no cuentan) y los datos personales pendientes.
   const pendientes = (estado.documentos ?? []).filter(
     (d) => d.obligatorio && d.estado !== 'subido' && d.estado !== 'no_aplica',
   )
-  const avisoSexo = Boolean(estado.requiere_sexo)
+  // También cuenta lo que se ve en el formulario: datos sin completar o con cambios sin guardar (el servidor decide con lo guardado).
+  const avisoDatos = estado.datos_personales?.completo === false || datosPendientes
 
   // Faltantes que dijo el servidor y la pantalla aún no lista (no repite los que ya están en `pendientes`).
   const nombresLocales = new Set(pendientes.map((d) => d.parametro.nombre))
@@ -51,7 +59,7 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
     rechazo && rechazo.estado === estado
       ? rechazo.lista.filter((f) => !nombresLocales.has(f.nombre))
       : []
-  const hayPendientes = pendientes.length > 0 || avisoSexo || delServidor.length > 0
+  const hayPendientes = pendientes.length > 0 || avisoDatos || delServidor.length > 0
   // El encabezado avisa del cambio mientras quede algo pendiente después de un rechazo del servidor.
   const desactualizado = Boolean(rechazo) && hayPendientes
 
@@ -135,11 +143,11 @@ export default function SeccionEnviarPostulacion({ estado, onExito, onError, onR
                 {faltante.motivo ? ` (${faltante.motivo})` : ''}
               </li>
             ))}
-            {avisoSexo && (
+            {avisoDatos && (
               <li className="flex flex-wrap items-center justify-between gap-x-3">
-                <span>Indica tu sexo para saber si aplica la libreta militar.</span>
-                <Boton variante="enlace" tamano="tactil" onClick={() => irA(ID_SECCION_SEXO)}>
-                  Ir a Datos del aspirante
+                <span>Completa tus datos personales (y los de tu representante legal si eres menor), autoriza su tratamiento y espera a que se guarden para poder enviar la postulación.</span>
+                <Boton variante="enlace" tamano="tactil" onClick={() => irAPestanaDatos()}>
+                  Ir a Datos personales
                 </Boton>
               </li>
             )}

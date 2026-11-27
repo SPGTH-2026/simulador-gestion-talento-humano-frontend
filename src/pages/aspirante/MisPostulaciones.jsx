@@ -3,9 +3,10 @@ import { MensajeExito } from '../../components/ui/Mensaje'
 import { Link } from 'react-router-dom'
 import EtiquetaVentana from '../../components/convocatorias/EtiquetaVentana'
 import Paginacion from '../../components/ui/Paginacion'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoTabla, EsqueletoTarjetas } from '../../components/ui/Esqueleto'
 import { formatearFechaHora } from '../../lib/ventanaPostulacion'
 import { CLASE_META_DT, CLASE_TARJETA, CLASE_TITULO_PAGINA } from '../../lib/estilos'
+import BloqueCitaciones from './BloqueCitaciones'
 import { BloqueConvocatoria, BloqueEstadoPostulacion, BloqueAcciones } from './PiezasMisPostulaciones'
 
 export default function MisPostulaciones() {
@@ -21,6 +22,9 @@ export default function MisPostulaciones() {
         </p>
       </div>
 
+      {/* Entrevistas y pruebas técnicas programadas por Selección (solo aparece si hay alguna). */}
+      <div className="@container"><BloqueCitaciones /></div>
+
       {exito && (
         <div {...pausaExito}>
           <MensajeExito>{exito.texto}</MensajeExito>
@@ -34,7 +38,11 @@ export default function MisPostulaciones() {
       )}
 
       {cargando ? (
-        <Cargando>Cargando postulaciones…</Cargando>
+        <>
+          {/* Como la pantalla real: tarjetas en móvil y tabla desde md. */}
+          <EsqueletoTarjetas texto="Cargando postulaciones…" n={3} unaColumna className="md:hidden" />
+          <EsqueletoTabla texto="Cargando postulaciones…" filas={4} columnas={4} className="hidden md:block" />
+        </>
       ) : postulaciones.length === 0 ? (
         // Sin postulaciones: mensaje claro con enlace al listado.
         <div className={`${CLASE_TARJETA} flex flex-col items-center gap-3 p-8 text-center`}>
@@ -135,15 +143,18 @@ export default function MisPostulaciones() {
         </>
       )}
 
-      {/* Con una sola página solo se dice el total; Anterior/Siguiente aparecen si hay más. */}
-      <Paginacion
-        meta={{ ...meta, total, last_page: totalPaginas, current_page: meta.current_page ?? 1 }}
-        singular="postulación"
-        plural="postulaciones"
-        etiqueta="Paginación de postulaciones"
-        onPagina={setPagina}
-        className="px-1"
-      />
+      {/* Con una sola página solo se dice el total; Anterior/Siguiente aparecen si hay más. Mientras carga no se muestra: el total
+          aún no se conoce y el esqueleto no debe decir «0 postulaciones». */}
+      {!cargando && (
+        <Paginacion
+          meta={{ ...meta, total, last_page: totalPaginas, current_page: meta.current_page ?? 1 }}
+          singular="postulación"
+          plural="postulaciones"
+          etiqueta="Paginación de postulaciones"
+          onPagina={setPagina}
+          className="px-1"
+        />
+      )}
     </div>
   )
 }

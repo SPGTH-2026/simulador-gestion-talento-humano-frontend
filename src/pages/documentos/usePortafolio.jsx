@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { obtenerPortafolio, estadoRevision } from '../../api/portafolios'
-import { abrirArchivoEnPestana, mensajeErrorBlob } from '../../api/postulacionesDocumentos'
+import { mensajeErrorBlob } from '../../api/postulacionesDocumentos'
+import useVisorDocumento from '../../hooks/useVisorDocumento'
 import Mensaje from '../../components/ui/Mensaje'
 import Boton from '../../components/ui/Boton'
-import Cargando from '../../components/ui/Cargando'
+import { EsqueletoDetalle } from '../../components/ui/Esqueleto'
 
 // Lógica de Portafolio: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
 export function usePortafolio({ userId }) {
@@ -18,6 +19,7 @@ export function usePortafolio({ userId }) {
   const [abriendoId, setAbriendoId] = useState(null)
   const [errorRevision, setErrorRevision] = useState(null)
   // Archivos con una acción en curso (claves 'ver:…' / 'descargar:…') y el error de cada tarjeta de archivo.
+  const { abrir: abrirVisor, visor } = useVisorDocumento()
   const [enCurso, setEnCurso] = useState(() => new Set())
   const [erroresArchivo, setErroresArchivo] = useState({})
   const encabezadoRevision = useRef(null)
@@ -92,13 +94,13 @@ export function usePortafolio({ userId }) {
     }
   }
 
-  // Abre el archivo en otra pestaña. Devuelve la promesa: 'accionArchivo' mantiene el botón ocupado hasta que termina.
-  const verArchivo = (ruta, nombre) => abrirArchivoEnPestana(ruta, { nombre })
+  // Abre el archivo en el visor interno (el propio visor muestra la carga y los errores).
+  const verArchivo = (ruta, nombre, titulo) => abrirVisor(ruta, { titulo: titulo || nombre, nombre })
 
   const rutaArchivo = (suffix) => `/revision/postulaciones/${postulacionSel.id}/${suffix}`
 
   if (cargando && !portafolio) {
-    return <Cargando>Cargando portafolio…</Cargando>
+    return <EsqueletoDetalle texto="Cargando portafolio…" bloques={3} />
   }
 
   if (error && !portafolio) {
@@ -179,5 +181,6 @@ export function usePortafolio({ userId }) {
       userId,
       usuario,
       verArchivo,
+      visor,
     }
 }

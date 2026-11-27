@@ -32,6 +32,11 @@ export const listaMisPostulaciones = (params) =>
 export const cambiarEstadoPostulacion = (id, estado) =>
   client.patch(`/postulaciones/${id}/estado`, { estado }).then((res) => res.data.data)
 
+// POST /api/postulaciones/{id}/descartar  (sin cuerpo)  ->  204
+// Quita de MI lista una postulación RETIRADA cuya convocatoria ya cerró (no se puede reabrir). No borra nada: el historial
+// queda para quien gestiona la convocatoria. 422 si no está retirada o si la convocatoria sigue abierta; 404 si es ajena.
+export const descartarPostulacion = (id) => client.post(`/postulaciones/${id}/descartar`)
+
 // POST /api/postulaciones/{id}/enviar  (sin cuerpo)  ->  { data: {...} } 'postulada'
 // Valida los documentos obligatorios:
 //   - 200 con estado 'postulada'.

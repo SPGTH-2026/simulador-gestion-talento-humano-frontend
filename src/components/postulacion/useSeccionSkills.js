@@ -179,7 +179,7 @@ export function useSeccionSkills({ vista,
   // "Ver" certificado: el PDF lo abre PanelDocumentosPostulacion (evento document:view).
   const verCertificadoDe = (skill) =>
     window.dispatchEvent(new CustomEvent('document:view', {
-      detail: { skillId: skill.id, nombre: skill.certificado?.nombre_original },
+      detail: { skillId: skill.id, nombre: skill.certificado?.nombre_original, titulo: skill.nombre ? `Certificado: ${skill.nombre}` : undefined },
     }))
 
   const registrarRef = (id) => (el) => {

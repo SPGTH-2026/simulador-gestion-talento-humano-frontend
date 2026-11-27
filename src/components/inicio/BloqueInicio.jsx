@@ -1,6 +1,6 @@
 import { TarjetaSeccion } from '../ui/Tarjeta'
 import Boton from '../ui/Boton'
-import Cargando from '../ui/Cargando'
+import { EsqueletoLista } from '../ui/Esqueleto'
 import { MensajeError } from '../ui/Mensaje'
 import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 
@@ -24,7 +24,7 @@ export default function BloqueInicio({
     <TarjetaSeccion titulo={titulo}>
       {descripcion && <p className={`mb-3 text-sm ${CLASE_TEXTO_SUAVE}`}>{descripcion}</p>}
 
-      {recurso.fase === 'cargando' && <Cargando>{textoCarga}</Cargando>}
+      {recurso.fase === 'cargando' && <EsqueletoLista texto={textoCarga} filas={3} avatar={false} />}
 
       {recurso.fase === 'error' && (
         <div className="flex flex-col items-start gap-3">

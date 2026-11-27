@@ -13,10 +13,16 @@ import Boton from '../ui/Boton'
 import { MensajeError } from '../ui/Mensaje'
 import BarraComparar from './BarraComparar'
 
-export default function PanelRanking({ convocatoriaId, activo = true, enProceso, puedeDecidir, comparacion, onConfirmada }) {
+// 'modalidad' (opcional, la de la cabecera) solo sirve para que el esqueleto de carga dibuje las columnas que corresponderán.
+export default function PanelRanking({ convocatoriaId, activo = true, enProceso, puedeDecidir, comparacion, onConfirmada, modalidad }) {
   const ctx = usePanelRanking({ convocatoriaId, activo, enProceso, puedeDecidir, comparacion, onConfirmada })
   if (ctx.fase === 'error' && !ctx.meta) return <ErrorTotalRanking error={ctx.error} recargar={ctx.recargar} />
-  if (!ctx.meta) return <CargandoRanking />
+  if (!ctx.meta) {
+    // Puesto y Resultado existen con actividades. Mientras la modalidad no llega se dibujan (es lo habitual); con «sin actividades» o sin
+    // configurar, ya conocidos, no.
+    const conPuesto = modalidad?.fase === 'listo' ? ['solo_entrevista', 'solo_prueba_tecnica', 'ambas'].includes(modalidad.opcion) : true
+    return <CargandoRanking puedeElegir={Boolean(puedeDecidir) && enProceso !== false} conPuesto={conPuesto} />
+  }
   const { alConfirmar, alRankingDesactualizado, avisos, borrador, cargando, desactualizado, empate, enComparacion, error, fase, hayFilas, meta, modo, puedeElegir, recargar, revision, seleccion, setBorrador, setRevision } = ctx;
   return (
     <div className="@container flex flex-col gap-3" aria-busy={cargando}>
@@ -60,7 +66,7 @@ export default function PanelRanking({ convocatoriaId, activo = true, enProceso,
       )}
 
       {modo !== 'pendiente_de_configurar' && !hayFilas && (
-        <SinCandidatosRanking />
+        <SinCandidatosRanking convocatoriaId={convocatoriaId} meta={meta} modo={modo} />
       )}
 
       {/* «Comparar candidatos» (CU-SEL-017) es un modo de la tabla, independiente de «Elegir»: sus marcas se guardan aparte

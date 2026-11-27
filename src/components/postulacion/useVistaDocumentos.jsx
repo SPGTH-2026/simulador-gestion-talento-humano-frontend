@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { CODIGO_LIBRETA_MILITAR, motivoNoEditable } from '../../lib/postulacionDocumentos'
+import { EsqueletoDetalle } from '../ui/Esqueleto'
 
 // Bloque de usePanelDocumentosPostulacion movido a su propio hook. Recibe sus dependencias en `deps`.
 export function useVistaDocumentos(deps) {
@@ -42,7 +43,7 @@ export function useVistaDocumentos(deps) {
   // Sin estado todavía: mientras llega el GET, o el error de acceso.
   if (idPostulacion && !estado && !error) {
     return (
-      <p className="text-slate-600 dark:text-sena-texto-suave">Cargando tus datos…</p>
+      <EsqueletoDetalle texto="Cargando tus datos…" bloques={2} />
     )
   }
   if (idPostulacion && !estado && error) {
@@ -68,7 +69,9 @@ export function useVistaDocumentos(deps) {
   const codigo = vista.postulacion?.estado?.codigo
   const esBorrador = codigo === 'borrador'
   const esRetirada = codigo === 'retirada'
-  const editableSexo = ventana === 'abierta' && puedeEscribir
+  // Los datos personales se editan en borrador o retirada con la ventana abierta. Enviada la postulación quedan fijos
+  // (hay que retirarla para cambiarlos) y durante una corrección tampoco se tocan.
+  const editableDatos = ventana === 'abierta' && puedeEscribir && codigo !== 'postulada' && !correccionVigente
   const faltan = (vista.documentos ?? [])
     .filter((d) => d.obligatorio && d.estado !== 'subido' && d.estado !== 'no_aplica')
     .map((d) => d.parametro.nombre)
@@ -82,7 +85,7 @@ export function useVistaDocumentos(deps) {
   return {
     codigo,
     editable,
-    editableSexo,
+    editableDatos,
     esAspirante,
     esBorrador,
     esPropia,

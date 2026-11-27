@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import useAvisoTransitorio from '../../hooks/useAvisoTransitorio'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { listaMisPostulaciones, cambiarEstadoPostulacion } from '../../api/postulaciones'
+import { listaMisPostulaciones, cambiarEstadoPostulacion, descartarPostulacion } from '../../api/postulaciones'
 import { mensajeError } from '../../api/mensajeError'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import { estadoVentana } from '../../lib/ventanaPostulacion'
@@ -101,6 +101,37 @@ export function useMisPostulaciones() {
     if (actualizada) navigate(`/postulaciones/${postulacion.id}/documentos`)
   }
 
+  // Descartar una postulación RETIRADA cuya convocatoria ya cerró: deja de aparecer en la lista. No borra nada del historial.
+  // (Descartar un BORRADOR es otra cosa: lo retira y se puede reabrir; ver cambiarEstado.)
+  const descartar = async (postulacion) => {
+    const nombre = postulacion.convocatoria?.nombre ?? 'la convocatoria'
+    const ok = await confirmar({
+      titulo: 'Descartar postulación',
+      mensaje: `La convocatoria "${nombre}" ya cerró, así que no puedes reabrir esta postulación. Si la descartas, dejará de aparecer en tu lista. ¿Quieres descartarla?`,
+      textoConfirmar: 'Descartar',
+      textoCancelar: 'Cancelar',
+      peligro: true,
+    })
+    if (!ok) return false
+
+    setAccionandoId(postulacion.id)
+    setError('')
+    try {
+      await descartarPostulacion(postulacion.id)
+      // Sale de la lista al instante; el total del paginado baja uno.
+      setPostulaciones((prev) => prev.filter((p) => p.id !== postulacion.id))
+      setMeta((prev) => ({ ...prev, total: Math.max((prev.total ?? 1) - 1, 0) }))
+      setExito({ texto: 'Postulación descartada: ya no aparece en tu lista.' })
+      return true
+    } catch (e) {
+      // No se recarga la lista: la recarga borraría este mensaje antes de que se lea. La fila sigue ahí y se puede reintentar.
+      setError(mensajeError(e))
+      return false
+    } finally {
+      setAccionandoId(null)
+    }
+  }
+
   // Ir al paso de documentos de esta postulación (continuar borrador / ver
   // documentos de una postulada).
   const irADocumentos = (postulacion) =>
@@ -118,6 +149,7 @@ export function useMisPostulaciones() {
       irADocumentos,
       cambiarEstado,
       reabrir,
+      descartar,
     }
   }
 

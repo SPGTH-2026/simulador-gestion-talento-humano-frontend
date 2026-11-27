@@ -3,7 +3,7 @@ import { obtenerConfiguracion, guardarConfiguracion } from '../../api/seleccion'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import Boton from '../ui/Boton'
 import { MensajeError } from '../ui/Mensaje'
-import Rueda from '../ui/Rueda'
+import { EsqueletoDetalle } from '../ui/Esqueleto'
 import { CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { opcionPorId } from '../../lib/seleccion'
 
@@ -16,7 +16,8 @@ export const desdeConfiguracion = (c) => ({
 export const soloDigitos = (valor) => valor.replace(/\D/g, '').slice(0, 3)
 
 // Lógica de PanelConfiguracion: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
-export function usePanelConfiguracion({ convocatoriaId, activo, puedeDecidir }) {
+// 'onGuardada' avisa al padre de que la configuración cambió (la cabecera muestra la modalidad y debe releerla).
+export function usePanelConfiguracion({ convocatoriaId, activo, puedeDecidir, onGuardada }) {
   const idGrupo = useId()
   const [config, setConfig] = useState(null)
   const [errorCarga, setErrorCarga] = useState('')
@@ -76,9 +77,7 @@ export function usePanelConfiguracion({ convocatoriaId, activo, puedeDecidir }) 
   }
   if (config == null) {
     return (
-      <p role="status" className={`flex items-center gap-2 py-8 text-sm ${CLASE_TEXTO_SUAVE}`}>
-        <Rueda /> Cargando configuración…
-      </p>
+      <EsqueletoDetalle texto="Cargando configuración…" bloques={2} />
     )
   }
 
@@ -133,6 +132,7 @@ export function usePanelConfiguracion({ convocatoriaId, activo, puedeDecidir }) 
       setConfig(res.data)
       setBorrador(desdeConfiguracion(res.data))
       setGuardada(true)
+      onGuardada?.()
     } catch (err) {
       if (!montado.current) return
       const porCampo = erroresDeCampo(err)

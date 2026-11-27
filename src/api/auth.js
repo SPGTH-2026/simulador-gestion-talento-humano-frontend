@@ -45,3 +45,11 @@ export const pendienteGoogle = () => client.get('/auth/google/pendiente').then((
 // POST /api/auth/google/pendiente/ficha  body { ficha_codigo }  ->  crea la cuenta con su ficha y abre la sesión
 export const completarPendienteGoogle = (codigo) =>
   client.post('/auth/google/pendiente/ficha', { ficha_codigo: codigo }).then((res) => res.data)
+
+// POST /api/auth/password/codigo  ->  { message }   (sesión + correo verificado)
+// Envía un código de 6 dígitos al correo de LA SESIÓN: no recibe destinatario. Responde 404 si la función está apagada.
+export const solicitarCodigoContrasena = () => client.post('/auth/password/codigo').then((res) => res.data)
+
+// POST /api/auth/password/establecer  body { code, password, password_confirmation }  ->  { message, acceso }
+// Fija o cambia la contraseña con el código recibido. Conserva la sesión actual y cierra las demás.
+export const establecerContrasena = (datos) => client.post('/auth/password/establecer', datos).then((res) => res.data)

@@ -10,7 +10,9 @@ import ConvocatoriaWizard from '../../components/convocatorias/ConvocatoriaWizar
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import Boton from '../../components/ui/Boton'
 import Icono from '../../components/ui/Icono'
-import Cargando from '../../components/ui/Cargando'
+import { CLASE_TARJETA_PLANA } from '../../lib/estilos'
+import CabeceraWizard from '../../components/convocatorias/CabeceraWizard'
+import { CargaInicial, Hueco } from '../../components/ui/Esqueleto'
 
 // Borrador y publicada se editan completos; en_proceso y cerrada son de solo
 // lectura. Al publicar desde aquí se guarda (PATCH) y, si todo va bien, se
@@ -133,7 +135,30 @@ export default function ConvocatoriaEditar() {
   }
 
   if (cargando) {
-    return <Cargando>Cargando convocatoria…</Cargando>
+    // Volver y el título no dependen de la API: se ven mientras carga, y solo el contenido es esqueleto.
+    return (
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+        <CabeceraWizard titulo="Editar convocatoria" subtitulo="" onVolver={volver} />
+        {/* Misma forma que el asistente: tarjeta de pasos y tarjeta del paso con sus campos (etiqueta + campo). */}
+        <CargaInicial texto="Cargando convocatoria…">
+          <div className="flex flex-col gap-4">
+            <div className={`${CLASE_TARJETA_PLANA} flex flex-col gap-3 p-4`}>
+              <Hueco className="h-3 w-2/5" />
+              <Hueco className="h-1.5 w-full rounded-full" />
+            </div>
+            <div className={`${CLASE_TARJETA_PLANA} flex flex-col gap-5 p-4 sm:p-6`}>
+              <Hueco className="h-5 w-1/3" />
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <Hueco className="h-3 w-1/4" />
+                  <Hueco className="h-11 w-full rounded-md" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </CargaInicial>
+      </div>
+    )
   }
 
   if (errorCarga || !detalle) {

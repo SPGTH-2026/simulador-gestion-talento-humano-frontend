@@ -144,7 +144,7 @@ export function useSeccionAdicionales({ vista,
   // "Ver": el PDF lo abre PanelDocumentosPostulacion (evento document:view).
   const ver = (adicional) =>
     window.dispatchEvent(new CustomEvent('document:view', {
-      detail: { documentoId: adicional.archivo.id, nombre: adicional.archivo.nombre_original },
+      detail: { documentoId: adicional.archivo.id, nombre: adicional.archivo.nombre_original, titulo: adicional.titulo },
     }))
 
     return {

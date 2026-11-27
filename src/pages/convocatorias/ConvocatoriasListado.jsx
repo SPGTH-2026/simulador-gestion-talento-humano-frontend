@@ -1,7 +1,8 @@
 import { useListadoConvocatorias } from './listado/useListadoConvocatorias'
 import FiltrosConvocatorias from './listado/FiltrosConvocatorias'
 import TarjetaConvocatoria from './listado/TarjetaConvocatoria'
-import { CLASE_ESQUELETO, ICONO_BOTON } from './listado/constantesListado'
+import { EsqueletoTarjetas } from '../../components/ui/Esqueleto'
+import { ICONO_BOTON } from './listado/constantesListado'
 import Boton from '../../components/ui/Boton'
 import Icono from '../../components/ui/Icono'
 import Paginacion from '../../components/ui/Paginacion'
@@ -61,6 +62,7 @@ export default function ConvocatoriasListado() {
               className="flex min-h-6 items-center gap-2.5 text-base font-medium text-sena-azul dark:text-sena-texto"
             >
               {buscando ? (
+                // Esta línea es el único aviso (el esqueleto de abajo no repite el texto): rueda + texto breve, igual que las demás.
                 <>
                   <Rueda /> {verEsqueleto ? 'Cargando convocatorias…' : 'Actualizando convocatorias…'}
                 </>
@@ -79,34 +81,8 @@ export default function ConvocatoriasListado() {
           </div>
         )}
 
-        {/* Esqueleto de carga. La animación se apaga si el usuario pidió reducir el movimiento. */}
-        {verEsqueleto && (
-          <div className="flex flex-col gap-4" aria-busy="true">
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {[0, 1, 2].map((i) => (
-              <Tarjeta key={i} className="p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className={`${CLASE_ESQUELETO} h-4 w-24`} />
-                  <div className={`${CLASE_ESQUELETO} h-5 w-16 rounded-full`} />
-                </div>
-                <div className={`${CLASE_ESQUELETO} mt-4 h-5 w-4/5`} />
-                <div className={`${CLASE_ESQUELETO} mt-2 h-4 w-3/5`} />
-                <div className="mt-4 flex gap-2">
-                  <div className={`${CLASE_ESQUELETO} h-6 w-20 rounded-full`} />
-                  <div className={`${CLASE_ESQUELETO} h-6 w-24 rounded-full`} />
-                </div>
-                <div className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4">
-                  <div className={`${CLASE_ESQUELETO} h-9 w-full`} />
-                  <div className={`${CLASE_ESQUELETO} h-9 w-full`} />
-                  <div className={`${CLASE_ESQUELETO} h-9 w-full`} />
-                  <div className={`${CLASE_ESQUELETO} h-9 w-full`} />
-                </div>
-                <div className={`${CLASE_ESQUELETO} mt-5 h-11 w-full`} />
-              </Tarjeta>
-            ))}
-          </div>
-          </div>
-        )}
+        {/* Carga inicial: esqueleto compartido (la animación se apaga con movimiento reducido). */}
+        {verEsqueleto && <EsqueletoTarjetas n={3} />}
 
         {verVacio && (
           <Tarjeta className="p-10 text-center" role="status">

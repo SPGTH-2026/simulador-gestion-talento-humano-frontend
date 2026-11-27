@@ -4,7 +4,7 @@ import { mensajeError } from '../../api/mensajeError'
 import Boton from '../ui/Boton'
 import { MensajeError } from '../ui/Mensaje'
 import Paginacion from '../ui/Paginacion'
-import Rueda from '../ui/Rueda'
+import { EsqueletoLista } from '../ui/Esqueleto'
 import { CLASE_LISTA, CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
 import { RESULTADO_DECISION, formatoFechaHora } from '../../lib/seleccion'
 
@@ -57,9 +57,7 @@ export default function HistorialDecision({ convocatoriaId, postulacionId, activ
       )}
 
       {cargando && filas.length === 0 && (
-        <p role="status" className={`flex items-center gap-2 py-6 text-sm ${CLASE_TEXTO_SUAVE}`}>
-          <Rueda /> Cargando historial…
-        </p>
+        <EsqueletoLista texto="Cargando historial…" filas={3} avatar={false} />
       )}
 
       {fase === 'listo' && filas.length === 0 && (

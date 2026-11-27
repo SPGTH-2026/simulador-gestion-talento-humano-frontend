@@ -2,8 +2,11 @@ import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { menu } from '../config/menu'
+import { seguridadCuentaActiva } from '../config/seguridadCuenta'
 import { CLASE_TEXTO_SUAVE } from '../lib/estilos'
+import AccesoContrasena from './cuenta/AccesoContrasena'
 import DatosUsuario from './DatosUsuario'
+import { EnlacesUsuario } from './informativo/EnlacesLegales'
 import SidebarItem from './SidebarItem'
 import ThemeToggle from './ThemeToggle'
 import Boton from './ui/Boton'
@@ -147,6 +150,19 @@ export default function Sidebar({ abierto = false, onCerrar, onNavegar }) {
               <DatosUsuario />
             </div>
             <ThemeToggle conTexto />
+            {seguridadCuentaActiva() && (
+              <AccesoContrasena
+                antesDeAbrir={onNavegar}
+                // El cajón se cierra al abrir el diálogo: el foco vuelve al botón del menú, que sí está a la vista.
+                alCerrar={() => document.querySelector('button[aria-label="Abrir menú"]')?.focus()}
+                boton={(abrir) => (
+                  <Boton variante="fantasma" tamano="tactil" onClick={abrir} aria-haspopup="dialog" className="w-full justify-start">
+                    <Icono nombre="candado" />
+                    Contraseña
+                  </Boton>
+                )}
+              />
+            )}
             <Boton
               variante="fantasma"
               tamano="tactil"
@@ -158,6 +174,10 @@ export default function Sidebar({ abierto = false, onCerrar, onNavegar }) {
               {cerrandoSesion ? 'Cerrando sesión…' : 'Cerrar sesión'}
             </Boton>
           </div>
+
+          {/* «Información legal» y «Acerca de SPGTH»: enlaces discretos al pie del menú, separados de los módulos por una línea; no son un módulo. Solo con la bandera de páginas
+              informativas activa. */}
+          <EnlacesUsuario onNavegar={onNavegar} className="mt-1 border-t border-sena-linea px-2 pb-[max(0.125rem,env(safe-area-inset-bottom))] pt-1 dark:border-sena-borde/40 sm:mt-auto" />
         </div>
       </aside>
     </>

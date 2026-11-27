@@ -6,6 +6,8 @@ import PermissionRoute from './auth/PermissionRoute'
 import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 import PantallaCarga from './components/ui/PantallaCarga'
+import LayoutInformativo from './layouts/LayoutInformativo'
+import { paginasInformativasActivas } from './config/paginasInformativas'
 
 import Login from './pages/login/Login'
 const Registro = lazy(() => import('./pages/login/Registro'))
@@ -13,6 +15,17 @@ const RecuperarContrasena = lazy(() => import('./pages/login/RecuperarContrasena
 const VerificarCorreo = lazy(() => import('./pages/login/VerificarCorreo'))
 const CompletarFicha = lazy(() => import('./pages/login/CompletarFicha'))
 const NotFound = lazy(() => import('./pages/errores/NotFound'))
+
+// Páginas informativas: desactivadas por defecto (ver config/paginasInformativas). Con la bandera apagada ni siquiera se importan.
+const ACTIVAS = paginasInformativasActivas()
+// Seguridad de la cuenta: desactivada por defecto (ver config/seguridadCuenta). Con la bandera apagada ni siquiera se importa.
+const SEGURIDAD_ACTIVA = import.meta.env.VITE_SEGURIDAD_CUENTA === 'true'
+const Seguridad = SEGURIDAD_ACTIVA ? lazy(() => import('./pages/seguridad/Seguridad')) : null
+const AcercaDe = ACTIVAS ? lazy(() => import('./pages/informativas/AcercaDe')) : null
+const Terminos = ACTIVAS ? lazy(() => import('./pages/informativas/Terminos')) : null
+const Privacidad = ACTIVAS ? lazy(() => import('./pages/informativas/Privacidad')) : null
+const Cookies = ACTIVAS ? lazy(() => import('./pages/informativas/Cookies')) : null
+const InformacionLegal = ACTIVAS ? lazy(() => import('./pages/informativas/InformacionLegal')) : null
 
 import Dashboard from './pages/dashboard/Dashboard'
 const ConvocatoriasListado = lazy(() => import('./pages/convocatorias/ConvocatoriasListado'))
@@ -35,6 +48,8 @@ const CorreccionesPostulacion = lazy(() => import('./pages/aspirante/Correccione
 const MisDocumentos = lazy(() => import('./pages/aspirante/MisDocumentos'))
 const MisEvaluaciones = lazy(() => import('./pages/aspirante/MisEvaluaciones'))
 const Notificaciones = lazy(() => import('./pages/aspirante/Notificaciones'))
+const Almacenamiento = lazy(() => import('./pages/almacenamiento/Almacenamiento'))
+const AlmacenamientoFicha = lazy(() => import('./pages/almacenamiento/AlmacenamientoFicha'))
 
 export default function AppRouter() {
   // El id distingue una espera de código de otra (cada ruta es una operación).
@@ -50,6 +65,17 @@ export default function AppRouter() {
         <Route path="/recuperar" element={<RecuperarContrasena />} />
       </Route>
 
+      {/* Informativas (solo con la bandera activa): públicas, se leen con o sin sesión. */}
+      {ACTIVAS && (
+        <Route element={<LayoutInformativo />}>
+          <Route path="/acerca-de" element={<AcercaDe />} />
+          <Route path="/terminos" element={<Terminos />} />
+          <Route path="/privacidad" element={<Privacidad />} />
+          <Route path="/cookies" element={<Cookies />} />
+          <Route path="/informacion-legal" element={<InformacionLegal />} />
+        </Route>
+      )}
+
       {/* Sin sesión o con sesión: el alta con Google espera la ficha antes de existir como cuenta. */}
       <Route path="/completar-ficha" element={<CompletarFicha />} />
 
@@ -60,6 +86,8 @@ export default function AppRouter() {
         <Route path="/verificar-correo" element={<VerificarCorreo />} />
 
         <Route element={<AppLayout />}>
+          {SEGURIDAD_ACTIVA && <Route path="seguridad" element={<Seguridad />} />}
+
           <Route element={<PermissionRoute permiso="dashboard:ver" />}>
             <Route index element={<Dashboard />} />
           </Route>
@@ -71,6 +99,11 @@ export default function AppRouter() {
           <Route element={<PermissionRoute permiso="convocatorias:gestionar" />}>
             <Route path="convocatorias/nueva" element={<ConvocatoriaNueva />} />
             <Route path="convocatorias/:id/editar" element={<ConvocatoriaEditar />} />
+          </Route>
+
+          <Route element={<PermissionRoute permiso="almacenamiento:ver" />}>
+            <Route path="almacenamiento" element={<Almacenamiento />} />
+            <Route path="almacenamiento/fichas/:fichaId" element={<AlmacenamientoFicha />} />
           </Route>
 
           <Route element={<PermissionRoute permiso="usuarios:gestionar" />}>

@@ -1,6 +1,8 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import { CLASE_TEXTO_SUAVE } from '../lib/estilos'
+import AccesoContrasena from './cuenta/AccesoContrasena'
+import { CLASE_BOTON_ICONO, CLASE_TEXTO_SUAVE } from '../lib/estilos'
+import { seguridadCuentaActiva } from '../config/seguridadCuenta'
 import { NOTIFICACIONES_DISPONIBLES } from '../config/menu'
 import { migasDe } from '../lib/migas'
 import CampanaNotificaciones from './notificaciones/CampanaNotificaciones'
@@ -92,6 +94,15 @@ export default function Topbar({ onAbrirMenu }) {
 
         <div className="hidden items-center gap-2 sm:flex">
           <span className="mx-1 h-6 w-px bg-sena-linea dark:bg-sena-borde/60" aria-hidden="true" />
+          {seguridadCuentaActiva() && (
+            <AccesoContrasena
+              boton={(abrir) => (
+                <button type="button" onClick={abrir} aria-haspopup="dialog" aria-label="Contraseña" title="Contraseña" className={CLASE_BOTON_ICONO}>
+                  <Icono nombre="candado" />
+                </button>
+              )}
+            />
+          )}
           <DatosUsuario />
           <button
             type="button"

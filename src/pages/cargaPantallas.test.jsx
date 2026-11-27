@@ -14,8 +14,8 @@ vi.mock('../api/postulacionesDocumentos', () => ({
   obtenerPerfil: vi.fn(),
   obtenerCorreccion: vi.fn(),
   enviarCorreccion: vi.fn(),
-  abrirArchivoEnPestana: vi.fn(),
   mensajeErrorBlob: vi.fn(),
+  dispararDescarga: vi.fn(),
 }))
 
 import ErrorBoundary from '../components/ErrorBoundary'
