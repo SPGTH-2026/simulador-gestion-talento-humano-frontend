@@ -30,7 +30,6 @@ const estadoBase = {
   postulacion: { id: 7 },
   convocatoria: { id: 1 },
   documentos: [],
-  adicionales: [],
   skills: [],
   sexo: null,
   completo: false,

@@ -1,16 +1,11 @@
 // Reglas y ayudas del paso de documentos de la postulación. Los números espejan
 // config/convocatorias.php del backend (fuente de verdad), que es quien decide:
-//   tamano_maximo_mb = 3, documentos_adicionales_max = 5,
-//   skills_postulacion_max = 30, titulo_adicional_max_longitud = 120,
-//   nota_adicional_max_longitud = 500.
+//   tamano_maximo_mb = 3, skills_postulacion_max = 30.
 // El nombre de una skill propia está topado a 100 en el controlador de skills.
 // (skills_max = 20 son las skills de la CONVOCATORIA, que no cambia; el tope de
 // skills declaradas en la postulación pasó de 20 a 30 en el doc 33.)
 
-export const MAX_DOCUMENTOS_ADICIONALES = 5
 export const MAX_SKILLS = 30
-export const MAX_TITULO_ADICIONAL = 120
-export const MAX_NOTA_ADICIONAL = 500
 
 export const CODIGO_LIBRETA_MILITAR = 'libreta_militar'
 
@@ -57,7 +52,7 @@ export function formatearTamano(bytes) {
 }
 
 // Progreso de los documentos obligatorios: cuántos están listos (subidos o en
-// 'no_aplica') sobre el total. Los opcionales y los adicionales no cuentan.
+// 'no_aplica') sobre el total. Los opcionales no cuentan.
 export function progresoObligatorios(documentos) {
   const obligatorios = (documentos ?? []).filter((d) => d.obligatorio)
   const cumplidos = obligatorios.filter(

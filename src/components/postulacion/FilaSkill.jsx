@@ -2,7 +2,7 @@ import { useId } from 'react'
 import BarraProgreso from '../ui/BarraProgreso'
 import Boton from '../ui/Boton'
 import Interruptor from '../ui/Interruptor'
-import { CLASE_ETIQUETA, CLASE_CERTIFICADA, origenTexto } from './estilosSkills'
+import { CLASE_ETIQUETA, CLASE_CERTIFICADA } from './estilosSkills'
 
 // Una fila de skill: casilla, nivel, certificado y acciones. Recibe lo que necesita como props.
 export default function FilaSkill({
@@ -14,7 +14,6 @@ export default function FilaSkill({
   certificadosSubidos,
   clave,
   tope,
-  sinSiNo = false,
   error = '',
   errorClave = null,
   onActivar,
@@ -35,7 +34,7 @@ export default function FilaSkill({
   const clavesDeLaFila = [clave, declarada && `skill-${declarada.id}`, declarada && `cert-${declarada.id}`, declarada && `quitarcert-${declarada.id}`]
   const errorDeLaFila = error && errorClave && clavesDeLaFila.includes(errorClave) ? error : ''
   const guardandoSiNo = enVuelo === clave || (activa && enVuelo === `skill-${declarada.id}`)
-  const puedeEditarCert = editable && !sinSiNo
+  const puedeEditarCert = editable
   // Hay algo en curso que NO es el guardado de esta fila: sus controles se bloquean (aria-disabled, sin perder el foco). El propio
   // interruptor de la fila no se deshabilita mientras guarda (perdería el foco del teclado): se marca como ocupado.
   const otraOperacion = Boolean(enVuelo) && !guardandoSiNo
@@ -48,41 +47,32 @@ export default function FilaSkill({
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-sena-texto">
           <span id={idNombre}>{nombre}</span>
-          {/* El origen solo se indica donde ayuda: las skills de la convocatoria ya lo dicen en su encabezado. */}
-          {activa && declarada.origen !== 'convocatoria' && (
-            <span className={CLASE_ETIQUETA}>{origenTexto(declarada.origen)}</span>
-          )}
           {activa && (
             <span className={certificado ? CLASE_CERTIFICADA : CLASE_ETIQUETA}>
               {certificado ? 'Certificado cargado' : 'Declarada'}
             </span>
           )}
-          {sinSiNo && (
-            <span className={CLASE_ETIQUETA}>Declarada antes</span>
-          )}
         </p>
 
-        {!sinSiNo && (
-          <div className="flex items-center gap-2">
-            {/* El único indicador visible es la rueda dentro del interruptor. Mientras guarda se ANUNCIA el estado con un texto solo
-                para lectores de pantalla (sr-only, fuera del flujo: no mueve la distribución). La región existe siempre para que
-                el anuncio se lea al cambiar su contenido. */}
-            <span role="status" className="sr-only">
-              {guardandoSiNo ? (activa ? 'Quitando…' : 'Guardando…') : ''}
-            </span>
-            <Interruptor
-              idNombre={idNombre}
-              activo={activa}
-              onChange={(declarar) => (declarar ? onActivar() : onDesactivar())}
-              ocupado={guardandoSiNo}
-              bloqueado={!editable || otraOperacion || Boolean(tope && !activa)}
-              ayudaId={editable && tope && !activa ? idAyuda : undefined}
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {/* El único indicador visible es la rueda dentro del interruptor. Mientras guarda se ANUNCIA el estado con un texto solo
+              para lectores de pantalla (sr-only, fuera del flujo: no mueve la distribución). La región existe siempre para que
+              el anuncio se lea al cambiar su contenido. */}
+          <span role="status" className="sr-only">
+            {guardandoSiNo ? (activa ? 'Quitando…' : 'Guardando…') : ''}
+          </span>
+          <Interruptor
+            idNombre={idNombre}
+            activo={activa}
+            onChange={(declarar) => (declarar ? onActivar() : onDesactivar())}
+            ocupado={guardandoSiNo}
+            bloqueado={!editable || otraOperacion || Boolean(tope && !activa)}
+            ayudaId={editable && tope && !activa ? idAyuda : undefined}
+          />
+        </div>
       </div>
 
-      {editable && tope && !activa && !sinSiNo && (
+      {editable && tope && !activa && (
         <p id={idAyuda} className="text-sm text-slate-600 dark:text-sena-texto-suave">
           Alcanzaste el máximo de skills: quita una para declarar otra.
         </p>

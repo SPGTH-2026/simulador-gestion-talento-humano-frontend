@@ -10,9 +10,9 @@ export default function SeccionSkills({
   onRecargar,
 }) {
   const ctx = useSeccionSkills({ vista, editable, asegurar, onRecargar })
-  // Sin skills en la convocatoria ni declaradas antes, el hook devuelve null: la sección no se pinta.
+  // Sin skills en la convocatoria, el hook devuelve null: la sección no se pinta.
   if (ctx === null) return null
-  const { accionesDeclarada, buscarDeclarada, certificadosSubidos, declaradas, declarar, enVuelo, error, errorClave, esVieja, fallarEn, progresoCert, quitar, requeridas, tope, viejas } = ctx
+  const { accionesDeclarada, buscarDeclarada, certificadosSubidos, declaradas, declarar, enVuelo, error, errorClave, fallarEn, progresoCert, quitar, requeridas, tope } = ctx
   return (
     <section className={ESTILO_TARJETA}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -35,9 +35,6 @@ export default function SeccionSkills({
           <ul className="mt-1 flex flex-col divide-y divide-slate-100 dark:divide-sena-borde">
             {requeridas.map((requerida) => {
               const declarada = buscarDeclarada(requerida.nombre)
-              // Una fila vieja que coincide con una skill de la convocatoria
-              // tampoco se toca: se muestra con su nota, sin interruptor.
-              const soloLectura = declarada ? esVieja(declarada) : false
               const clave = `req-${requerida.id ?? normalizarSkill(requerida.nombre)}`
 
               return (
@@ -49,7 +46,6 @@ export default function SeccionSkills({
                   enVuelo={enVuelo} progresoCert={progresoCert} certificadosSubidos={certificadosSubidos} error={error} errorClave={errorClave}
                   clave={clave}
                   tope={tope}
-                  sinSiNo={soloLectura}
                   onActivar={() => {
                     if (declarada) return
                     declarar(clave, (fresco) => {
@@ -74,32 +70,6 @@ export default function SeccionSkills({
                 />
               )
             })}
-          </ul>
-        </div>
-      )}
-
-      {viejas.length > 0 && (
-        <div className="mt-4">
-          <p className={ESTILO_GRUPO}>Declaradas antes</p>
-          <p className="mt-1 text-sm text-slate-600 dark:text-sena-texto-suave">
-            Registradas cuando la postulación todavía permitía agregar
-            habilidades propias o del catálogo. Se conservan, pero ya no se
-            pueden editar ni quitar.
-          </p>
-          <ul className="mt-1 flex flex-col divide-y divide-slate-100 dark:divide-sena-borde">
-            {viejas.map((skill) => (
-              <FilaSkill
-                key={`skill-${skill.id}`}
-                nombre={skill.nombre}
-                declarada={skill}
-                editable={editable}
-                enVuelo={enVuelo} progresoCert={progresoCert} certificadosSubidos={certificadosSubidos} error={error} errorClave={errorClave}
-                clave={`skill-${skill.id}`}
-                tope={tope}
-                sinSiNo
-                {...accionesDeclarada(skill)}
-              />
-            ))}
           </ul>
         </div>
       )}

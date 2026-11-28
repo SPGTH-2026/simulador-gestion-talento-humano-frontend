@@ -31,7 +31,6 @@ export function useVistaDocumentos(deps) {
       requiere_sexo: pideLibretaConv && !sexo,
       sexo,
       documentos,
-      adicionales: [],
       skills: [],
       skills_convocatoria: (skillsConvocatoriaNombres ?? []).map((nombre) => ({
         id: null,

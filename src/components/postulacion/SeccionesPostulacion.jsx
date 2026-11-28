@@ -3,7 +3,6 @@ import Boton from '../ui/Boton'
 import CamposDatosPersonales from './CamposDatosPersonales'
 import IndicadorCompletitud from './IndicadorCompletitud'
 import Icono from '../ui/Icono'
-import SeccionAdicionales from './SeccionAdicionales'
 import SeccionDocumentosRequeridos from './SeccionDocumentosRequeridos'
 import SeccionEnviarPostulacion from './SeccionEnviarPostulacion'
 import SeccionSkills from './SeccionSkills'
@@ -12,7 +11,7 @@ import { usePostulacion } from './contextoPostulacion'
 
 // Las secciones de la postulación del aspirante. Todas leen el mismo estado (ProveedorPostulacion), así que pueden ir en
 // pestañas distintas o apiladas en una pantalla. Van por fases:
-//   1) Datos personales (incluye la autorización de datos)  2) Documentos (con habilidades, adicionales y envío).
+//   1) Datos personales (incluye la autorización de datos)  2) Documentos (con habilidades y envío).
 // En pestañas, Documentos se abre solo cuando los datos están autorizados y guardados (`props.irA` salta de una a otra).
 
 const CLASE_ERROR = 'rounded bg-red-100 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300'
@@ -144,25 +143,14 @@ export function PestanaDocumentos({ conAvisos = true }) {
       )}
 
       {!modoCorreccion && (
-        <>
-          <SeccionSkills
-            vista={vista}
-            // Durante una corrección vigente solo se reemplazan los documentos marcados: las habilidades no se editan.
-            editable={editable && !correccionVigente}
-            asegurar={asegurar}
-            onRecargar={recargar}
-            onError={setError}
-          />
-
-          <SeccionAdicionales
-            vista={vista}
-            editable={editable}
-            bloqueoCorreccion={correccionVigente}
-            asegurar={asegurar}
-            onRecargar={recargar}
-            onError={setError}
-          />
-        </>
+        <SeccionSkills
+          vista={vista}
+          // Durante una corrección vigente solo se reemplazan los documentos marcados: las habilidades no se editan.
+          editable={editable && !correccionVigente}
+          asegurar={asegurar}
+          onRecargar={recargar}
+          onError={setError}
+        />
       )}
 
       {!modoCorreccion && esBorrador && editable && (

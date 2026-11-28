@@ -37,7 +37,6 @@ const base = {
   requiere_sexo: false,
   sexo: null,
   documentos: [],
-  adicionales: [],
   skills_convocatoria: [{ id: 21, nombre: 'Adaptabilidad' }],
 }
 const sinDeclarar = { ...base, skills: [] }

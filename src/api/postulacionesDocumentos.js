@@ -58,36 +58,12 @@ export const subirDocumento = (postulacionId, parametro, archivo, alProgresar) =
 export const eliminarDocumento = (postulacionId, documentoId) =>
   client.delete(`/postulaciones/${postulacionId}/documentos/${documentoId}`)
 
-// POST /api/postulaciones/{id}/documentos/adicionales
-//   multipart: titulo (obligatorio), nota (opcional), archivo
-export const subirAdicional = (postulacionId, { titulo, nota, archivo, alProgresar }) => {
-  const datos = new FormData()
-  datos.append('titulo', titulo)
-  if (nota) datos.append('nota', nota)
-  datos.append('archivo', archivo)
-  return client
-    .post(`/postulaciones/${postulacionId}/documentos/adicionales`, datos, progresoSubida(alProgresar))
+// POST /api/postulaciones/{id}/skills  body: { convocatoria_skill_id }
+// Solo se declara una skill que PIDE la convocatoria, por su id. Idempotente (200 si ya estaba).
+export const declararSkill = (postulacionId, { convocatoriaSkillId } = {}) =>
+  client
+    .post(`/postulaciones/${postulacionId}/skills`, { convocatoria_skill_id: convocatoriaSkillId })
     .then((res) => res.data.data)
-}
-
-// POST /api/postulaciones/{id}/skills  (doc 33)  body con EXACTAMENTE UNA forma:
-//   { convocatoria_skill_id }  skill pedida por la convocatoria (origen 'convocatoria')
-//   { parametro_id }           skill del catálogo general (origen 'catalogo')
-//   { nombre }                 skill propia (origen 'propia')
-// Las de la convocatoria/catálogo SIEMPRE se envían por id; las propias, por nombre.
-// Idempotente por nombre sin distinguir mayúsculas (200 si ya estaba).
-export const declararSkill = (
-  postulacionId,
-  { nombre, convocatoriaSkillId, parametroId } = {},
-) => {
-  let cuerpo
-  if (convocatoriaSkillId) cuerpo = { convocatoria_skill_id: convocatoriaSkillId }
-  else if (parametroId) cuerpo = { parametro_id: parametroId }
-  else cuerpo = { nombre }
-  return client
-    .post(`/postulaciones/${postulacionId}/skills`, cuerpo)
-    .then((res) => res.data.data)
-}
 
 // DELETE /api/postulaciones/{id}/skills/{skill}  ->  204
 export const eliminarSkill = (postulacionId, skillId) =>

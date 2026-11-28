@@ -162,11 +162,6 @@ export function criterios(meta) {
               ))}
             </ul>
           )}
-          <span className={`text-xs ${CLASE_TEXTO_SUAVE}`}>
-            {c.skills.adicionales === 0
-              ? 'Sin skills adicionales'
-              : `${c.skills.adicionales} ${c.skills.adicionales === 1 ? 'skill adicional' : 'skills adicionales'}`}
-          </span>
         </div>
       ),
     },

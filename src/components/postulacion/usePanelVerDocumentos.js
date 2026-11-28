@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import useVisorDocumento from '../../hooks/useVisorDocumento'
 
-// Un solo escuchador para los botones "Ver" de TODAS las secciones (documentos requeridos, adicionales y certificados de
+// Un solo escuchador para los botones "Ver" de TODAS las secciones (documentos requeridos y certificados de
 // skills): el archivo se muestra en el visor interno (un diálogo con el PDF), sin abrir otra pestaña. Si falla (archivo
 // perdido, disco sin credenciales), el error y el botón Reintentar salen dentro del propio visor.
 // Devuelve `visor`, el elemento que el panel debe pintar.

@@ -5,7 +5,6 @@ afterEach(cleanup)
 
 vi.mock('./SeccionDocumentosRequeridos', () => ({ default: () => <p>lista de documentos</p> }))
 vi.mock('./SeccionSkills', () => ({ default: () => null }))
-vi.mock('./SeccionAdicionales', () => ({ default: () => null }))
 vi.mock('./SeccionEnviarPostulacion', () => ({ default: () => null }))
 vi.mock('./IndicadorCompletitud', () => ({ default: () => null }))
 

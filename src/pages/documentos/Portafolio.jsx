@@ -111,8 +111,7 @@ export default function Portafolio({ userId }) {
 
                 <p className={`text-xs ${CLASE_TEXTO_SUAVE}`}>
                   Postulada el {formatearFechaHora(p.fecha_postulacion)}
-                  {' · '}Documentos: {p.documentos?.subidos ?? 0}/{p.documentos?.requeridos ?? 0} requeridos,{' '}
-                  {p.documentos?.adicionales ?? 0} adicionales
+                  {' · '}Documentos: {p.documentos?.subidos ?? 0}/{p.documentos?.requeridos ?? 0} requeridos
                   {' · '}Skills: {p.skills?.total ?? 0} ({p.skills?.con_certificado ?? 0} con certificado)
                 </p>
               </Tarjeta>
@@ -193,35 +192,6 @@ export default function Portafolio({ userId }) {
             </section>
           )}
 
-          {revision.adicionales && revision.adicionales.length > 0 && (
-            <section>
-              <h3 className={`${TITULO_BLOQUE} mb-3`}>Documentos adicionales</h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {revision.adicionales.map((d) => (
-                  <Tarjeta key={d.id} as="article" className="flex flex-col gap-3 p-4">
-                    <div className="min-w-0">
-                      <p className={`font-medium ${CLASE_TEXTO_FUERTE} ${CLASE_TEXTO_PARTIDO}`}>{d.titulo}</p>
-                      {d.nota && <p className={`text-xs ${CLASE_TEXTO_SUAVE} ${CLASE_TEXTO_PARTIDO}`}>{d.nota}</p>}
-                      <p className={`mt-1 text-xs ${CLASE_TEXTO_SUAVE} ${CLASE_TEXTO_PARTIDO}`}>
-                        {d.archivo?.nombre_original} · {formatearTamano(d.archivo?.tamano_bytes)}
-                      </p>
-                    </div>
-                    {d.archivo && (
-                      <div className="mt-auto border-t border-sena-linea/70 pt-3 dark:border-sena-borde/50">
-                        {botonesLectura(
-                          `adic-${d.archivo.id}`,
-                          d.archivo.nombre_original,
-                          () => verArchivo(rutaArchivo(`documentos/${d.archivo.id}/archivo?inline=1`), d.archivo.nombre_original, d.titulo),
-                          () => descargarDocumentoRevision(postulacionSel.id, d.archivo.id, d.archivo.nombre_original),
-                        )}
-                      </div>
-                    )}
-                  </Tarjeta>
-                ))}
-              </div>
-            </section>
-          )}
-
           {revision.skills && revision.skills.length > 0 && (
             <section>
               <h3 className={`${TITULO_BLOQUE} mb-3`}>Skills declaradas</h3>
@@ -254,7 +224,7 @@ export default function Portafolio({ userId }) {
             </section>
           )}
 
-          {revision.documentos?.length === 0 && revision.adicionales?.length === 0 && revision.skills?.length === 0 && (
+          {revision.documentos?.length === 0 && revision.skills?.length === 0 && (
             <p className={`py-8 text-center ${CLASE_TEXTO_SUAVE}`}>No hay documentos ni skills en esta postulación.</p>
           )}
         </Tarjeta>

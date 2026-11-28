@@ -71,14 +71,6 @@ export function useSeccionSkills({ vista,
 
   const tope = declaradas.length >= MAX_SKILLS
 
-  // Las skills que ya estaban declaradas antes (catálogo o propias) no se
-  // pueden tocar: se muestran aparte y en solo lectura.
-  const esVieja = (skill) => skill.origen !== 'convocatoria'
-  const nombresRequeridas = new Set(requeridas.map((r) => normalizarSkill(r.nombre)))
-  const viejas = declaradas.filter(
-    (s) => esVieja(s) && !nombresRequeridas.has(normalizarSkill(s.nombre)),
-  )
-
   // La postulación ya existe (la vista trae su id); si no, se crea el borrador
   // de forma silenciosa justo antes de guardar.
   const pidSeguro = async () => vista.postulacion?.id ?? (await asegurar()).postulacionId
@@ -198,9 +190,8 @@ export function useSeccionSkills({ vista,
         }
       : {}
 
-  // Si la convocatoria NO pide skills y el aspirante no tiene ninguna
-  // declarada antes, la sección entera no se pinta: nada que ver con skills.
-  if (requeridas.length === 0 && viejas.length === 0) {
+  // Si la convocatoria NO pide skills, la sección entera no se pinta: nada que ver con skills.
+  if (requeridas.length === 0) {
     return null
   }
 
@@ -218,8 +209,6 @@ export function useSeccionSkills({ vista,
       elegirCertificado,
       enVuelo,
       error,
-      esVieja,
-      nombresRequeridas,
       onRecargar,
       pidSeguro,
       progresoCert,
@@ -237,7 +226,6 @@ export function useSeccionSkills({ vista,
       setVistaPrevia,
       tope,
       verCertificadoDe,
-      viejas,
       vista,
       vistaPrevia,
     }
