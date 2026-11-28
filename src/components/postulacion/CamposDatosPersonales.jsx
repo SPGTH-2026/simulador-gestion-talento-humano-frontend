@@ -1,6 +1,8 @@
 import { CLASE_CAJA_SUAVE, CLASE_CAMPO, CLASE_TARJETA, CLASE_TEXTO_SUAVE, CLASE_TITULO_SECCION } from '../../lib/estilos'
 import { EDAD_MINIMA, ID_SECCION_DATOS } from '../../lib/datosPersonales'
+import { ayudaDocumento } from '../../lib/camposPersonales'
 import AutorizacionDatos from './AutorizacionDatos'
+import CampoTelefono from './CampoTelefono'
 import Boton from '../ui/Boton'
 import Campo from '../ui/Campo'
 import GrupoSexo from './GrupoSexo'
@@ -42,7 +44,15 @@ export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onCo
             </select>
           </Campo>
           <Campo etiqueta="Número de documento" requerido error={errorDe('numero_documento')}>
-            <input type="text" inputMode="numeric" maxLength={20} className={CLASE_CAMPO} {...campo('numero_documento')} />
+            <input
+              type="text"
+              inputMode={form.tipo_documento_identidad === 'pasaporte' ? 'text' : 'numeric'}
+              maxLength={form.tipo_documento_identidad === 'pasaporte' ? 20 : 15}
+              title={ayudaDocumento(form.tipo_documento_identidad)}
+              placeholder={form.tipo_documento_identidad ? '' : 'Elige primero el tipo'}
+              className={CLASE_CAMPO}
+              {...campo('numero_documento')}
+            />
           </Campo>
 
           <Campo etiqueta="Fecha de nacimiento" requerido error={errorDe('fecha_nacimiento')}>
@@ -57,9 +67,14 @@ export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onCo
             </select>
           </Campo>
 
-          <Campo etiqueta="Teléfono" requerido error={errorDe('telefono')}>
-            <input type="tel" autoComplete="tel" maxLength={20} className={CLASE_CAMPO} {...campo('telefono')} />
-          </Campo>
+          <CampoTelefono
+            etiqueta="Teléfono"
+            requerido
+            valor={form.telefono}
+            onCambio={(valor) => cambiar('telefono', valor)}
+            deshabilitado={!editable}
+            error={errorDe('telefono')}
+          />
           <Campo etiqueta="Departamento" requerido error={errorDe('departamento')}>
             <select autoComplete="address-level1" className={CLASE_CAMPO} {...campo('departamento')}>
               <option value="">Selecciona un departamento</option>
@@ -117,17 +132,33 @@ export default function CamposDatosPersonales({ d, editable, motivoBloqueo, onCo
                 </select>
               </Campo>
               <Campo etiqueta="Número de documento" requerido error={errorDe('representante_documento')}>
-                <input type="text" inputMode="numeric" maxLength={20} className={CLASE_CAMPO} {...campo('representante_documento')} />
+                <input
+                  type="text"
+                  inputMode={form.representante_tipo_documento === 'pasaporte' ? 'text' : 'numeric'}
+                  maxLength={form.representante_tipo_documento === 'pasaporte' ? 20 : 15}
+                  title={ayudaDocumento(form.representante_tipo_documento)}
+                  className={CLASE_CAMPO}
+                  {...campo('representante_documento')}
+                />
               </Campo>
-              <Campo etiqueta="Teléfono" requerido error={errorDe('representante_telefono')}>
-                <input type="tel" maxLength={20} className={CLASE_CAMPO} {...campo('representante_telefono')} />
-              </Campo>
+              <CampoTelefono
+                etiqueta="Teléfono"
+                requerido
+                valor={form.representante_telefono}
+                onCambio={(valor) => cambiar('representante_telefono', valor)}
+                deshabilitado={!editable}
+                error={errorDe('representante_telefono')}
+              />
               <Campo etiqueta="Correo electrónico" requerido error={errorDe('representante_correo')}>
                 <input type="email" autoComplete="off" maxLength={150} className={CLASE_CAMPO} {...campo('representante_correo')} />
               </Campo>
-              <Campo etiqueta="Teléfono alterno (opcional)" error={errorDe('representante_telefono_alterno')}>
-                <input type="tel" maxLength={20} className={CLASE_CAMPO} {...campo('representante_telefono_alterno')} />
-              </Campo>
+              <CampoTelefono
+                etiqueta="Teléfono alterno (opcional)"
+                valor={form.representante_telefono_alterno}
+                onCambio={(valor) => cambiar('representante_telefono_alterno', valor)}
+                deshabilitado={!editable}
+                error={errorDe('representante_telefono_alterno')}
+              />
               <Campo etiqueta="Departamento de residencia (opcional)" error={errorDe('representante_departamento')}>
                 <select className={CLASE_CAMPO} {...campo('representante_departamento')}>
                   <option value="">Selecciona un departamento</option>

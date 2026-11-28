@@ -1,3 +1,5 @@
+import { armarTelefono, partirTelefono, telefonoValido } from './camposPersonales'
+
 // Reglas y valores iniciales del formulario de datos personales de una postulación. Las reglas de edad se repiten aquí
 // solo para avisar al instante; el servidor es quien las exige.
 
@@ -94,7 +96,21 @@ const OBLIGATORIOS = [
 export function formCompleto(form, hoy = new Date()) {
   const esMenor = categoriaDeEdad(form.fecha_nacimiento, hoy) === 'menor'
   const obligatorios = esMenor ? [...OBLIGATORIOS, ...OBLIGATORIOS_REPRESENTANTE] : OBLIGATORIOS
-  return obligatorios.every((campo) => String(form[campo] ?? '').trim() !== '') && (!esMenor || form.representante_conoce === true)
+  const telefonos = esMenor ? ['telefono', 'representante_telefono'] : ['telefono']
+  // El teléfono alterno es opcional, pero si se escribe debe estar completo.
+  const alternoBien = !esMenor || !String(form.representante_telefono_alterno ?? '').trim() || telefonoValido(form.representante_telefono_alterno)
+  return (
+    obligatorios.every((campo) => String(form[campo] ?? '').trim() !== '') &&
+    telefonos.every((campo) => telefonoValido(form[campo])) &&
+    alternoBien &&
+    (!esMenor || form.representante_conoce === true)
+  )
+}
+
+function normalizarTelefono(valor) {
+  if (!valor) return ''
+  const { codigo, numero } = partirTelefono(valor)
+  return armarTelefono(codigo, numero)
 }
 
 // Valores del formulario a partir de lo guardado en la postulación (o vacío si aún no hay datos).
@@ -114,6 +130,10 @@ export function formDesdeDatos(datos) {
     representante_departamento: datos.representante_departamento?.codigo ?? '',
     representante_municipio: datos.representante_municipio?.codigo ?? '',
     nivel_formacion: datos.nivel_formacion?.codigo ?? '',
+    // Un teléfono guardado antes de existir el código del país se muestra y se vuelve a guardar como colombiano (+57).
+    telefono: normalizarTelefono(datos.telefono),
+    representante_telefono: normalizarTelefono(datos.representante_telefono),
+    representante_telefono_alterno: normalizarTelefono(datos.representante_telefono_alterno),
   }
 }
 

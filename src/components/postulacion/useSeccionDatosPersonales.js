@@ -3,6 +3,7 @@ import { listaParametros } from '../../api/convocatorias'
 import { guardarDatosPersonales } from '../../api/postulacionesDocumentos'
 import { listaDepartamentos, listaMunicipios } from '../../api/ubicaciones'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
+import { limpiarCampo } from '../../lib/camposPersonales'
 import { categoriaDeEdad, cuerpoDesdeForm, EDAD_MINIMA, formCompleto, formDesdeDatos } from '../../lib/datosPersonales'
 
 // Catálogos fijos (tipos de documento, niveles de formación y departamentos): no cambian durante la sesión, así que se piden
@@ -107,7 +108,14 @@ export function useSeccionDatosPersonales({ datos, editable, asegurar, onRecarga
   const cambiar = (campo, valor) => {
     // Cambiar de departamento invalida el municipio: pertenece al anterior.
     const hijo = { departamento: 'municipio', representante_departamento: 'representante_municipio' }[campo]
-    setForm((prev) => ({ ...prev, [campo]: valor, ...(hijo ? { [hijo]: '' } : {}) }))
+    setForm((prev) => {
+      // Cada campo solo acepta lo que le corresponde (letras, números, código de país…) y tiene su largo máximo.
+      const siguiente = { ...prev, [campo]: limpiarCampo(campo, valor, prev), ...(hijo ? { [hijo]: '' } : {}) }
+      // El tipo de documento decide si el número lleva letras (pasaporte) o solo dígitos: se vuelve a limpiar.
+      if (campo === 'tipo_documento_identidad') siguiente.numero_documento = limpiarCampo('numero_documento', prev.numero_documento, siguiente)
+      if (campo === 'representante_tipo_documento') siguiente.representante_documento = limpiarCampo('representante_documento', prev.representante_documento, siguiente)
+      return siguiente
+    })
     setErrores((prev) => ({ ...prev, [campo]: undefined, ...(hijo ? { [hijo]: undefined } : {}) }))
   }
 
