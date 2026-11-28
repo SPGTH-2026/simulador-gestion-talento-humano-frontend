@@ -5,6 +5,20 @@ import { listaDepartamentos, listaMunicipios } from '../../api/ubicaciones'
 import { erroresDeCampo, mensajeError } from '../../api/mensajeError'
 import { categoriaDeEdad, cuerpoDesdeForm, EDAD_MINIMA, formCompleto, formDesdeDatos } from '../../lib/datosPersonales'
 
+// Catálogos fijos (tipos de documento, niveles de formación y departamentos): no cambian durante la sesión, así que se piden
+// una sola vez y no en cada visita a la postulación. Si la petición falla, la siguiente visita vuelve a pedirlos.
+let catalogosFijos = null
+function cargarCatalogosFijos() {
+  if (!catalogosFijos) {
+    catalogosFijos = Promise.all([listaParametros('tipo_documento_identidad'), listaParametros('nivel_formacion'), listaDepartamentos()])
+      .catch((e) => {
+        catalogosFijos = null
+        throw e
+      })
+  }
+  return catalogosFijos
+}
+
 // Pausa antes de guardar, para no mandar una petición por cada tecla: lo bastante corta para sentirse inmediata.
 const ESPERA_GUARDADO_MS = 500
 
@@ -39,7 +53,7 @@ export function useSeccionDatosPersonales({ datos, editable, asegurar, onRecarga
 
   useEffect(() => {
     let activo = true
-    Promise.all([listaParametros('tipo_documento_identidad'), listaParametros('nivel_formacion'), listaDepartamentos()])
+    cargarCatalogosFijos()
       .then(([tipos, niveles, departamentos]) => {
         if (activo) setCatalogos({ tiposDocumento: tipos.data ?? [], nivelesFormacion: niveles.data ?? [], departamentos })
       })
