@@ -3,10 +3,7 @@ import { crearDocumentoCatalogo } from '../../api/convocatorias'
 import { mensajeError } from '../../api/mensajeError'
 import { DOCUMENTOS_OBLIGATORIOS, esObligatorioFijo } from '../../lib/documentosConvocatoria'
 import { MAX_SKILLS, claveSkill, repartoIgual } from './convocatoriaWizardUtils'
-import { sumaDePonderaciones, sumaTotalPorcentajes, valorPonderacion } from './convocatoriaWizardValidacion'
-
-// Porcentaje ya asignado a las habilidades: lo que queda para repartir entre los documentos.
-const sumaHabilidades = (skills) => (skills ?? []).reduce((acc, s) => acc + (Number(s.ponderacion) || 0), 0)
+import { sumaDePonderaciones, sumaDeSkills, valorPonderacion } from './convocatoriaWizardValidacion'
 
 // Skills y documentos del formulario de convocatoria: agregar y quitar skills (libres o del catálogo), elegir
 // documentos, crear uno nuevo en el catálogo y repartir o escribir sus porcentajes. Recibe el formulario y su setter.
@@ -90,7 +87,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
       const documentos = prev.documentos.includes(identificador)
         ? prev.documentos.filter((c) => c !== identificador)
         : [...prev.documentos, identificador]
-      return { ...prev, documentos, ...(repartoAuto ? { ponderaciones: repartoIgual(documentos, 100 - sumaHabilidades(prev.skills)) } : {}) }
+      return { ...prev, documentos, ...(repartoAuto ? { ponderaciones: repartoIgual(documentos, 100) } : {}) }
     })
   }
 
@@ -120,7 +117,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
 
       setForm((prev) => {
         const documentos = prev.documentos.includes(identificador) ? prev.documentos : [...prev.documentos, identificador]
-        return { ...prev, documentos, ...(repartoAuto ? { ponderaciones: repartoIgual(documentos, 100 - sumaHabilidades(prev.skills)) } : {}) }
+        return { ...prev, documentos, ...(repartoAuto ? { ponderaciones: repartoIgual(documentos, 100) } : {}) }
       })
 
       setNuevoDocumento('')
@@ -173,7 +170,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
   const repartirPonderaciones = () => {
     if (form.documentos.length === 0) return
     setRepartoAuto(true)
-    setForm((prev) => ({ ...prev, ponderaciones: repartoIgual(prev.documentos, 100 - sumaHabilidades(prev.skills)) }))
+    setForm((prev) => ({ ...prev, ponderaciones: repartoIgual(prev.documentos, 100) }))
   }
 
   const sumaPonderaciones = () => sumaDePonderaciones(form)
@@ -188,7 +185,7 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
   }
 
   // ── Porcentaje de cada habilidad ─────────────────────────────────────
-  // Vacío = sin porcentaje. Con documentos y habilidades ponderados, el total debe ser 100 %.
+  // Vacío = sin porcentaje. Las habilidades, entre sí, deben sumar 100 % (valen el 10 % de la evaluación).
   const cambiarPorcentajeSkill = (nombre, valor) => {
     const clave = claveSkill(nombre)
     const limpio = String(valor).replace(/[^\d.]/g, '').slice(0, 6)
@@ -203,7 +200,17 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
     return form.skills.find((s) => claveSkill(s.nombre) === clave)?.ponderacion ?? ''
   }
 
-  const sumaTotal = () => sumaTotalPorcentajes(form)
+  const sumaSkills = () => sumaDeSkills(form)
+
+  // Reparte el 100 % en partes iguales entre las habilidades elegidas (el último absorbe el redondeo).
+  const repartirPorcentajesSkills = () => {
+    if (form.skills.length === 0) return
+    const reparto = repartoIgual(form.skills.map((s) => claveSkill(s.nombre)), 100)
+    setForm((prev) => ({
+      ...prev,
+      skills: prev.skills.map((s) => ({ ...s, ponderacion: reparto[claveSkill(s.nombre)] ?? '' })),
+    }))
+  }
 
   return {
     agregarDocumentoCatalogo,
@@ -213,7 +220,8 @@ export default function useSkillsYDocumentos({ form, setForm, catalogos, setCata
     cambiarPonderacion,
     cambiarPorcentajeSkill,
     porcentajeSkill,
-    sumaTotal,
+    sumaSkills,
+    repartirPorcentajesSkills,
     documentosObligatorios,
     documentosOpcionales,
     errorDocumento,

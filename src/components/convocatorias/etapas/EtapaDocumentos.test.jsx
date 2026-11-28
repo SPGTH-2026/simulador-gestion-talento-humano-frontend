@@ -5,8 +5,8 @@ import { ETIQUETAS_DOCUMENTO, etiquetasDocumento } from '../../../lib/documentos
 
 afterEach(cleanup)
 
-// Regla vigente: todo documento que el gestor selecciona queda obligatorio para el aspirante. Los «Documentos adicionales»
-// del aspirante son otra cosa (los aporta voluntariamente). La pantalla debe decir lo mismo que el sistema.
+// Regla vigente: todo documento que el gestor selecciona queda obligatorio para el aspirante. La pantalla debe decir lo
+// mismo que el sistema.
 const ctx = {
   agregarDocumentoCatalogo: vi.fn(),
   bloquearDocumentos: false,
@@ -28,13 +28,12 @@ const ctx = {
 }
 
 describe('ayuda del paso Documentos del asistente', () => {
-  it('dice que los adicionales que selecciona el gestor también son obligatorios y los distingue de los del aspirante', () => {
+  it('dice que los documentos que selecciona el gestor también son obligatorios', () => {
     render(<EtapaDocumentos ctx={ctx} />)
 
     expect(screen.getByText(/Los cuatro documentos básicos se incluyen siempre/)).toBeTruthy()
     expect(screen.getByText(/Elegir otros\s+documentos es opcional/)).toBeTruthy()
     expect(screen.getByText(/todo documento que selecciones aquí será\s+obligatorio para postularse/)).toBeTruthy()
-    expect(screen.getByText(/«Documentos adicionales» que el aspirante\s+puede aportar de forma voluntaria/)).toBeTruthy()
   })
 
   it('no rotula como «Opcionales» lo que en realidad queda obligatorio', () => {

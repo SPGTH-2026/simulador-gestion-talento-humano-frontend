@@ -25,13 +25,20 @@ function PorcentajeSkill({ ctx, nombre, habilitado, soloLectura }) {
 
 // Etapa 4 del asistente de convocatorias. Recibe el estado y las acciones del asistente en la prop ctx.
 export default function EtapaSkills({ ctx }) {
-  const { agregarSkill, alternarSkillCatalogo, errorDeSkills, errorSkill, form, nuevaSkill, quitarSkill, setNuevaSkill, skillEstaAgregada, skillsCatalogo, skillsLibres, soloLectura, sumaTotal } = ctx
+  const { agregarSkill, alternarSkillCatalogo, errorDeSkills, errorSkill, form, nuevaSkill, quitarSkill, setNuevaSkill, skillEstaAgregada, skillsCatalogo, skillsLibres, soloLectura, sumaSkills, repartirPorcentajesSkills } = ctx
   return (
       <div className="flex flex-col gap-4">
         <p className="text-sm text-slate-600 dark:text-sena-texto-suave">
-          Porcentaje total de documentos y habilidades: <strong>{sumaTotal()}%</strong> de 100%. Cada habilidad elegida
-          necesita su porcentaje.
+          Porcentaje de las habilidades: <strong>{sumaSkills()}%</strong> de 100%. Las habilidades valen el 10 % de la evaluación
+          y se reparten entre sí; si no escribes porcentajes, todas valen lo mismo. Solo suman las que el aspirante declare.
         </p>
+        {!soloLectura && form.skills.length > 0 && (
+          <div>
+            <Boton variante="contorno" tamano="flexible" onClick={repartirPorcentajesSkills}>
+              Repartir en partes iguales
+            </Boton>
+          </div>
+        )}
 
         {/* Del catálogo: casillas en una rejilla. Al elegir una habilidad se habilita su porcentaje. */}
         <div className="flex flex-col gap-2">

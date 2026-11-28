@@ -21,11 +21,17 @@ describe('formInicial', () => {
 })
 
 describe('repartoIgual', () => {
-  it('reparte el 100 % y el último absorbe el redondeo', () => {
+  it('reparte el 100 % en partes exactamente iguales: ninguno vale más que otro', () => {
     const mapa = repartoIgual(['a', 'b', 'c'])
     expect(Object.keys(mapa)).toEqual(['a', 'b', 'c'])
+    expect(new Set(Object.values(mapa)).size).toBe(1)
+    expect(mapa.a).toBe('33.3333')
     const suma = Object.values(mapa).reduce((acc, v) => acc + Number(v), 0)
-    expect(Math.round(suma * 100) / 100).toBe(100)
+    expect(Math.abs(suma - 100)).toBeLessThan(0.01)
+  })
+
+  it('cuando divide exacto, no deja decimales', () => {
+    expect(repartoIgual(['a', 'b', 'c', 'd'])).toEqual({ a: '25', b: '25', c: '25', d: '25' })
   })
 
   it('sin documentos no reparte nada', () => {

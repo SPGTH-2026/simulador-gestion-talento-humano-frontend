@@ -2,7 +2,7 @@ import Boton from '../../ui/Boton'
 
 // Etapa 6 del asistente de convocatorias. Recibe el estado y las acciones del asistente en la prop ctx.
 export default function EtapaDocumentos({ ctx }) {
-  const { agregarDocumentoCatalogo, bloquearDocumentos, documentosBloqueados, documentosObligatorios, documentosOpcionales, errorDe, errorDocumento, filaDocumento, guardandoDocumento, mostrarNuevoDocumento, nuevoDocumento, repartirPonderaciones, repartoAuto, setErrorDocumento, setMostrarNuevoDocumento, setNuevoDocumento, sumaPonderaciones, sumaTotal } = ctx
+  const { agregarDocumentoCatalogo, bloquearDocumentos, documentosBloqueados, documentosObligatorios, documentosOpcionales, errorDe, errorDocumento, filaDocumento, guardandoDocumento, mostrarNuevoDocumento, nuevoDocumento, repartirPonderaciones, repartoAuto, setErrorDocumento, setMostrarNuevoDocumento, setNuevoDocumento, sumaPonderaciones } = ctx
   return (
       <div className="flex flex-col gap-3">
         {/* Encabezado del paso con la acción de cargar un documento nuevo. */}
@@ -15,9 +15,7 @@ export default function EtapaDocumentos({ ctx }) {
               obligatorio para postularse.
             </p>
             <p className="text-xs text-slate-500 dark:text-sena-texto-suave">
-              No es lo mismo que los «Documentos adicionales» que el aspirante
-              puede aportar de forma voluntaria al postularse. Solo se aceptan
-              archivos PDF.
+              Solo se aceptan archivos PDF.
             </p>
           </div>
           {!documentosBloqueados && (
@@ -90,7 +88,8 @@ export default function EtapaDocumentos({ ctx }) {
               </h3>
               <p className="mt-1 text-xs text-slate-500 dark:text-sena-texto-suave">
                 Define el peso de cada documento para calificar esta
-                convocatoria. Si los dejas vacíos, todos valen lo mismo.
+                convocatoria: entre sí deben sumar 100 %. Si los dejas vacíos, todos valen lo mismo. Los documentos valen el 90 % de la
+                evaluación (100 % si la convocatoria no pide habilidades).
                 {repartoAuto && ' El reparto es automático: se rehace solo al marcar o quitar documentos; si escribes un porcentaje a mano, deja de serlo.'}
               </p>
             </div>
@@ -102,7 +101,7 @@ export default function EtapaDocumentos({ ctx }) {
                     : 'text-amber-700 dark:text-amber-300'
                 }`}
               >
-                Suma: {Math.round(sumaPonderaciones() * 100) / 100}% · Total con habilidades: {sumaTotal ? sumaTotal() : sumaPonderaciones()}% de 100%
+                Suma: {Math.round(sumaPonderaciones() * 100) / 100}% de 100%
               </span>
               {!documentosBloqueados && (
                 <Boton variante="contorno" tamano="flexible" onClick={repartirPonderaciones}>

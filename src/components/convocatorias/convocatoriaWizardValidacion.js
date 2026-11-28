@@ -19,35 +19,43 @@ export function valorPorcentajeSkill(skill) {
   return String(skill?.ponderacion ?? '')
 }
 
-// Suma de los porcentajes de documentos y habilidades: juntos deben sumar 100 %.
-export function sumaTotalPorcentajes(form) {
-  const docs = sumaDePonderaciones(form)
-  const skills = (form.skills ?? []).reduce((acc, s) => acc + (Number(valorPorcentajeSkill(s)) || 0), 0)
-  return Math.round((docs + skills) * 100) / 100
+// Suma de los porcentajes de las habilidades elegidas.
+export function sumaDeSkills(form) {
+  const suma = (form.skills ?? []).reduce((acc, s) => acc + (Number(valorPorcentajeSkill(s)) || 0), 0)
+  return Math.round(suma * 100) / 100
 }
 
-// Devuelve el mensaje de error o null. Sin porcentajes configurados es válido. Con porcentajes, todos los documentos y
-// todas las habilidades deben tener el suyo, y la suma total debe ser 100 %.
-export function validarPonderaciones(form) {
-  const docsConfigurados = form.documentos.filter((codigo) => String(valorPonderacion(form, codigo)).trim() !== '')
-  const skillsConfiguradas = (form.skills ?? []).filter((s) => valorPorcentajeSkill(s).trim() !== '')
+const redondear = (n) => Math.round(n * 100) / 100
 
-  if (docsConfigurados.length === 0 && skillsConfiguradas.length === 0) return null
-
-  if (docsConfigurados.length !== form.documentos.length) {
-    return 'Define el porcentaje de todos los documentos: deben sumar 100%.'
-  }
-
-  if (skillsConfiguradas.length !== (form.skills ?? []).length) {
-    return 'Define el porcentaje de cada habilidad de la convocatoria.'
-  }
-
-  const suma = sumaTotalPorcentajes(form)
-  if (Math.abs(suma - 100) > 0.01) {
-    return `Los porcentajes de documentos y habilidades deben sumar 100% (suman ${suma}%).`
-  }
-
+// Mensaje de error de un bloque o null. Sin porcentajes en el bloque es válido (se reparte en partes iguales). Con porcentajes,
+// todos los elementos del bloque deben tener el suyo y la suma debe ser 100 %.
+function validarBloque(valores, plural, quien) {
+  const configurados = valores.filter((v) => String(v).trim() !== '')
+  if (configurados.length === 0) return null
+  if (configurados.length !== valores.length) return `Define el porcentaje de ${quien}: deben sumar 100%.`
+  const suma = redondear(valores.reduce((acc, v) => acc + (Number(v) || 0), 0))
+  // La base guarda dos decimales: tres partes iguales (33,33 × 3) suman 99,99. Cada valor puede errar media centésima.
+  const tolerancia = Math.max(0.01, 0.005 * valores.length) + 1e-9
+  if (Math.abs(suma - 100) > tolerancia) return `Los porcentajes de las ${plural} deben sumar 100% (suman ${suma}%).`
   return null
+}
+
+// Documentos: entre sí suman 100 % (el sistema los lleva al 90 % de la evaluación si la convocatoria pide habilidades).
+export function validarPonderaciones(form) {
+  return validarBloque(
+    form.documentos.map((codigo) => valorPonderacion(form, codigo)),
+    'documentos',
+    'todos los documentos',
+  )
+}
+
+// Habilidades: entre sí suman 100 % (el sistema las lleva al 10 % de la evaluación).
+export function validarPonderacionesSkills(form) {
+  return validarBloque(
+    (form.skills ?? []).map((s) => valorPorcentajeSkill(s)),
+    'habilidades',
+    'cada habilidad',
+  )
 }
 
 // Lo que impide guardar un borrador. Nada de esto bloquea recorrer los pasos.
@@ -67,6 +75,8 @@ export function calcularErroresBorrador(form, { esNueva, fichas }) {
   }
   const errorPonderaciones = validarPonderaciones(form)
   if (errorPonderaciones) e.documentos = errorPonderaciones
+  const errorSkills = validarPonderacionesSkills(form)
+  if (errorSkills) e.skills = errorSkills
   return e
 }
 
@@ -101,7 +111,7 @@ export function calcularAvisosFechas(form, { puedePublicar }) {
     avisos.push({
       clave: 'evaluacion-antes-cierre',
       tono: 'info',
-      texto: `La evaluación empieza el ${formatearFecha(form.fecha_evaluacion)}, antes del cierre: desde ese día quienes ya enviaron su postulación no podrán editarla ni reemplazar documentos. Los aspirantes podrán seguir postulándose hasta el ${formatearFecha(form.fecha_cierre)}.`,
+      texto: `La fecha de evaluación (${formatearFecha(form.fecha_evaluacion)}) es anterior al cierre (${formatearFecha(form.fecha_cierre)}). Es solo una referencia: los aspirantes podrán seguir postulándose hasta el cierre y la evaluación no se bloquea por esta fecha.`,
     })
   }
   if (form.fecha_evaluacion && form.fecha_apertura && form.fecha_evaluacion < form.fecha_apertura) {

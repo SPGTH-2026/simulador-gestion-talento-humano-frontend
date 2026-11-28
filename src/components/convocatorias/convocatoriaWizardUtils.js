@@ -87,20 +87,13 @@ export const MAX_SKILLS = 20
 // Longitud máxima del nombre de una skill (skills_max del backend).
 export const MAX_SKILL_LONGITUD = 100
 
-// Reparte `totalPorReparto` (100 % por defecto) en partes iguales entre los documentos. El último absorbe el redondeo para que la suma
-// sea exactamente 100.
+// Reparte `totalPorReparto` (100 % por defecto) en partes IGUALES: todos valen exactamente lo mismo (con tres, 33,3333 cada uno), sin que
+// ninguno absorba el redondeo. La suma puede quedar a una diezmilésima de 100: la validación lo tolera (ver validarBloque).
 export function repartoIgual(documentos, totalPorReparto = 100) {
   const total = documentos.length
   if (total === 0) return {}
-  const base = Math.floor((totalPorReparto / total) * 100) / 100
-  const mapa = {}
-  let acumulado = 0
-  documentos.forEach((codigo, indice) => {
-    const valor = indice === total - 1 ? Math.round((totalPorReparto - acumulado) * 100) / 100 : base
-    acumulado += valor
-    mapa[codigo] = String(valor)
-  })
-  return mapa
+  const valor = String(Math.round((totalPorReparto / total) * 10000) / 10000)
+  return Object.fromEntries(documentos.map((codigo) => [codigo, valor]))
 }
 
 export function soloDigitos(valor) {
