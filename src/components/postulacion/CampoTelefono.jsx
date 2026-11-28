@@ -27,40 +27,45 @@ export default function CampoTelefono({ etiqueta, requerido = false, valor, onCa
   }
 
   return (
-    <Campo etiqueta={etiqueta} requerido={requerido} error={error} ayuda={`Código del país y número: ${ayudaTelefono(codigo)}, solo números.`}>
+    <Campo etiqueta={etiqueta} requerido={requerido} error={error} ayuda={`${paisDe(codigo)?.nombre ?? 'Otro país'} (+${codigo}): ${ayudaTelefono(codigo)}, solo números.`}>
       {({ id, describedby, invalid }) => (
-        <div className="flex gap-2">
-          <select
-            aria-label={`País del ${etiqueta.toLowerCase().replace(' (opcional)', '')}`}
-            value={codigo}
-            disabled={deshabilitado}
-            onChange={(e) => cambiarPais(e.target.value)}
-            className={`${CLASE_CAMPO} w-32 shrink-0`}
-          >
-            {PAISES_TELEFONO.map((pais) => (
-              <option key={pais.codigo} value={pais.codigo}>
-                {pais.bandera} +{pais.codigo}
-              </option>
-            ))}
-            {!paisDe(codigo) && <option value={codigo}>+{codigo}</option>}
-          </select>
-          <input
-            id={id}
-            type="tel"
-            inputMode="numeric"
-            autoComplete={autoComplete}
-            maxLength={maximo}
-            placeholder={codigo === '57' ? '3001234567' : ''}
-            value={partido.numero}
-            disabled={deshabilitado}
-            aria-describedby={describedby}
-            aria-invalid={invalid || undefined}
-            onChange={(e) => {
-              setElegido(codigo)
-              onCambio(armarTelefono(codigo, limpiarNumeroTelefono(codigo, e.target.value)))
-            }}
-            className={`${CLASE_CAMPO} min-w-0 flex-1`}
-          />
+        <div className="flex flex-wrap gap-2">
+          {/* El ancho va en el contenedor: el campo base ya es w-full y anularía un ancho puesto en la propia lista. */}
+          <div className="w-24 shrink-0">
+            <select
+              aria-label={`País del ${etiqueta.toLowerCase().replace(' (opcional)', '')}`}
+              value={codigo}
+              disabled={deshabilitado}
+              onChange={(e) => cambiarPais(e.target.value)}
+              className={`${CLASE_CAMPO} px-1 text-center [text-align-last:center]`}
+            >
+              {PAISES_TELEFONO.map((pais) => (
+                <option key={pais.codigo} value={pais.codigo}>
+                  +{pais.codigo}
+                </option>
+              ))}
+              {!paisDe(codigo) && <option value={codigo}>+{codigo}</option>}
+            </select>
+          </div>
+          <div className="min-w-32 flex-1">
+            <input
+              id={id}
+              type="tel"
+              inputMode="numeric"
+              autoComplete={autoComplete}
+              maxLength={maximo}
+              placeholder={codigo === '57' ? '3001234567' : ''}
+              value={partido.numero}
+              disabled={deshabilitado}
+              aria-describedby={describedby}
+              aria-invalid={invalid || undefined}
+              onChange={(e) => {
+                setElegido(codigo)
+                onCambio(armarTelefono(codigo, limpiarNumeroTelefono(codigo, e.target.value)))
+              }}
+              className={CLASE_CAMPO}
+            />
+          </div>
         </div>
       )}
     </Campo>

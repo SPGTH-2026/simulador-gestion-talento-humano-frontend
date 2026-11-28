@@ -3,17 +3,17 @@
 
 // Países para el código del teléfono. `digitos` = [mínimo, máximo] del número SIN el código. Colombia lleva exactamente 10.
 export const PAISES_TELEFONO = [
-  { codigo: '57', nombre: 'Colombia', bandera: '🇨🇴', digitos: [10, 10] },
-  { codigo: '58', nombre: 'Venezuela', bandera: '🇻🇪', digitos: [10, 10] },
-  { codigo: '593', nombre: 'Ecuador', bandera: '🇪🇨', digitos: [9, 9] },
-  { codigo: '51', nombre: 'Perú', bandera: '🇵🇪', digitos: [9, 9] },
-  { codigo: '507', nombre: 'Panamá', bandera: '🇵🇦', digitos: [7, 8] },
-  { codigo: '52', nombre: 'México', bandera: '🇲🇽', digitos: [10, 10] },
-  { codigo: '56', nombre: 'Chile', bandera: '🇨🇱', digitos: [9, 9] },
-  { codigo: '54', nombre: 'Argentina', bandera: '🇦🇷', digitos: [10, 10] },
-  { codigo: '55', nombre: 'Brasil', bandera: '🇧🇷', digitos: [10, 11] },
-  { codigo: '1', nombre: 'Estados Unidos / Canadá', bandera: '🇺🇸', digitos: [10, 10] },
-  { codigo: '34', nombre: 'España', bandera: '🇪🇸', digitos: [9, 9] },
+  { codigo: '57', nombre: 'Colombia', digitos: [10, 10] },
+  { codigo: '58', nombre: 'Venezuela', digitos: [10, 10] },
+  { codigo: '593', nombre: 'Ecuador', digitos: [9, 9] },
+  { codigo: '51', nombre: 'Perú', digitos: [9, 9] },
+  { codigo: '507', nombre: 'Panamá', digitos: [7, 8] },
+  { codigo: '52', nombre: 'México', digitos: [10, 10] },
+  { codigo: '56', nombre: 'Chile', digitos: [9, 9] },
+  { codigo: '54', nombre: 'Argentina', digitos: [10, 10] },
+  { codigo: '55', nombre: 'Brasil', digitos: [10, 11] },
+  { codigo: '1', nombre: 'EE. UU. / Canadá', digitos: [10, 10] },
+  { codigo: '34', nombre: 'España', digitos: [9, 9] },
 ]
 
 export const PAIS_POR_DEFECTO = '57'
