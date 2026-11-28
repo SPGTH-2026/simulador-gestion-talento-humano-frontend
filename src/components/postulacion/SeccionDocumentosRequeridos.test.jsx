@@ -41,6 +41,27 @@ describe('SeccionDocumentosRequeridos', () => {
     expect(screen.getByText(/solo puedes reemplazar los documentos que el evaluador marcó/i)).toBeTruthy()
   })
 
+  it('en una corrección dice qué puntos del checklist no cumplió cada documento marcado', () => {
+    const correccion = {
+      marcados: new Set([10]),
+      reemplazados: new Set(),
+      itemsNoCumplidos: { 10: ['Firmada', 'Sin tachones'], 20: ['No debería verse: no está marcado'] },
+    }
+    render(<SeccionDocumentosRequeridos {...base} correccion={correccion} bloqueoCorreccion />)
+
+    expect(screen.getByText('Puntos que no cumplió:')).toBeTruthy()
+    expect(screen.getByText('Firmada')).toBeTruthy()
+    expect(screen.getByText('Sin tachones')).toBeTruthy()
+    expect(screen.queryByText(/No debería verse/)).toBeNull()
+  })
+
+  it('sin puntos fallidos no pinta el recuadro', () => {
+    const correccion = { marcados: new Set([10]), reemplazados: new Set(), itemsNoCumplidos: {} }
+    render(<SeccionDocumentosRequeridos {...base} correccion={correccion} bloqueoCorreccion />)
+
+    expect(screen.queryByText('Puntos que no cumplió:')).toBeNull()
+  })
+
   describe('libreta militar', () => {
     const conLibreta = (estado) => ({
       postulacion: { id: 5, estado: { codigo: 'borrador' } },

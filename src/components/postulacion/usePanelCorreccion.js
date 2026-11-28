@@ -27,7 +27,9 @@ export function usePanelCorreccion({ idPostulacion, rol, onCorreccionEnviada, se
   const ronda = correccion?.correccion?.ronda_actual ?? null
   const marcados = useMemo(() => new Set((ronda?.documentos_marcados ?? []).map(Number)), [ronda])
   const reemplazados = useMemo(() => new Set((ronda?.documentos_reemplazados ?? []).map(Number)), [ronda])
-  const infoCorreccion = correccion ? { marcados, reemplazados } : null
+  // Por documento, los puntos de su checklist que el evaluador marcó «No cumple» (para que el aspirante sepa qué corregir).
+  const itemsNoCumplidos = useMemo(() => correccion?.items_no_cumplidos ?? {}, [correccion])
+  const infoCorreccion = correccion ? { marcados, reemplazados, itemsNoCumplidos } : null
   // La vigencia la decide el servidor (estado de la ronda): pedida, sin responder, con plazo y postulación activos. La
   // pantalla no la recalcula, así coincide siempre con lo que el servidor va a aceptar.
   const correccionVigente = ronda?.estado === 'vigente'

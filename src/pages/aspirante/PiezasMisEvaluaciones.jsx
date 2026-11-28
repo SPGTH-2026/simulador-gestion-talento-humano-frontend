@@ -7,7 +7,7 @@ import Dialogo from '../../components/ui/Dialogo'
 import Icono from '../../components/ui/Icono'
 import Mensaje, { MensajeAviso } from '../../components/ui/Mensaje'
 import { CLASE_CAJA_SUAVE, CLASE_TARJETA_PLANA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_PARTIDO, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
-import { ESTADO_DOCUMENTO, formatearPeso } from '../../lib/evaluacion'
+import { ESTADO_DOCUMENTO, claveItem, formatearPeso } from '../../lib/evaluacion'
 import { MENSAJES_CERRADOS, nombreRonda, textoPlazo } from '../../lib/correcciones'
 
 // El contrato puede traer el aspirante como texto o como objeto.
@@ -147,6 +147,22 @@ export function EstadoCorreccion({ evaluacion, onCerrar }) {
   )
 }
 
+// Los puntos del checklist de un documento que el evaluador marcó «No cumple». Sin ninguno, no se pinta nada.
+function PuntosNoCumplidos({ items = [], perfil, documentoId }) {
+  const fallan = items.filter((_, n) => perfil?.[claveItem(documentoId, n)] === false)
+  if (fallan.length === 0) return null
+  return (
+    <div className="w-full rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
+      <p className="font-medium">Puntos que no cumplió:</p>
+      <ul className="mt-1 list-disc pl-5">
+        {fallan.map((texto) => (
+          <li key={texto}>{texto}</li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export function DetalleEvaluacion({ evaluacion, documentos, estadoDocumentos, onCerrar }) {
   const completada = evaluacion.estado === 'finalizada'
   const actualizados = evaluacion.documentos_actualizados ?? []
@@ -222,6 +238,7 @@ export function DetalleEvaluacion({ evaluacion, documentos, estadoDocumentos, on
                       {estado.texto}
                     </EtiquetaConIcono>
                   </span>
+                  <PuntosNoCumplidos items={d.items} perfil={evaluacion.perfil} documentoId={d.id} />
                 </li>
               )
             })}

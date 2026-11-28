@@ -56,6 +56,8 @@ export default function SeccionDocumentosRequeridos({
           const { parametro, obligatorio, estado: estadoDoc, archivo } = documento
           const marcado = Boolean(correccion?.marcados?.has(parametro.id))
           const reemplazado = Boolean(correccion?.reemplazados?.has(parametro.id))
+          // Puntos del checklist de este documento que el evaluador marcó «No cumple».
+          const puntosNoCumplidos = marcado ? (correccion?.itemsNoCumplidos?.[parametro.id] ?? []) : []
           // En el modo corrección solo se muestran los documentos marcados.
           if (soloCorreccion && !marcado) return null
           const codigo = parametro.codigo
@@ -118,6 +120,17 @@ export default function SeccionDocumentosRequeridos({
                       </span>
                     )}
                   </p>
+
+                  {puntosNoCumplidos.length > 0 && (
+                    <div className="mt-1.5 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
+                      <p className="font-medium">Puntos que no cumplió:</p>
+                      <ul className="mt-1 list-disc pl-5">
+                        {puntosNoCumplidos.map((texto) => (
+                          <li key={texto}>{texto}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {(estadoDoc === 'subido' || archivosSubidos[clave]) && archivoMostrar && (
                     // Ficha del archivo cargado: icono en verde de estado «listo», nombre en una línea propia y debajo,
@@ -199,7 +212,7 @@ export default function SeccionDocumentosRequeridos({
               </div>
 
               {/* Barra a todo el ancho de la fila (antes quedaba en la columna del nombre y se veía mucho más corta que
-                  la de completitud y las de skills y adicionales). */}
+                  la de completitud y las de skills). */}
               {enProceso && progreso[clave] != null && (
                 <BarraProgreso valor={progreso[clave]} etiqueta="Cargando documento" className="mt-0" />
               )}
