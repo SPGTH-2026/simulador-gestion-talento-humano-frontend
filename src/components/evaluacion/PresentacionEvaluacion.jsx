@@ -24,6 +24,34 @@ export function EtiquetaConIcono({ tono, icono, children }) {
   )
 }
 
+// Cómo va un documento con checklist: «Cumple · 4 de 6», «No cumple · 3 de 6» o «En curso · 2 de 6». Hay que superar la mitad de los
+// ítems; la mitad exacta no alcanza. Solo lectura: se deduce de los ítems.
+export function EtiquetaIndicador({ indicador }) {
+  if (!indicador) return null
+  const { estado, cumplen, total, necesita } = indicador
+  if (estado === 'cumple') {
+    return (
+      <EtiquetaConIcono tono="exito" icono={<Icono nombre="check" className="size-3.5" />}>
+        Cumple · {cumplen} de {total}
+      </EtiquetaConIcono>
+    )
+  }
+  if (estado === 'no_cumple') {
+    return (
+      <span title={`Necesita más de la mitad de los ítems (${necesita} de ${total}).`}>
+        <EtiquetaConIcono tono="peligro" icono={<IconoX className="size-3.5" />}>
+          No cumple · {cumplen} de {total}
+        </EtiquetaConIcono>
+      </span>
+    )
+  }
+  return (
+    <EtiquetaConIcono tono="azul" icono={<Icono nombre="reloj" className="size-3.5" />}>
+      En curso · {cumplen} de {total}
+    </EtiquetaConIcono>
+  )
+}
+
 // Cómo va la evaluación: sin empezar, con un borrador guardado o completada.
 export function EtiquetaEvaluacion({ evaluacion }) {
   if (evaluacion?.estado === 'finalizada') {
@@ -36,6 +64,14 @@ export function EtiquetaEvaluacion({ evaluacion }) {
   // El evaluador pidió corregir documentos: espera al aspirante o, si ya
   // reemplazó alguno, hay algo nuevo por revisar.
   if (evaluacion?.estado === 'correccion_solicitada') {
+    // El plazo del aspirante venció sin respuesta: ya no puede corregir y el evaluador puede finalizar con lo que hay.
+    if (evaluacion.correccion_estado === 'vencida') {
+      return (
+        <EtiquetaConIcono tono="aviso" icono={<Icono nombre="alerta" className="size-3.5" />}>
+          Plazo vencido
+        </EtiquetaConIcono>
+      )
+    }
     const porRevisar = (evaluacion.documentos_actualizados?.length ?? 0) > 0
     return (
       <EtiquetaConIcono

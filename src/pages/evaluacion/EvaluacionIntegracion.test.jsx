@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
-// Integración de lo que llegó de develop (reapertura y bloqueo de «No cumple») con el visor interno de documentos.
+// Integración de lo que llegó de develop (reapertura y bloqueo de «No cumple») con el visor de documentos junto al checklist.
 vi.mock('../../auth/useAuth', () => ({ useAuth: () => ({ user: { id: 1, role: 'aprendiz' }, can: () => true }) }))
 vi.mock('../../hooks/useConfirmacion', () => ({ useConfirmacion: () => vi.fn() }))
 vi.mock('../../api/evaluaciones', () => ({ obtenerEvaluacion: vi.fn(), guardarEvaluacion: vi.fn() }))
@@ -65,26 +65,49 @@ describe('Evaluación: reapertura, «No cumple» y visor', () => {
   })
 
   it('permite finalizar con «No cumple» cuando las correcciones se agotaron', async () => {
-    obtenerEvaluacion.mockResolvedValue(base(evaluacion, { puede_solicitar: false, motivo: 'agotadas' }))
+    // Con algo en «No cumple» las observaciones son obligatorias para finalizar.
+    obtenerEvaluacion.mockResolvedValue(base({ ...evaluacion, observaciones: 'No presentó la cédula legible.' }, { puede_solicitar: false, motivo: 'agotadas' }))
     montar()
     await screen.findByText('Evaluación reabierta.')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Finalizar y enviar resultado' }).disabled).toBe(false))
     expect(screen.queryByText(/Marcados como «No cumple»/)).toBeNull()
   })
 
-  it('«Ver documento» abre el visor interno con la ruta de revisión y, al cerrarlo, la pantalla conserva su estado', async () => {
+  it('con una corrección pendiente (el aspirante aún está en plazo) no ofrece guardar, corregir ni finalizar', async () => {
+    const esperando = { ...evaluacion, reabierta: null, estado: 'correccion_solicitada', correccion_estado: 'vigente', observaciones: 'Hay campos borrosos.' }
+    obtenerEvaluacion.mockResolvedValue(base(esperando, { puede_solicitar: false, motivo: 'pendiente' }))
+    montar()
+
+    expect(await screen.findByText('Esperando al aspirante.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Finalizar y enviar resultado' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Guardar borrador' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Enviar a corrección/ })).toBeNull()
+    // El documento se puede ver, pero no calificar.
+    expect(screen.getByRole('button', { name: 'Calificar documento: Documento de identidad' })).toBeTruthy()
+  })
+
+  it('cuando el plazo de la corrección venció vuelven las acciones', async () => {
+    const vencida = { ...evaluacion, reabierta: null, estado: 'correccion_solicitada', correccion_estado: 'vencida', observaciones: 'Hay campos borrosos.' }
+    obtenerEvaluacion.mockResolvedValue(base(vencida, { puede_solicitar: false, motivo: 'vencida' }))
+    montar()
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Finalizar y enviar resultado' })).toBeTruthy())
+    expect(screen.queryByText('Esperando al aspirante.')).toBeNull()
+  })
+
+  it('«Calificar» abre el documento al lado con la ruta de revisión y, al cerrarlo, la pantalla conserva su estado', async () => {
     obtenerEvaluacion.mockResolvedValue(base(evaluacion, { puede_solicitar: true, motivo: 'quedan' }))
     montar()
     await screen.findByText('Evaluación reabierta.')
-    const ver = screen.getByRole('button', { name: 'Ver documento: Documento de identidad' })
-    ver.focus()
-    fireEvent.click(ver)
-    expect(await screen.findByRole('dialog', { name: 'Documento de identidad' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Calificar documento: Documento de identidad' }))
+    // El documento se muestra en la propia pantalla (no en un diálogo), junto a los controles de calificación.
+    expect(await screen.findByRole('heading', { name: 'Calificando: Documento de identidad' })).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await waitFor(() => expect(obtenerArchivo).toHaveBeenCalled())
     expect(obtenerArchivo.mock.calls[0][0]).toBe('/revision/postulaciones/9/documentos/1/archivo?inline=1')
     expect(window.open).not.toHaveBeenCalled()
-    fireEvent.keyDown(window, { key: 'Escape' })
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(document.activeElement).toBe(ver)
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Calificando: Documento de identidad' })).toBeNull())
     // Sigue el aviso y el bloqueo: abrir y cerrar el visor no toca la evaluación.
     expect(screen.getByText('Evaluación reabierta.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Finalizar y enviar resultado' }).disabled).toBe(true)

@@ -6,7 +6,7 @@ import Dialogo from './Dialogo'
 //
 // Escape y clic fuera cancelan. El foco va al botón de cancelar para que una
 // pulsación accidental de Enter no ejecute la acción destructiva; al cerrarse
-// vuelve a donde estaba (lo gestiona Dialogo).
+// vuelve a donde estaba (lo gestiona Dialogo). Con `textoCancelar: null` solo hay un botón («Entendido»): el foco va a él.
 export default function ConfirmarAccion({
   titulo,
   mensaje,
@@ -46,10 +46,12 @@ export default function ConfirmarAccion({
       </div>
 
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Boton autoFocus variante="contorno" onClick={onCancelar}>
-          {textoCancelar}
-        </Boton>
-        <Boton variante={peligro ? 'peligro' : 'primario'} onClick={onConfirmar}>
+        {textoCancelar && (
+          <Boton autoFocus variante="contorno" onClick={onCancelar}>
+            {textoCancelar}
+          </Boton>
+        )}
+        <Boton autoFocus={!textoCancelar} variante={peligro ? 'peligro' : 'primario'} onClick={onConfirmar}>
           {textoConfirmar}
         </Boton>
       </div>

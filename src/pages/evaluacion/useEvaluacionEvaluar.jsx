@@ -11,7 +11,14 @@ import { MensajeError } from '../../components/ui/Mensaje'
 import { useConfirmacion } from '../../hooks/useConfirmacion'
 import useVisorDocumento from '../../hooks/useVisorDocumento'
 import { CLASE_TARJETA, CLASE_TEXTO_FUERTE, CLASE_TEXTO_SUAVE } from '../../lib/estilos'
-import { repartirPesos } from '../../lib/evaluacion'
+import {
+  UMBRAL_CUMPLIMIENTO,
+  calcularPuntaje,
+  contarPendientes,
+  formatearPorcentaje,
+  hayNoCumple,
+  resultadoDocumento,
+} from '../../lib/evaluacion'
 
 // Lógica de EvaluacionEvaluar: estado, efectos y manejadores. Devuelve todo en un objeto (ctx) para la vista.
 export function useEvaluacionEvaluar() {
@@ -34,6 +41,9 @@ export function useEvaluacionEvaluar() {
   const [itemMarcas, setItemMarcas] = useState({})
   const [observaciones, setObservaciones] = useState('')
   const [guardando, setGuardando] = useState(false)
+  // Documento que se está calificando con su archivo al lado, y si el archivo se muestra ampliado.
+  const [documentoActivoId, setDocumentoActivoId] = useState(null)
+  const [ampliado, setAmpliado] = useState(false)
   const botonBorrador = useRef(null)
   const botonCorregir = useRef(null)
   const botonFinalizar = useRef(null)
@@ -44,7 +54,6 @@ export function useEvaluacionEvaluar() {
   // aparte, sin peso ni respuesta.
   const aplicables = documentos.filter((d) => d.obligatorio && d.estado !== 'no_aplica')
   const excluidos = documentos.filter((d) => !(d.obligatorio && d.estado !== 'no_aplica'))
-  const pesos = repartirPesos(aplicables)
   // Obligatorios aplicables que el aspirante no ha cargado. El servidor no deja marcarlos «Cumple» ni finalizar con
   // alguno faltante; sí deja guardar un borrador y pedir la corrección con el faltante marcado «No cumple».
   const faltantes = aplicables.filter((d) => d.estado === 'pendiente')
@@ -97,63 +106,80 @@ export function useEvaluacionEvaluar() {
     }
   }, [postulacionId])
 
+  // Habilidades que la convocatoria pide y el aspirante DECLARÓ: solo esas se califican y suman. Una no declarada no aparece.
+  const habilidades = (dato?.skills ?? []).filter((s) => s.declarada)
+  const puntos = dato?.puntos ?? null
+  const calculo = { aplicables, respuestas, itemMarcas, habilidades, skillMarcas }
+
   const total = aplicables.length
-  const cumplidos = aplicables.filter((d) => respuestas[d.id] === true).length
-  const sinResponder = aplicables.filter((d) => respuestas[d.id] == null).length
+  const cumplidos = aplicables.filter((d) => resultadoDocumento(d, respuestas, itemMarcas) === true).length
+  const sinResponder = aplicables.filter((d) => d.estado !== 'pendiente' && resultadoDocumento(d, respuestas, itemMarcas) == null).length
   const sinCargar = faltantes.length
-  const pesoTotal = Object.values(pesos).reduce((acc, valor) => acc + valor, 0)
-  // Un documento con checklist aporta la parte de sus ítems marcados como «Cumple» (sin ítems, todo su peso).
-  const fraccionDocumento = (d) => {
-    const items = d.items ?? []
-    if (items.length === 0) return 1
-    const pid = String(d.id).replace(/^doc-/, '')
-    return items.filter((_, n) => itemMarcas[`docitem-${pid}-${n}`] === true).length / items.length
-  }
-  const pesoObtenido = aplicables.reduce(
-    (acc, d) => acc + (respuestas[d.id] === true ? (pesos[d.id] ?? 0) * fraccionDocumento(d) : 0),
-    0,
-  )
-  // Habilidades ponderadas de la convocatoria (mismo criterio que el servidor): cuentan cuando el evaluador las marca
-  // «Cumple». Sin porcentaje no cuentan. Documentos y habilidades comparten el mismo 100 %.
-  const habilidadesPonderadas = (dato?.skills ?? []).filter((s) => s.ponderacion != null)
-  const pesoHabilidades = habilidadesPonderadas.reduce((acc, s) => acc + Number(s.ponderacion), 0)
-  const pesoHabilidadesObtenido = habilidadesPonderadas.reduce(
-    (acc, s) => acc + (skillMarcas[`skill-${s.id}`] === true ? Number(s.ponderacion) : 0),
-    0,
-  )
-  const pesoGlobal = pesoTotal + pesoHabilidades
-  const cumplimiento = pesoGlobal > 0
-    ? Math.round(((pesoObtenido + pesoHabilidadesObtenido) / pesoGlobal) * 100)
-    : 0
+  // Mismo cálculo que el servidor: documentos 90 puntos, habilidades declaradas 10 (100 de documentos si no hay habilidades).
+  const puntaje = calcularPuntaje({ ...calculo, puntos })
+  const cumplimiento = puntaje.total
+  // Lo que falta calificar antes de poder finalizar (ítems, documentos sin checklist y habilidades declaradas).
+  const pendientes = contarPendientes(calculo)
+  const algunNoCumple = hayNoCumple(calculo)
+  const faltaObservacion = algunNoCumple && observaciones.trim() === ''
 
   // Documentos que el aspirante reemplazó después de que se le pidió corregir.
   const actualizados = dato?.evaluacion?.documentos_actualizados ?? []
   const enCorreccion = dato?.evaluacion?.estado === 'correccion_solicitada'
+  // Una evaluación finalizada es un resultado: se ve en solo lectura. Solo se puede volver a calificar si se reabrió porque el
+  // aspirante cambió un documento.
+  const soloLectura = dato?.evaluacion?.estado === 'finalizada' && !dato?.evaluacion?.reabierta
+  // Se pidió corregir y el aspirante todavía está dentro de su plazo sin responder: no hay nada que el evaluador deba hacer. Se
+  // calcula con la ronda de corrección vigente; cuando el aspirante responde o el plazo vence, vuelven las acciones.
+  const esperandoAspirante = dato?.evaluacion?.estado === 'correccion_solicitada' && dato?.evaluacion?.correccion_estado === 'vigente'
   // Rondas de corrección de la POSTULACIÓN (compartidas entre evaluadores): las reglas las aplica el servidor y la pantalla
   // solo explica por qué «Enviar a corrección» está disponible o bloqueado (ver PanelRondasCorreccion).
   const correccion = dato?.correccion ?? null
   const puedePedirCorreccion = correccion ? Boolean(correccion.puede_solicitar) : true
-  // Documentos marcados «No cumple». Mientras haya alguno y la corrección todavía pueda seguir, no se finaliza: si se
-  // finaliza, el aspirante queda con un documento sin corregir y la selección usaría esa evaluación.
-  const noCumple = aplicables.filter((d) => respuestas[d.id] === false)
+  // Documentos con algún «No cumple». Si el cumplimiento no alcanza el mínimo y la corrección todavía puede seguir, no se
+  // finaliza: se le da al aspirante la oportunidad de corregir. Con el mínimo alcanzado se puede finalizar aunque algo no cumpla.
+  const noCumple = aplicables.filter((d) => resultadoDocumento(d, respuestas, itemMarcas) === false)
   // Las correcciones se agotaron: no quedan rondas (plazo vencido sin respuesta o las dos ordinarias usadas) y el
-  // evaluador no puede pedir otra. Solo entonces se puede finalizar con un documento «No cumple».
+  // evaluador no puede pedir otra. Solo entonces se puede finalizar por debajo del mínimo con un documento «No cumple».
   const correccionAgotada = Boolean(correccion) && !correccion.puede_solicitar
     && ['agotadas', 'vencida'].includes(correccion.motivo)
-  const bloqueoPorNoCumple = noCumple.length > 0 && !correccionAgotada
-  const bloqueoFinalizar = faltantes.length > 0 || bloqueoPorNoCumple
+  const bloqueoPorNoCumple = noCumple.length > 0 && cumplimiento < UMBRAL_CUMPLIMIENTO && !correccionAgotada
+  const bloqueoFinalizar = soloLectura || esperandoAspirante || faltantes.length > 0 || pendientes > 0 || faltaObservacion || bloqueoPorNoCumple
+
+  const documentoActivo = aplicables.find((d) => d.id === documentoActivoId) ?? null
+  const rutaDocumento = (documento) =>
+    documento?.archivo ? `/revision/postulaciones/${postulacionId}/documentos/${documento.archivo.id}/archivo?inline=1` : null
+
+  const abrirDocumento = (documento) => {
+    setDocumentoActivoId(documento.id)
+    // Con el panel ya pintado, se lleva a la vista (en pantallas estrechas queda debajo de la lista).
+    setTimeout(() => document.getElementById('panel-calificar-documento')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }), 0)
+  }
+  const cerrarDocumento = () => {
+    setDocumentoActivoId(null)
+    setAmpliado(false)
+  }
+
+  // «Cumple» / «No cumple» de un documento SIN checklist. Con checklist se califica ítem por ítem y el documento se deduce.
+  const marcarDocumento = (documento, valor) => setRespuestas((prev) => ({ ...prev, [documento.id]: valor }))
 
   const guardar = async (estadoFinal) => {
     setError('')
     setGuardando(true)
 
-    // Por seguridad, aunque el formulario no lo permita, nunca viaja «Cumple» de un documento sin archivo.
+    // El resultado de cada documento sale de su checklist (o de su propio Cumple / No cumple). Por seguridad, aunque el
+    // formulario no lo permita, nunca viaja «Cumple» de un documento sin archivo.
     const faltanIds = new Set(faltantes.map((d) => d.id))
+    const perfilDocumentos = {}
+    for (const d of aplicables) {
+      const resultado = resultadoDocumento(d, respuestas, itemMarcas)
+      if (resultado === undefined || (resultado === true && faltanIds.has(d.id))) continue
+      perfilDocumentos[d.id] = resultado
+    }
+    const idsHabilidades = new Set(habilidades.map((s) => `skill-${s.id}`))
     const perfil = {
-      ...Object.fromEntries(
-        Object.entries(respuestas).filter(([id, valor]) => !(valor === true && faltanIds.has(id))),
-      ),
-      ...skillMarcas,
+      ...perfilDocumentos,
+      ...Object.fromEntries(Object.entries(skillMarcas).filter(([clave]) => idsHabilidades.has(clave))),
       ...itemMarcas,
     }
 
@@ -175,13 +201,21 @@ export function useEvaluacionEvaluar() {
       setGuardando(false)
     }
 
+    // Al finalizar no se queda en la pantalla: el resultado es definitivo y se vuelve al listado (un solo botón, sin «Seguir aquí»).
+    if (estadoFinal === 'finalizada') {
+      await confirmar({
+        titulo: 'Evaluación finalizada',
+        mensaje: `El resultado quedó guardado: ${formatearPorcentaje(guardada?.cumplimiento ?? cumplimiento)} de cumplimiento.`,
+        textoConfirmar: 'Volver al listado',
+        textoCancelar: null,
+      })
+      navigate('/evaluacion')
+      return
+    }
+
     // Con los botones ya habilitados: al cerrar el diálogo el foco vuelve al
     // que lo abrió, y un botón deshabilitado no puede recibirlo.
     const textos = {
-      finalizada: {
-        titulo: 'Evaluación finalizada',
-        mensaje: `El resultado quedó guardado: ${guardada?.cumplimiento ?? cumplimiento} % de cumplimiento.`,
-      },
       correccion_solicitada: {
         titulo: 'Solicitud enviada',
         mensaje:
@@ -203,39 +237,23 @@ export function useEvaluacionEvaluar() {
       return
     }
     // Los botones se deshabilitaron mientras se guardaba y perdieron el foco.
-    const boton =
-      estadoFinal === 'finalizada'
-        ? botonFinalizar
-        : estadoFinal === 'correccion_solicitada'
-          ? botonCorregir
-          : botonBorrador
+    const boton = estadoFinal === 'correccion_solicitada' ? botonCorregir : botonBorrador
     setTimeout(() => boton.current?.focus(), 0)
   }
 
   const finalizar = async () => {
     if (bloqueoFinalizar) return // el botón ya está desactivado
-    const pendientes =
-      sinResponder > 0
-        ? ` ${sinResponder === 1 ? '1 requisito sin responder contará' : `${sinResponder} requisitos sin responder contarán`} como no cumplido.`
-        : ''
     const continuar = await confirmar({
       titulo: '¿Finalizar la evaluación?',
-      mensaje: `Se guardará el resultado con ${cumplimiento} % de cumplimiento (${cumplidos} de ${total} requisitos).${pendientes}`,
+      mensaje: `Se guardará el resultado con ${formatearPorcentaje(cumplimiento)} de cumplimiento (${cumplidos} de ${total} documentos cumplen). Después no podrás cambiarlo.`,
       textoConfirmar: 'Finalizar evaluación',
       textoCancelar: 'Seguir revisando',
     })
     if (continuar) guardar('finalizada')
   }
 
-  // El visor interno muestra la carga y los errores; no se abre otra pestaña.
-  const verDocumento = (documento) =>
-    abrirVisor(`/revision/postulaciones/${postulacionId}/documentos/${documento.archivo.id}/archivo?inline=1`, {
-      titulo: documento.nombre || documento.archivo.nombre_original,
-      nombre: documento.archivo.nombre_original,
-    })
-
   // Certificado que el aspirante subió para una habilidad que declaró (id de la declaración: postulacion_skill_id).
-  // Igual que los documentos, se muestra en el visor interno.
+  // Se muestra en el visor interno.
   const verCertificado = (habilidad) =>
     abrirVisor(`/revision/postulaciones/${postulacionId}/skills/${habilidad.postulacion_skill_id}/certificado/archivo?inline=1`, {
       titulo: `${habilidad.nombre} - certificado`,
@@ -284,73 +302,74 @@ export function useEvaluacionEvaluar() {
 
   const { aspirante, convocatoria, evaluacion } = dato
 
-    return {
-      actualizados,
-      aplicables,
-      aspirante,
-      botonBorrador,
-      botonCorregir,
-      botonFinalizar,
-      cargando,
-      confirmar,
-      convocatoria,
-      cumplidos,
-      correccion,
-      cumplimiento,
-      dato,
-      datosAspirante,
-      documentos,
-      enCorreccion,
-      error,
-      evaluacion,
-      excluidos,
-      bloqueoFinalizar,
-      bloqueoPorNoCumple,
-      habilidades: dato?.skills ?? [],
-      skillMarcas,
-      itemMarcas,
-      setItemMarca: (clave, valor) =>
-        setItemMarcas((prev) => {
-          const siguiente = { ...prev }
-          if (valor === undefined) delete siguiente[clave]
-          else siguiente[clave] = valor
-          return siguiente
-        }),
-      setSkillMarca: (id, valor) =>
-        setSkillMarcas((prev) => {
-          const siguiente = { ...prev }
-          if (valor === undefined) delete siguiente[`skill-${id}`]
-          else siguiente[`skill-${id}`] = valor
-          return siguiente
-        }),
-      pesoGlobal,
-
-      faltantes,
-      finalizar,
-      guardando,
-      noCumple,
-      guardar,
-      puedePedirCorreccion,
-      navigate,
-      observaciones,
-      pesoObtenido,
-      pesoTotal,
-      pesos,
-      postulacionId,
-      respuestas,
-      setCargando,
-      setDato,
-      setDocumentos,
-      setError,
-      setGuardando,
-      setObservaciones,
-      setRespuestas,
-      sinCargar,
-      sinResponder,
-      total,
-      verCertificado,
-      verDocumento,
-      visor,
-      volverAlListado,
-    }
+  return {
+    abrirDocumento,
+    actualizados,
+    ampliado,
+    aplicables,
+    aspirante,
+    algunNoCumple,
+    botonBorrador,
+    botonCorregir,
+    botonFinalizar,
+    bloqueoFinalizar,
+    bloqueoPorNoCumple,
+    cargando,
+    cerrarDocumento,
+    convocatoria,
+    correccion,
+    cumplidos,
+    cumplimiento,
+    dato,
+    datosAspirante,
+    documentoActivo,
+    documentos,
+    enCorreccion,
+    error,
+    esperandoAspirante,
+    evaluacion,
+    excluidos,
+    faltaObservacion,
+    faltantes,
+    finalizar,
+    guardando,
+    guardar,
+    habilidades,
+    itemMarcas,
+    marcarDocumento,
+    noCumple,
+    observaciones,
+    pendientes,
+    postulacionId,
+    puedePedirCorreccion,
+    puntaje,
+    puntos,
+    respuestas,
+    rutaDocumento,
+    setAmpliado,
+    setDato,
+    setItemMarca: (clave, valor) =>
+      setItemMarcas((prev) => {
+        const siguiente = { ...prev }
+        if (valor === undefined) delete siguiente[clave]
+        else siguiente[clave] = valor
+        return siguiente
+      }),
+    setObservaciones,
+    setSkillMarca: (id, valor) =>
+      setSkillMarcas((prev) => {
+        const siguiente = { ...prev }
+        if (valor === undefined) delete siguiente[`skill-${id}`]
+        else siguiente[`skill-${id}`] = valor
+        return siguiente
+      }),
+    sinCargar,
+    sinResponder,
+    skillMarcas,
+    soloLectura,
+    total,
+    verCertificado,
+    visor,
+    volverAlListado,
+  }
 }

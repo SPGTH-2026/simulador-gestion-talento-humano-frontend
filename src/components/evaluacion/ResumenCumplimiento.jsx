@@ -4,7 +4,7 @@ import {
   CLASE_TEXTO_FUERTE,
   CLASE_TEXTO_SUAVE,
 } from '../../lib/estilos'
-import { UMBRAL_CUMPLIMIENTO } from '../../lib/evaluacion'
+import { UMBRAL_CUMPLIMIENTO, formatearPorcentaje } from '../../lib/evaluacion'
 import { Resultado } from './PresentacionEvaluacion'
 
 // Cumplimiento del perfil. Mientras la evaluación no está completada es
@@ -19,9 +19,11 @@ export default function ResumenCumplimiento({
   total,
   sinResponder,
   sinCargar,
+  pendientes = 0,
 }) {
   const completada = evaluacion?.estado === 'finalizada'
-  const guardado = Math.round(evaluacion?.cumplimiento ?? 0)
+  // El valor guardado ya trae sus dos decimales: se muestra tal cual, sin redondear al entero.
+  const guardado = Number(evaluacion?.cumplimiento ?? 0)
   const mostrado = completada ? guardado : porcentaje
   const alcanza = porcentaje >= UMBRAL_CUMPLIMIENTO
 
@@ -32,7 +34,7 @@ export default function ResumenCumplimiento({
           {completada ? 'Cumplimiento del perfil' : 'Cumplimiento provisional'}
         </h2>
         <p className={`text-2xl font-bold tabular-nums ${CLASE_TEXTO_FUERTE}`} aria-live="polite">
-          {mostrado} %
+          {formatearPorcentaje(mostrado)}
         </p>
       </div>
       <div
@@ -54,6 +56,12 @@ export default function ResumenCumplimiento({
         {sinResponder > 0 && ` · ${sinResponder} sin responder`}
       </p>
 
+      {!completada && pendientes > 0 && (
+        <p className={`mt-2 text-xs ${CLASE_TEXTO_SUAVE}`}>
+          Faltan {pendientes} {pendientes === 1 ? 'elemento' : 'elementos'} por calificar para poder finalizar.
+        </p>
+      )}
+
       {completada ? (
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <Resultado evaluacion={evaluacion} />
@@ -70,7 +78,7 @@ export default function ResumenCumplimiento({
 
       {completada && porcentaje !== guardado && (
         <p className={`mt-2 text-xs ${CLASE_TEXTO_SUAVE}`}>
-          Tus marcas actuales darían {porcentaje}&nbsp;%: guarda para actualizar el resultado.
+          Tus marcas actuales darían {formatearPorcentaje(porcentaje)}: guarda para actualizar el resultado.
         </p>
       )}
 
