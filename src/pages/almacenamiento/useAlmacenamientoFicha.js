@@ -79,7 +79,18 @@ export function useAlmacenamientoFicha(fichaId) {
     })
   }
 
-  // Marca o desmarca solo los que se pueden borrar de esta página (los obligatorios nunca entran).
+  // Marca o desmarca los documentos de un aspirante (solo los de esta página).
+  const alternarGrupo = (ids) => {
+    setSeleccion((prev) => {
+      const todos = ids.every((id) => prev.has(id))
+      const siguiente = new Set(prev)
+      ids.forEach((id) => (todos ? siguiente.delete(id) : siguiente.add(id)))
+
+      return siguiente
+    })
+  }
+
+  // Marca o desmarca todos los documentos de esta página (cualquier tipo se puede borrar).
   const alternarTodos = () => {
     const borrables = documentos.filter((d) => d.borrable).map((d) => d.id)
     setSeleccion((prev) => {
@@ -137,6 +148,7 @@ export function useAlmacenamientoFicha(fichaId) {
 
   return {
     alternar,
+    alternarGrupo,
     alternarTodos,
     aviso,
     borrarSeleccion,

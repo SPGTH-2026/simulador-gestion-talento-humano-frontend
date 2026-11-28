@@ -26,6 +26,18 @@ import {
 } from '../../lib/estilos'
 import { useAlmacenamientoFicha } from './useAlmacenamientoFicha'
 
+// Agrupa los documentos por aspirante, en el orden en que llegan de la página actual.
+function agruparPorAspirante(documentos) {
+  const mapa = new Map()
+  for (const d of documentos) {
+    const clave = d.aspirante_id ?? d.aspirante ?? "sin-aspirante"
+    if (!mapa.has(clave)) mapa.set(clave, { clave, nombre: d.aspirante ?? "—", documentos: [] })
+    mapa.get(clave).documentos.push(d)
+  }
+
+  return [...mapa.values()]
+}
+
 export default function AlmacenamientoFicha() {
   const { fichaId } = useParams()
   const a = useAlmacenamientoFicha(fichaId)
@@ -33,6 +45,7 @@ export default function AlmacenamientoFicha() {
   // El aprendiz general solo ve (almacenamiento:ver); borrar exige almacenamiento:gestionar.
   const puedeBorrar = can('almacenamiento:gestionar')
   const marcados = a.seleccion.size
+  const grupos = agruparPorAspirante(a.documentos)
 
   return (
     <div className="flex flex-col gap-5">
@@ -48,7 +61,7 @@ export default function AlmacenamientoFicha() {
           </h1>
           <p className={`text-sm ${CLASE_SUBTITULO_PAGINA}`}>
             {puedeBorrar
-              ? 'Puedes borrar los adicionales y los opcionales. Los obligatorios no se borran: el aspirante los reemplaza.'
+              ? 'Puedes borrar cualquier documento. Si borras un obligatorio, el aspirante tendrá que volver a subirlo.'
               : 'Solo lectura: aquí ves los documentos de tu ficha y su tamaño.'}
           </p>
         </div>
@@ -139,35 +152,65 @@ export default function AlmacenamientoFicha() {
                   <th className={`${CLASE_TH} text-right`}>Tamaño</th>
                 </tr>
               </thead>
-              <tbody className={CLASE_TBODY}>
-                {a.documentos.map((d) => (
-                  <tr key={d.id} className={CLASE_FILA}>
-                    {puedeBorrar && (
-                      <td className={CLASE_TD}>
-                        <input
-                          type="checkbox"
-                          aria-label={`Seleccionar ${d.titulo ?? 'documento'}`}
-                          checked={a.seleccion.has(d.id)}
-                          disabled={!d.borrable || a.ocupado}
-                          onChange={() => a.alternar(d.id)}
-                          className="size-4"
-                        />
+              {grupos.map((g) => {
+                const ids = g.documentos.map((d) => d.id)
+                const marcados = ids.filter((id) => a.seleccion.has(id)).length
+                const tamanoGrupo = g.documentos.reduce((suma, d) => suma + (d.tamano_bytes ?? 0), 0)
+
+                return (
+                  <tbody key={g.clave} className={CLASE_TBODY}>
+                    <tr className="bg-sena-fondo/60 dark:bg-sena-noche/40">
+                      {puedeBorrar && (
+                        <td className={CLASE_TD}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Seleccionar los documentos de ${g.nombre}`}
+                            checked={marcados === ids.length}
+                            onChange={() => a.alternarGrupo(ids)}
+                            disabled={a.ocupado}
+                            className="size-4"
+                          />
+                        </td>
+                      )}
+                      <td colSpan={4} className={CLASE_TD}>
+                        <span className={`font-semibold ${CLASE_TEXTO_FUERTE}`}>{g.nombre}</span>
+                        <span className={`ml-2 text-xs ${CLASE_TEXTO_SUAVE}`}>
+                          {g.documentos.length} documento(s)
+                          {marcados > 0 ? ` · ${marcados} seleccionado(s)` : ''}
+                        </span>
                       </td>
-                    )}
-                    <td className={CLASE_TD}>
-                      <div className={`font-semibold ${CLASE_TEXTO_FUERTE}`}>{d.titulo ?? '—'}</div>
-                      <div className={`text-xs ${CLASE_TEXTO_SUAVE}`}>
-                        {d.tipo === 'adicional' ? 'Adicional' : 'Requerido'}
-                        {d.obligatorio ? ' · obligatorio (no se borra)' : ''}
-                      </div>
-                    </td>
-                    <td className={`${CLASE_TD} ${CLASE_TEXTO_FUERTE}`}>{d.aspirante ?? '—'}</td>
-                    <td className={`${CLASE_TD} ${CLASE_TEXTO_SUAVE}`}>{d.convocatoria ?? '—'}</td>
-                    <td className={`${CLASE_TD} ${CLASE_TEXTO_SUAVE}`}>{formatearFechaHora(d.creado_at)}</td>
-                    <td className={`${CLASE_TD} ${CLASE_TEXTO_FUERTE} text-right`}>{formatearTamano(d.tamano_bytes)}</td>
-                  </tr>
-                ))}
-              </tbody>
+                      <td className={`${CLASE_TD} ${CLASE_TEXTO_FUERTE} text-right`}>{formatearTamano(tamanoGrupo)}</td>
+                    </tr>
+                    {g.documentos.map((d) => (
+                      <tr key={d.id} className={CLASE_FILA}>
+                        {puedeBorrar && (
+                          <td className={CLASE_TD}>
+                            <input
+                              type="checkbox"
+                              aria-label={`Seleccionar ${d.titulo ?? 'documento'}`}
+                              checked={a.seleccion.has(d.id)}
+                              disabled={a.ocupado}
+                              onChange={() => a.alternar(d.id)}
+                              className="size-4"
+                            />
+                          </td>
+                        )}
+                        <td className={CLASE_TD}>
+                          <div className={`font-semibold ${CLASE_TEXTO_FUERTE}`}>{d.titulo ?? '—'}</div>
+                          <div className={`text-xs ${CLASE_TEXTO_SUAVE}`}>
+                            {d.tipo === 'adicional' ? 'Adicional' : 'Requerido'}
+                            {d.obligatorio ? ' · obligatorio' : ''}
+                          </div>
+                        </td>
+                        <td className={`${CLASE_TD} ${CLASE_TEXTO_FUERTE}`}>{d.aspirante ?? '—'}</td>
+                        <td className={`${CLASE_TD} ${CLASE_TEXTO_SUAVE}`}>{d.convocatoria ?? '—'}</td>
+                        <td className={`${CLASE_TD} ${CLASE_TEXTO_SUAVE}`}>{formatearFechaHora(d.creado_at)}</td>
+                        <td className={`${CLASE_TD} ${CLASE_TEXTO_FUERTE} text-right`}>{formatearTamano(d.tamano_bytes)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                )
+              })}
             </table>
           </Tarjeta>
 

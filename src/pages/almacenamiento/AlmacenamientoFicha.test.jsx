@@ -62,10 +62,10 @@ afterEach(() => {
 })
 
 describe('Documentos de una ficha', () => {
-  it('no deja marcar un documento obligatorio', async () => {
+  it('permite marcar también un documento obligatorio', async () => {
     api.listaDocumentosFicha.mockResolvedValue(
       respuestaListado([
-        documento({ id: 1, titulo: 'Hoja de vida', tipo: 'requerido', obligatorio: true, borrable: false }),
+        documento({ id: 1, titulo: 'Hoja de vida', tipo: 'requerido', obligatorio: true, borrable: true }),
         documento({ id: 2, titulo: 'Diploma' }),
       ]),
     )
@@ -73,7 +73,7 @@ describe('Documentos de una ficha', () => {
     montar()
 
     const casillaObligatorio = await screen.findByRole('checkbox', { name: /seleccionar hoja de vida/i })
-    expect(casillaObligatorio.disabled).toBe(true)
+    expect(casillaObligatorio.disabled).toBe(false)
     expect(screen.getByRole('checkbox', { name: /seleccionar diploma/i }).disabled).toBe(false)
   })
 
